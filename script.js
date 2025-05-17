@@ -6,17 +6,17 @@ let audioContext, mic, pitchDetector, micStream;
 let running = false;
 let paused = false;
 let gameOver = false;
-let score = 0; // Add this at the top with your other variables
+let score = 0;
+let showSplash = true; // Show splash screen on load
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const startBtn = document.getElementById("startBtn");
-const pauseBtn = document.getElementById("pauseBtn");
-
 // Load images
 const bgImg = new Image();
 bgImg.src = "assets/background.png";
+const splashImg = new Image();
+splashImg.src = "assets/splash.png";
 const birdImg = new Image();
 birdImg.src = "assets/bird.png";
 const pipeImg = new Image();
@@ -44,98 +44,43 @@ const PIPE_CAP_HEIGHT = 32; // Height of the pipe cap in pixels (adjust if neede
 const BIRD_WIDTH = 40;
 const BIRD_HEIGHT = 32;
 
-// Request microphone access as soon as the page loads
-window.addEventListener("DOMContentLoaded", async () => {
-  try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    console.log("Microphone access granted.");
-  } catch (err) {
-    alert("Microphone access is required to play the game.");
-    startBtn.disabled = true;
-  }
-});
+// Animation and pitch loop
+let animationFrameId = null;
+let pitchLoopActive = false;
 
-startBtn.onclick = async () => {
-  if (!running) {
-    // START GAME
-    startBtn.textContent = "Quit Game";
-    pauseBtn.textContent = "Pause";
-    pauseBtn.disabled = false;
-    running = true;
-    paused = false;
-    gameOver = false;
-    resetGame();
-    draw();
-    await setupAudio();
+// Pitch range for mapping to screen height (easy to adjust)
+const PITCH_MIN = 500;  // Lowest pitch (Hz) maps to bottom of screen
+const PITCH_MAX = 1000;  // Highest pitch (Hz) maps to top of screen
+
+// Responsive canvas
+function resizeCanvas() {
+  if (window.innerWidth > window.innerHeight) {
+    // Landscape: fixed width, full height, horizontally centered
+    canvas.height = window.innerHeight;
+    canvas.width = 480;
+    canvas.style.left = `${(window.innerWidth - canvas.width) / 2}px`;
+    canvas.style.top = `0px`;
+    canvas.style.position = 'absolute';
   } else {
-    // QUIT GAME
-    stopGame();
+    // Portrait: fill the screen
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.left = `0px`;
+    canvas.style.top = `0px`;
+    canvas.style.position = 'absolute';
   }
-};
-
-pauseBtn.onclick = () => {
-  if (!running) return;
-  paused = !paused;
-  pauseBtn.textContent = paused ? "Resume" : "Pause";
-  if (!paused) {
-    draw(); // Restart the animation loop when unpausing
-  }
-};
-
-document.addEventListener("keydown", (e) => {
-  if (e.code === "Space") {
-    e.preventDefault();
-    if (running) pauseBtn.onclick();
-  }
-});
-
-async function setupAudio() {
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  mic = audioContext.createMediaStreamSource(micStream);
-
-  pitchDetector = await ml5.pitchDetection(
-    "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
-    audioContext,
-    micStream,
-    modelLoaded
-  );
+  // Only redraw if not running (so splash/buttons show up)
+  if (!running) draw();
 }
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', resizeCanvas);
+resizeCanvas();
 
-function modelLoaded() {
-  console.log("Pitch model loaded.");
-  getPitch();
-}
-
-function getPitch() {
-  if (!running) return;
-  pitchDetector.getPitch((err, frequency) => {
-    if (err) {
-      console.error("Pitch detection error:", err);
-    }
-    if (frequency) {
-      pitch = frequency;
-    }
-    getPitch();
-  });
-}
-
-function clamp(val, min, max) {
-  return Math.max(min, Math.min(max, val));
-}
-
-function resetGame() {
-  birdY = 300;
-  pitch = null;
-  pipes = [];
-  pipeTimer = 0;
-  gameOver = false;
-  score = 0; // Reset score
-}
-
+// Draw score using digit images
 function drawScore(x, y, score) {
   const scoreStr = score.toString();
-  const digitWidth = 32;   // Adjust to your digit image width
-  const digitHeight = 48;  // Adjust to your digit image height
+  const digitWidth = 32;
+  const digitHeight = 48;
   const totalWidth = scoreStr.length * digitWidth;
   let drawX = x - totalWidth / 2;
   for (let char of scoreStr) {
@@ -145,92 +90,148 @@ function drawScore(x, y, score) {
   }
 }
 
-function draw() {
-  if (!running) return;
+// Draw in-canvas buttons (always in top right)
+function drawGameButtons() {
+  const btnSize = 48;
+  const padding = 20;
+  const pauseX = canvas.width - btnSize * 2 - padding * 1.5;
+  const quitX = canvas.width - btnSize - padding;
+  const btnY = padding;
 
-  // Draw background
+  // Start/Pause button
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = "#1976d2";
+  ctx.fillRect(pauseX, btnY, btnSize, btnSize);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 28px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  if (!running) {
+    ctx.fillText("▶", pauseX + btnSize / 2, btnY + btnSize / 2 + 2);
+  } else {
+    ctx.fillText("II", pauseX + btnSize / 2, btnY + btnSize / 2);
+  }
+  ctx.restore();
+
+  // Quit button
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = "#d32f2f";
+  ctx.fillRect(quitX, btnY, btnSize, btnSize);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 28px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("✖", quitX + btnSize / 2, btnY + btnSize / 2 + 1);
+  ctx.restore();
+}
+
+// Main draw function
+function draw() {
+  if (animationFrameId) {
+    animationFrameId = null;
+  }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
 
-  let minPitch = 500;
-  let maxPitch = 1000;
-  let yPadding = 30; // pixels from top and bottom
+  // Splash screen
+  if (showSplash) {
+    // Draw splash image centered
+    const splashW = Math.min(canvas.width * 0.8, splashImg.naturalWidth || 400);
+    const splashH = splashW * ((splashImg.naturalHeight || 200) / (splashImg.naturalWidth || 400));
+    ctx.save();
+    ctx.globalAlpha = 0.97;
+    ctx.drawImage(
+      splashImg,
+      canvas.width / 2 - splashW / 2,
+      canvas.height / 2 - splashH / 2,
+      splashW,
+      splashH
+    );
+    ctx.restore();
+
+    // Always draw buttons last so they appear on top
+    drawGameButtons();
+    return;
+  }
+
+  if (!running) return;
+
+  let yPadding = 30;
   let targetY;
 
   if (pitch) {
-    let clampedPitch = clamp(pitch, minPitch, maxPitch);
+    let clampedPitch = clamp(pitch, PITCH_MIN, PITCH_MAX);
     let availableHeight = canvas.height - 2 * yPadding;
-    targetY =
+    let targetY =
       canvas.height -
       yPadding -
-      ((clampedPitch - minPitch) / (maxPitch - minPitch)) * availableHeight;
+      ((clampedPitch - PITCH_MIN) / (PITCH_MAX - PITCH_MIN)) * availableHeight;
+    birdY = birdY * smoothing + targetY * (1 - smoothing);
   } else {
-    targetY = birdY;
+    // No pitch detected: apply gravity so the bird falls
+    birdY += 4; // Increase or decrease for faster/slower fall
   }
 
-  birdY = birdY * smoothing + targetY * (1 - smoothing);
+  // Prevent bird from falling below the bottom of the screen
+  if (birdY > canvas.height - BIRD_HEIGHT) {
+    birdY = canvas.height - BIRD_HEIGHT;
+  }
 
   // Pipes logic
   if (!paused && !gameOver) {
     pipeTimer++;
     if (pipeTimer >= PIPE_INTERVAL) {
       pipeTimer = 0;
-      // Random gap position
       const gapY = Math.floor(
         yPadding + Math.random() * (canvas.height - 2 * yPadding - PIPE_GAP)
       );
       pipes.push({
         x: canvas.width,
         gapY: gapY,
-        passed: false, // Track if the bird has passed this pipe
+        passed: false,
       });
     }
-    // Move pipes
     for (let pipe of pipes) {
       pipe.x -= PIPE_SPEED;
     }
-    // Remove off-screen pipes
     pipes = pipes.filter((pipe) => pipe.x + PIPE_WIDTH > 0);
   }
 
-  // Draw pipes with cap and body (no cropping)
+  // Draw pipes
   for (let pipe of pipes) {
-    // --- TOP PIPE (rotated 180°) ---
+    // Top pipe (rotated 180°)
     ctx.save();
-    ctx.translate(pipe.x + PIPE_WIDTH / 2, pipe.gapY); // Move to bottom center of top pipe
+    ctx.translate(pipe.x + PIPE_WIDTH / 2, pipe.gapY);
     ctx.rotate(Math.PI);
-
-    // Draw cap
     ctx.drawImage(
       pipeImg,
-      0, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT, // src
-      -PIPE_WIDTH / 2, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT // dest
+      0, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT,
+      -PIPE_WIDTH / 2, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT
     );
-    // Draw body
     if (pipe.gapY - PIPE_CAP_HEIGHT > 0) {
       ctx.drawImage(
         pipeImg,
-        0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT, // src
-        -PIPE_WIDTH / 2, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipe.gapY - PIPE_CAP_HEIGHT // dest
+        0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT,
+        -PIPE_WIDTH / 2, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipe.gapY - PIPE_CAP_HEIGHT
       );
     }
     ctx.restore();
 
-    // --- BOTTOM PIPE ---
+    // Bottom pipe
     const bottomPipeHeight = canvas.height - (pipe.gapY + PIPE_GAP);
     const bottomPipeY = pipe.gapY + PIPE_GAP;
-
-    // Draw cap
     ctx.drawImage(
       pipeImg,
-      0, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT, // src
-      pipe.x, bottomPipeY, PIPE_WIDTH, PIPE_CAP_HEIGHT // dest
+      0, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT,
+      pipe.x, bottomPipeY, PIPE_WIDTH, PIPE_CAP_HEIGHT
     );
-    // Draw body
     if (bottomPipeHeight - PIPE_CAP_HEIGHT > 0) {
       ctx.drawImage(
         pipeImg,
-        0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT, // src
-        pipe.x, bottomPipeY + PIPE_CAP_HEIGHT, PIPE_WIDTH, bottomPipeHeight - PIPE_CAP_HEIGHT // dest
+        0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT,
+        pipe.x, bottomPipeY + PIPE_CAP_HEIGHT, PIPE_WIDTH, bottomPipeHeight - PIPE_CAP_HEIGHT
       );
     }
   }
@@ -238,15 +239,17 @@ function draw() {
   // Draw bird
   ctx.drawImage(birdImg, 100, birdY, BIRD_WIDTH, BIRD_HEIGHT);
 
-  // Score logic: increment when bird passes a pipe
-  for (let pipe of pipes) {
-    if (!pipe.passed && pipe.x + PIPE_WIDTH < 100) {
-      pipe.passed = true;
-      score++;
+  // Score logic
+  if (!gameOver) {
+    for (let pipe of pipes) {
+      if (!pipe.passed && pipe.x + PIPE_WIDTH / 2 < 100 + BIRD_WIDTH / 2) {
+        pipe.passed = true;
+        score++;
+      }
     }
   }
 
-  // Draw score using digit images at the top
+  // Draw score
   if (!gameOver) {
     drawScore(canvas.width / 2, 20, score);
   }
@@ -254,27 +257,9 @@ function draw() {
   // Collision detection
   if (!gameOver) {
     for (let pipe of pipes) {
-      // Bird rectangle
-      const birdRect = {
-        x: 100,
-        y: birdY,
-        w: BIRD_WIDTH,
-        h: BIRD_HEIGHT,
-      };
-      // Top pipe rectangle
-      const topRect = {
-        x: pipe.x,
-        y: 0,
-        w: PIPE_WIDTH,
-        h: pipe.gapY,
-      };
-      // Bottom pipe rectangle
-      const bottomRect = {
-        x: pipe.x,
-        y: pipe.gapY + PIPE_GAP,
-        w: PIPE_WIDTH,
-        h: canvas.height - (pipe.gapY + PIPE_GAP),
-      };
+      const birdRect = { x: 100, y: birdY, w: BIRD_WIDTH, h: BIRD_HEIGHT };
+      const topRect = { x: pipe.x, y: 0, w: PIPE_WIDTH, h: pipe.gapY };
+      const bottomRect = { x: pipe.x, y: pipe.gapY + PIPE_GAP, w: PIPE_WIDTH, h: canvas.height - (pipe.gapY + PIPE_GAP) };
       if (
         rectsOverlap(birdRect, topRect) ||
         rectsOverlap(birdRect, bottomRect)
@@ -289,45 +274,59 @@ function draw() {
   if (gameOver) {
     ctx.fillStyle = "rgba(80,80,80,0.5)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const goNaturalWidth = gameoverImg.naturalWidth || 300;
+    const goNaturalHeight = gameoverImg.naturalHeight || 80;
+    const goDrawWidth = 300;
+    const goDrawHeight = goDrawWidth * (goNaturalHeight / goNaturalWidth);
     ctx.drawImage(
       gameoverImg,
-      canvas.width / 2 - 150,
-      canvas.height / 2 - 60,
-      300,
-      120
+      canvas.width / 2 - goDrawWidth / 2,
+      canvas.height / 2 - goDrawHeight / 2,
+      goDrawWidth,
+      goDrawHeight
     );
-    // Draw score using digit images on game over screen
-    drawScore(canvas.width / 2, canvas.height / 2 + 70, score);
+    drawScore(canvas.width / 2, canvas.height / 2 + goDrawHeight / 2 + 20, score);
     running = false;
-    pauseBtn.disabled = true;
-    startBtn.textContent = "Start Game";
+    pitchLoopActive = false;
+    drawGameButtons();
     return;
   }
 
-  // Draw overlay and pause icon if paused
+  // Pause overlay
   if (paused) {
     ctx.fillStyle = "rgba(80, 80, 80, 0.5)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw pause icon (two vertical bars)
     const iconWidth = 40;
     const iconHeight = 60;
     const barWidth = 12;
     const gap = 12;
     const x = canvas.width / 2 - iconWidth / 2;
     const y = canvas.height / 2 - iconHeight / 2;
-
     ctx.fillStyle = "#fff";
     ctx.fillRect(x, y, barWidth, iconHeight);
     ctx.fillRect(x + barWidth + gap, y, barWidth, iconHeight);
   }
 
-  // Only continue animation if not paused or game over
   if (!paused && !gameOver) {
-    requestAnimationFrame(draw);
+    animationFrameId = requestAnimationFrame(draw);
   }
+
+  // Always draw buttons last so they appear on top
+  drawGameButtons();
 }
 
+// Utility
+function clamp(val, min, max) {
+  return Math.max(min, Math.min(max, val));
+}
+function resetGame() {
+  birdY = 300;
+  pitch = null;
+  pipes = [];
+  pipeTimer = 0;
+  gameOver = false;
+  score = 0;
+}
 function rectsOverlap(a, b) {
   return (
     a.x < b.x + b.w &&
@@ -336,7 +335,6 @@ function rectsOverlap(a, b) {
     a.y + a.h > b.y
   );
 }
-
 function stopGame() {
   running = false;
   paused = false;
@@ -344,5 +342,131 @@ function stopGame() {
   birdY = 300;
   pipes = [];
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+  pitchLoopActive = false;
+  showSplash = true;
+  draw();
+  if (audioContext) {
+    audioContext.close();
+    audioContext = null;
+  }
 }
+
+// Pitch detection
+async function setupAudio() {
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  mic = audioContext.createMediaStreamSource(micStream);
+
+  pitchDetector = await ml5.pitchDetection(
+    "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
+    audioContext,
+    micStream,
+    modelLoaded
+  );
+}
+function modelLoaded() {
+  getPitch();
+}
+function getPitch() {
+  if (!running || !pitchLoopActive) return;
+  pitchDetector.getPitch((err, frequency) => {
+    if (err) {
+      console.error("Pitch detection error:", err);
+    }
+    if (frequency) {
+      pitch = frequency;
+    } else {
+      pitch = null;
+    }
+    // Only continue if pitchLoopActive is still true
+    if (pitchLoopActive) getPitch();
+  });
+}
+
+// Handle in-canvas button clicks
+canvas.addEventListener("click", function (e) {
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  const btnSize = 48;
+  const padding = 20;
+  const pauseX = canvas.width - btnSize * 2 - padding * 1.5;
+  const quitX = canvas.width - btnSize - padding;
+  const btnY = padding;
+
+  // Start/Pause button area
+  if (
+    mouseX >= pauseX &&
+    mouseX <= pauseX + btnSize &&
+    mouseY >= btnY &&
+    mouseY <= btnY + btnSize
+  ) {
+    // STOP any previous loops before starting a new game
+    if (!running || showSplash) {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      pitchLoopActive = false;
+
+      // START GAME logic
+      running = true;
+      paused = false;
+      gameOver = false;
+      showSplash = false;
+      resetGame();
+      pitchLoopActive = true;
+      draw();
+      setupAudio();
+    } else {
+      // Pause/unpause
+      paused = !paused;
+      if (!paused && !animationFrameId) {
+        animationFrameId = requestAnimationFrame(draw);
+      }
+    }
+    return;
+  }
+
+  // Quit button area
+  if (
+    mouseX >= quitX &&
+    mouseX <= quitX + btnSize &&
+    mouseY >= btnY &&
+    mouseY <= btnY + btnSize
+  ) {
+    if (running || showSplash) stopGame();
+    return;
+  }
+});
+
+// Microphone access on load
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    console.log("Microphone access granted.");
+  } catch (err) {
+    alert("Microphone access is required to play the game.");
+  }
+});
+
+// Draw initial splash/background/buttons as soon as possible
+function tryDrawInitial() {
+  if (bgImg.complete && splashImg.complete) {
+    draw();
+  } else {
+    let loaded = 0;
+    function check() {
+      loaded++;
+      if (bgImg.complete && splashImg.complete) draw();
+    }
+    bgImg.onload = check;
+    splashImg.onload = check;
+  }
+}
+tryDrawInitial();
 

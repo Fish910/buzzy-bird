@@ -1,16 +1,26 @@
-body {
-  font-family: sans-serif;
-  text-align: center;
-  background: #f0f8ff;
+html, body {
+  height: 100%;
   margin: 0;
-  padding: 20px;
+  padding: 0;
+  background: #f0f8ff;
+  overflow: hidden;
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  touch-action: none;
 }
 
 canvas {
-  border: 2px solid #444;
-  background: #e0f7fa;
   display: block;
-  margin: 20px auto;
+  background: #e0f7fa;
+  touch-action: none;
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  left: 0;
+  top: 0;
 }
 
 button {
