@@ -170,8 +170,9 @@ function draw() {
       ((clampedPitch - PITCH_MIN) / (PITCH_MAX - PITCH_MIN)) * availableHeight;
     birdY = birdY * smoothing + targetY * (1 - smoothing);
   } else {
-    // No pitch detected: apply gravity so the bird falls
-    birdY += 4; // Increase or decrease for faster/slower fall
+    // Smooth, consistent slow fall when no pitch is detected
+    const gravity = 8; // Lower value for slower, smoother fall
+    birdY += gravity;
   }
 
   // Prevent bird from falling below the bottom of the screen

@@ -14,13 +14,15 @@ body {
 
 canvas {
   display: block;
-  background: #e0f7fa;
-  touch-action: none;
   position: absolute;
-  margin: 0;
-  padding: 0;
   left: 0;
   top: 0;
+  margin: 0;
+  padding: 0;
+  background: #e0f7fa;
+  touch-action: none;
+  /* REMOVE any width/height here! */
+  /* Do NOT set width: 100vw or height: 100vh */
 }
 
 button {
