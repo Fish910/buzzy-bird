@@ -336,6 +336,16 @@ function rectsOverlap(a, b) {
     a.y + a.h > b.y
   );
 }
+function stopAudio() {
+  pitchLoopActive = false;
+  pitch = null;
+  if (audioContext) {
+    audioContext.close();
+    audioContext = null;
+  }
+  mic = null;
+  pitchDetector = null;
+}
 function stopGame() {
   running = false;
   paused = false;
@@ -347,13 +357,9 @@ function stopGame() {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
-  pitchLoopActive = false;
+  stopAudio(); // <--- Add this line
   showSplash = true;
   draw();
-  if (audioContext) {
-    audioContext.close();
-    audioContext = null;
-  }
 }
 
 // Pitch detection
@@ -412,7 +418,7 @@ canvas.addEventListener("click", function (e) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
       }
-      pitchLoopActive = false;
+      stopAudio(); // <--- Add this line
 
       // START GAME logic
       running = true;
