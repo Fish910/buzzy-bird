@@ -11,6 +11,9 @@ let showSplash = true; // Show splash screen on load
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
 
 // Load images
 const bgImg = new Image();
@@ -54,34 +57,21 @@ const PITCH_MAX = 523;  // Highest pitch (Hz) maps to top of screen
 
 // Responsive canvas
 function resizeCanvas() {
-  const dpr = window.devicePixelRatio || 1;
-  let width, height;
   if (window.innerWidth > window.innerHeight) {
     // Landscape: fixed width, full height, horizontally centered
-    height = window.innerHeight;
-    width = 480;
-    canvas.style.width = width + "px";
-    canvas.style.height = height + "px";
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.left = `${(window.innerWidth - width) / 2}px`;
+    canvas.height = window.innerHeight;
+    canvas.width = 480;
+    canvas.style.left = `${(window.innerWidth - canvas.width) / 2}px`;
     canvas.style.top = `0px`;
     canvas.style.position = 'absolute';
   } else {
     // Portrait: fill the screen
-    width = window.innerWidth;
-    height = window.innerHeight;
-    canvas.style.width = width + "px";
-    canvas.style.height = height + "px";
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     canvas.style.left = `0px`;
     canvas.style.top = `0px`;
     canvas.style.position = 'absolute';
   }
-  ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
-  ctx.scale(dpr, dpr); // Scale context for crisp drawing
-
   // Only redraw if not running (so splash/buttons show up)
   if (!running) draw();
 }
@@ -236,21 +226,17 @@ function draw() {
     // Bottom pipe
     const bottomPipeHeight = canvas.height - (pipe.gapY + PIPE_GAP);
     const bottomPipeY = pipe.gapY + PIPE_GAP;
-    if (bottomPipeHeight > 0) {
-      // Draw the cap
+    ctx.drawImage(
+      pipeImg,
+      0, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT,
+      pipe.x, bottomPipeY, PIPE_WIDTH, PIPE_CAP_HEIGHT
+    );
+    if (bottomPipeHeight - PIPE_CAP_HEIGHT > 0) {
       ctx.drawImage(
         pipeImg,
-        0, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT,
-        pipe.x, bottomPipeY, PIPE_WIDTH, PIPE_CAP_HEIGHT
+        0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT,
+        pipe.x, bottomPipeY + PIPE_CAP_HEIGHT, PIPE_WIDTH, bottomPipeHeight - PIPE_CAP_HEIGHT
       );
-      // Only draw the body if there's enough space
-      if (bottomPipeHeight - PIPE_CAP_HEIGHT > 0) {
-        ctx.drawImage(
-          pipeImg,
-          0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT,
-          pipe.x, bottomPipeY + PIPE_CAP_HEIGHT, PIPE_WIDTH, bottomPipeHeight - PIPE_CAP_HEIGHT
-        );
-      }
     }
   }
 
@@ -395,7 +381,7 @@ function modelLoaded() {
   getPitch();
 }
 function getPitch() {
-  if (!running || !pitchLoopActive) return;
+  if (!running || !pitchLoopActive || paused) return;
   pitchDetector.getPitch((err, frequency) => {
     if (err) {
       console.error("Pitch detection error:", err);
