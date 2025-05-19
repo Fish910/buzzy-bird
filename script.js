@@ -54,21 +54,34 @@ const PITCH_MAX = 523;  // Highest pitch (Hz) maps to top of screen
 
 // Responsive canvas
 function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  let width, height;
   if (window.innerWidth > window.innerHeight) {
     // Landscape: fixed width, full height, horizontally centered
-    canvas.height = window.innerHeight;
-    canvas.width = 480;
-    canvas.style.left = `${(window.innerWidth - canvas.width) / 2}px`;
+    height = window.innerHeight;
+    width = 480;
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.left = `${(window.innerWidth - width) / 2}px`;
     canvas.style.top = `0px`;
     canvas.style.position = 'absolute';
   } else {
     // Portrait: fill the screen
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
     canvas.style.left = `0px`;
     canvas.style.top = `0px`;
     canvas.style.position = 'absolute';
   }
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+  ctx.scale(dpr, dpr); // Scale context for crisp drawing
+
   // Only redraw if not running (so splash/buttons show up)
   if (!running) draw();
 }
