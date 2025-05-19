@@ -49,8 +49,8 @@ let animationFrameId = null;
 let pitchLoopActive = false;
 
 // Pitch range for mapping to screen height (easy to adjust)
-const PITCH_MIN = 500;  // Lowest pitch (Hz) maps to bottom of screen
-const PITCH_MAX = 1000;  // Highest pitch (Hz) maps to top of screen
+const PITCH_MIN = 130;  // Lowest pitch (Hz) maps to bottom of screen
+const PITCH_MAX = 523;  // Highest pitch (Hz) maps to top of screen
 
 // Responsive canvas
 function resizeCanvas() {
@@ -223,12 +223,14 @@ function draw() {
     // Bottom pipe
     const bottomPipeHeight = canvas.height - (pipe.gapY + PIPE_GAP);
     const bottomPipeY = pipe.gapY + PIPE_GAP;
+    // Always draw the cap
     ctx.drawImage(
       pipeImg,
       0, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT,
       pipe.x, bottomPipeY, PIPE_WIDTH, PIPE_CAP_HEIGHT
     );
-    if (bottomPipeHeight - PIPE_CAP_HEIGHT > 0) {
+    // Only draw the body if there's enough space
+    if (bottomPipeHeight > PIPE_CAP_HEIGHT) {
       ctx.drawImage(
         pipeImg,
         0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT,
@@ -476,4 +478,3 @@ function tryDrawInitial() {
   }
 }
 tryDrawInitial();
-
