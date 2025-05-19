@@ -223,19 +223,28 @@ function draw() {
     // Bottom pipe
     const bottomPipeHeight = canvas.height - (pipe.gapY + PIPE_GAP);
     const bottomPipeY = pipe.gapY + PIPE_GAP;
-    // Always draw the cap
-    ctx.drawImage(
-      pipeImg,
-      0, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT,
-      pipe.x, bottomPipeY, PIPE_WIDTH, PIPE_CAP_HEIGHT
-    );
-    // Only draw the body if there's enough space
-    if (bottomPipeHeight > PIPE_CAP_HEIGHT) {
-      ctx.drawImage(
-        pipeImg,
-        0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT,
-        pipe.x, bottomPipeY + PIPE_CAP_HEIGHT, PIPE_WIDTH, bottomPipeHeight - PIPE_CAP_HEIGHT
-      );
+    if (bottomPipeHeight > 0) {
+      // If the available height is less than the cap, only draw the visible part of the cap
+      if (bottomPipeHeight <= PIPE_CAP_HEIGHT) {
+        ctx.drawImage(
+          pipeImg,
+          0, 0, PIPE_WIDTH, bottomPipeHeight, // Only part of the cap
+          pipe.x, bottomPipeY, PIPE_WIDTH, bottomPipeHeight
+        );
+      } else {
+        // Draw the cap
+        ctx.drawImage(
+          pipeImg,
+          0, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT,
+          pipe.x, bottomPipeY, PIPE_WIDTH, PIPE_CAP_HEIGHT
+        );
+        // Draw the body
+        ctx.drawImage(
+          pipeImg,
+          0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT,
+          pipe.x, bottomPipeY + PIPE_CAP_HEIGHT, PIPE_WIDTH, bottomPipeHeight - PIPE_CAP_HEIGHT
+        );
+      }
     }
   }
 
