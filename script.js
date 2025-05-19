@@ -11,9 +11,6 @@ let showSplash = true; // Show splash screen on load
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-ctx.imageSmoothingEnabled = false;
-ctx.webkitImageSmoothingEnabled = false;
-
 
 // Load images
 const bgImg = new Image();
