@@ -38,7 +38,7 @@ const PIPE_SPEED = 2;
 let pipes = [];
 let pipeTimer = 0;
 const PIPE_INTERVAL = 120; // frames
-const PIPE_CAP_HEIGHT = 32; // Height of the pipe cap in pixels (adjust if needed)
+const PIPE_CAP_HEIGHT = 24; // Height of the pipe cap in pixels (now 24)
 
 // Bird settings
 const BIRD_WIDTH = 40;
@@ -206,11 +206,13 @@ function draw() {
     ctx.save();
     ctx.translate(pipe.x + PIPE_WIDTH / 2, pipe.gapY);
     ctx.rotate(Math.PI);
+    // Draw cap (top 24px of sprite)
     ctx.drawImage(
       pipeImg,
       0, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT,
       -PIPE_WIDTH / 2, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT
     );
+    // Draw body
     if (pipe.gapY - PIPE_CAP_HEIGHT > 0) {
       ctx.drawImage(
         pipeImg,
@@ -221,23 +223,24 @@ function draw() {
     ctx.restore();
 
     // Bottom pipe
-    ctx.save();
-    ctx.rotate(Math.PI * 2);
     const bottomPipeHeight = canvas.height - (pipe.gapY + PIPE_GAP);
     const bottomPipeY = pipe.gapY + PIPE_GAP;
-    ctx.drawImage(
-      pipeImg,
-      0, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT,
-      pipe.x, bottomPipeY, PIPE_WIDTH, PIPE_CAP_HEIGHT
-    );
-    if (bottomPipeHeight - PIPE_CAP_HEIGHT > 0) {
+    if (bottomPipeHeight > 0) {
+      // Draw cap (top 24px of sprite)
       ctx.drawImage(
         pipeImg,
-        0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT,
-        pipe.x, bottomPipeY + PIPE_CAP_HEIGHT, PIPE_WIDTH, bottomPipeHeight - PIPE_CAP_HEIGHT
+        0, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT,
+        pipe.x, bottomPipeY, PIPE_WIDTH, PIPE_CAP_HEIGHT
       );
+      // Draw body
+      if (bottomPipeHeight - PIPE_CAP_HEIGHT > 0) {
+        ctx.drawImage(
+          pipeImg,
+          0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT,
+          pipe.x, bottomPipeY + PIPE_CAP_HEIGHT, PIPE_WIDTH, bottomPipeHeight - PIPE_CAP_HEIGHT
+        );
+      }
     }
-    ctx.restore();
   }
 
   // Draw bird
