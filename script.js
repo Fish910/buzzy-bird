@@ -221,6 +221,8 @@ function draw() {
     ctx.restore();
 
     // Bottom pipe
+    ctx.save();
+    ctx.rotate(Math.PI * 2);
     const bottomPipeHeight = canvas.height - (pipe.gapY + PIPE_GAP);
     const bottomPipeY = pipe.gapY + PIPE_GAP;
     ctx.drawImage(
@@ -235,6 +237,7 @@ function draw() {
         pipe.x, bottomPipeY + PIPE_CAP_HEIGHT, PIPE_WIDTH, bottomPipeHeight - PIPE_CAP_HEIGHT
       );
     }
+    ctx.restore();
   }
 
   // Draw bird
