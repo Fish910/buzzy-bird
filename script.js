@@ -207,17 +207,18 @@ function draw() {
     ctx.translate(pipe.x + PIPE_WIDTH / 2, pipe.gapY);
     ctx.rotate(Math.PI);
     // Draw cap (top 24px of sprite, skip 2px transparent border on each side)
+    // The cap source is 56px wide, so center it over the 60px pipe body
     ctx.drawImage(
       pipeImg,
-      2, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT, // source: x=2, y=0, width=56, height=24
-      -PIPE_WIDTH / 2, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT // dest: centered, not stretched
+      2, 0, 56, PIPE_CAP_HEIGHT, // source: x=2, y=0, width=56, height=24
+      -PIPE_WIDTH / 2 - 2, 0, 56, PIPE_CAP_HEIGHT // dest: center 56px over 60px pipe
     );
     // Draw body
     if (pipe.gapY - PIPE_CAP_HEIGHT > 0) {
       ctx.drawImage(
         pipeImg,
         0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT,
-        -PIPE_WIDTH / 2, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipe.gapY - PIPE_CAP_HEIGHT
+        -PIPE_WIDTH / 2 - 4, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipe.gapY - PIPE_CAP_HEIGHT
       );
     }
     ctx.restore();
@@ -227,10 +228,11 @@ function draw() {
     const bottomPipeY = pipe.gapY + PIPE_GAP;
     if (bottomPipeHeight > 0) {
       // Draw cap (top 24px of sprite, skip 2px transparent border on each side)
+      // Center the 56px cap over the 60px pipe body
       ctx.drawImage(
         pipeImg,
-        2, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT, // source: x=2, y=0, width=56, height=24
-        pipe.x, bottomPipeY, PIPE_WIDTH, PIPE_CAP_HEIGHT // dest: not stretched
+        2, 0, 56, PIPE_CAP_HEIGHT, // source: x=2, y=0, width=56, height=24
+        pipe.x + 2, bottomPipeY, 56, PIPE_CAP_HEIGHT // dest: center 56px over 60px pipe
       );
       // Draw body
       if (bottomPipeHeight - PIPE_CAP_HEIGHT > 0) {
