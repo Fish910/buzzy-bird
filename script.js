@@ -33,12 +33,16 @@ for (let i = 0; i <= 9; i++) {
 
 // Pipe settings
 const PIPE_WIDTH = 60;
-const PIPE_GAP = 160;
 const PIPE_SPEED = 2;
 let pipes = [];
 let pipeTimer = 0;
 const PIPE_INTERVAL = 120; // frames
 const PIPE_CAP_HEIGHT = 24; // Height of the pipe cap in pixels (now 24)
+
+function getPipeGap() {
+  // 28% of the canvas height, but clamp between 120 and 260 pixels
+  return clamp(Math.floor(canvas.height * 0.28), 120, 260);
+}
 
 // Bird settings
 const BIRD_WIDTH = 40;
@@ -186,7 +190,7 @@ function draw() {
     if (pipeTimer >= PIPE_INTERVAL) {
       pipeTimer = 0;
       const gapY = Math.floor(
-        yPadding + Math.random() * (canvas.height - 2 * yPadding - PIPE_GAP)
+        yPadding + Math.random() * (canvas.height - 2 * yPadding - getPipeGap())
       );
       pipes.push({
         x: canvas.width,
@@ -223,8 +227,8 @@ function draw() {
     ctx.restore();
 
     // Bottom pipe
-    const bottomPipeHeight = canvas.height - (pipe.gapY + PIPE_GAP);
-    const bottomPipeY = pipe.gapY + PIPE_GAP;
+    const bottomPipeHeight = canvas.height - (pipe.gapY + getPipeGap());
+    const bottomPipeY = pipe.gapY + getPipeGap();
     if (bottomPipeHeight > 0) {
       // Draw cap (stretch 56px to 60px, centered)
       ctx.drawImage(
@@ -266,7 +270,7 @@ function draw() {
     for (let pipe of pipes) {
       const birdRect = { x: 100, y: birdY, w: BIRD_WIDTH, h: BIRD_HEIGHT };
       const topRect = { x: pipe.x, y: 0, w: PIPE_WIDTH, h: pipe.gapY };
-      const bottomRect = { x: pipe.x, y: pipe.gapY + PIPE_GAP, w: PIPE_WIDTH, h: canvas.height - (pipe.gapY + PIPE_GAP) };
+      const bottomRect = { x: pipe.x, y: pipe.gapY + getPipeGap(), w: PIPE_WIDTH, h: canvas.height - (pipe.gapY + getPipeGap()) };
       if (
         rectsOverlap(birdRect, topRect) ||
         rectsOverlap(birdRect, bottomRect)
