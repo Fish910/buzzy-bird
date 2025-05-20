@@ -206,11 +206,11 @@ function draw() {
     ctx.save();
     ctx.translate(pipe.x + PIPE_WIDTH / 2, pipe.gapY);
     ctx.rotate(Math.PI);
-    // Draw cap (stretch 56px to 60px to match body)
+    // Draw cap (stretch 56px to 60px, centered)
     ctx.drawImage(
       pipeImg,
-      2, 0, 56, PIPE_CAP_HEIGHT,
-      -PIPE_WIDTH / 2, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT
+      2, 0, 56, PIPE_CAP_HEIGHT,         // source: skip 2px transparent border
+      -PIPE_WIDTH / 2, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT // dest: center 60px over body
     );
     // Draw body (aligned with cap)
     if (pipe.gapY - PIPE_CAP_HEIGHT > 0) {
@@ -226,7 +226,7 @@ function draw() {
     const bottomPipeHeight = canvas.height - (pipe.gapY + PIPE_GAP);
     const bottomPipeY = pipe.gapY + PIPE_GAP;
     if (bottomPipeHeight > 0) {
-      // Draw cap (stretch 56px to 60px to match body)
+      // Draw cap (stretch 56px to 60px, centered)
       ctx.drawImage(
         pipeImg,
         2, 0, 56, PIPE_CAP_HEIGHT,
