@@ -5,9 +5,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
   <title>Pitch Bird</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://unpkg.com/ml5@0.6.0/dist/ml5.min.js"></script>
+  <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
 </head>
 <body>
+  <div id="mainMenu" class="menu">
+    <img src="assets/splash.png" alt="Splash" class="splash-img" />
+    <div class="menu-buttons">
+      <button id="skinsBtn">Skins</button>
+      <button id="settingsBtn">Settings</button>
+      <button id="howToBtn">How to Play</button>
+      <button id="creditsBtn">Credits</button>
+    </div>
+    <div class="menu-info">
+      <span id="pointsDisplay">Points: 0</span>
+      <span id="highScoreDisplay">High Score: 0</span>
+    </div>
+    <div class="menu-tap">Tap or click anywhere to start!</div>
+  </div>
+
+  <div id="skinsPopup" class="popup hidden">
+    <div class="popup-content">
+      <h2>Skins</h2>
+      <div id="skinsGrid" class="skins-grid"></div>
+      <button id="closeSkinsBtn">Close</button>
+    </div>
+  </div>
+
+  <!-- How To Play Popup -->
+  <div id="howToPopup" class="popup hidden">
+    <div class="popup-content">
+      <h2>How to Play</h2>
+      <div id="howToText" style="max-width: 340px; text-align: left;">
+        <!-- Write your instructions here! -->
+        <p>Use your voice or instrument to control the bird's height! The higher the pitch, the higher the bird flies. Avoid the pipes and try to get the highest score possible.</p>
+      </div>
+      <button id="closeHowToBtn">Close</button>
+    </div>
+  </div>
+
+  <!-- Credits Popup -->
+  <div id="creditsPopup" class="popup hidden">
+    <div class="popup-content">
+      <h2>Credits</h2>
+      <div id="creditsText" style="max-width: 340px; text-align: left;">
+        <!-- Write your credits here! -->
+        <p>Game by Liam Downing.<br>
+        Powered by ml5.js and the Web Audio API.<br>
+        </p>
+      </div>
+      <button id="closeCreditsBtn">Close</button>
+    </div>
+  </div>
+
+  <!-- Settings Popup -->
+  <div id="settingsPopup" class="popup hidden">
+    <div class="popup-content">
+      <h2>Settings</h2>
+      <div style="display: flex; flex-direction: column; gap: 18px; align-items: center;">
+        <div>
+          <label for="bottomNoteBox">Bottom Note:</label>
+          <div id="bottomNoteBox" class="note-box">C3</div>
+        </div>
+        <div>
+          <label for="topNoteBox">Top Note:</label>
+          <div id="topNoteBox" class="note-box">C4</div>
+        </div>
+      </div>
+      <button id="closeSettingsBtn">Close</button>
+    </div>
+  </div>
+
+  <!-- Note Slider Popup -->
+  <div id="noteSliderPopup" class="popup hidden">
+    <div class="popup-content">
+      <h3 id="sliderLabel">Select Note</h3>
+      <input type="range" id="noteSlider" min="0" max="71" value="36" style="width: 220px;">
+      <div id="sliderNoteDisplay" style="margin-top: 12px; font-size: 1.2em;">C3</div>
+      <button id="closeNoteSliderBtn">OK</button>
+    </div>
+  </div>
   <canvas id="gameCanvas"></canvas>
   <script src="script.js"></script>
 </body>

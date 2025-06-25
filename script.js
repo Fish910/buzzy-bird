@@ -7,7 +7,6 @@ let running = false;
 let paused = false;
 let gameOver = false;
 let score = 0;
-let showSplash = true; // Show splash screen on load
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -139,27 +138,6 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
 
-  // Splash screen
-  if (showSplash) {
-    // Draw splash image centered
-    const splashW = Math.min(canvas.width * 0.8, splashImg.naturalWidth || 400);
-    const splashH = splashW * ((splashImg.naturalHeight || 200) / (splashImg.naturalWidth || 400));
-    ctx.save();
-    ctx.globalAlpha = 0.97;
-    ctx.drawImage(
-      splashImg,
-      canvas.width / 2 - splashW / 2,
-      canvas.height / 2 - splashH / 2,
-      splashW,
-      splashH
-    );
-    ctx.restore();
-
-    // Always draw buttons last so they appear on top
-    drawGameButtons();
-    return;
-  }
-
   if (!running) return;
 
   let yPadding = 30;
@@ -283,6 +261,10 @@ function draw() {
 
   // Game over screen
   if (gameOver) {
+    // Award points and update high score
+    addPoints(score);
+    setHighScoreIfNeeded(score);
+
     ctx.fillStyle = "rgba(80,80,80,0.5)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     const goNaturalWidth = gameoverImg.naturalWidth || 300;
@@ -368,13 +350,15 @@ function stopGame() {
     animationFrameId = null;
   }
   stopAudio(); // <--- Add this line
-  showSplash = true;
   draw();
 }
 
 // Pitch detection
 async function setupAudio() {
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  if (!micStream) {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  }
   mic = audioContext.createMediaStreamSource(micStream);
 
   pitchDetector = await ml5.pitchDetection(
@@ -403,6 +387,91 @@ function getPitch() {
   });
 }
 
+// --- Persistent Storage Manager ---
+const STORAGE_KEY = "buzzyBirdSave";
+const DEFAULT_SKINS = [
+  { id: "default", name: "Classic", price: 0, img: "assets/bird.png" },
+  // Example: { id: "red", name: "Red Bird", price: 100, img: "assets/skins/red.png" },
+  // Add more skins as needed
+];
+
+// Load or initialize save data
+function loadSave() {
+  let save = localStorage.getItem(STORAGE_KEY);
+  if (save) {
+    try {
+      save = JSON.parse(save);
+      // Ensure all fields exist
+      if (!save.points) save.points = 0;
+      if (!save.highScore) save.highScore = 0;
+      if (!save.ownedSkins) save.ownedSkins = ["default"];
+      if (!save.equippedSkin) save.equippedSkin = "default";
+      return save;
+    } catch {
+      // Corrupt data, reset
+      return createDefaultSave();
+    }
+  }
+  return createDefaultSave();
+}
+function createDefaultSave() {
+  return {
+    points: 0,
+    highScore: 0,
+    ownedSkins: ["default"],
+    equippedSkin: "default",
+  };
+}
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
+}
+
+// Global save object
+let save = loadSave();
+
+// --- Skin Management ---
+const SKINS = [
+  ...DEFAULT_SKINS,
+  // Add more skins here, e.g.:
+  // { id: "red", name: "Red Bird", price: 100, img: "assets/skins/red.png" },
+];
+
+// Utility to get skin object by id
+function getSkin(id) {
+  return SKINS.find(s => s.id === id) || SKINS[0];
+}
+
+// --- Points & High Score Logic ---
+function addPoints(amount) {
+  save.points += amount;
+  saveData();
+}
+function setHighScoreIfNeeded(newScore) {
+  if (newScore > save.highScore) {
+    save.highScore = newScore;
+    saveData();
+  }
+}
+function unlockSkin(skinId) {
+  if (!save.ownedSkins.includes(skinId)) {
+    save.ownedSkins.push(skinId);
+    saveData();
+  }
+}
+function equipSkin(skinId) {
+  if (save.ownedSkins.includes(skinId)) {
+    save.equippedSkin = skinId;
+    saveData();
+  }
+}
+
+// --- Use equipped skin for bird ---
+function updateBirdImage() {
+  const skin = getSkin(save.equippedSkin);
+  birdImg.src = skin.img;
+}
+updateBirdImage();
+
 // Handle in-canvas button clicks
 canvas.addEventListener("click", function (e) {
   const rect = canvas.getBoundingClientRect();
@@ -423,7 +492,7 @@ canvas.addEventListener("click", function (e) {
     mouseY <= btnY + btnSize
   ) {
     // STOP any previous loops before starting a new game
-    if (!running || showSplash) {
+    if (!running) {
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
@@ -434,7 +503,6 @@ canvas.addEventListener("click", function (e) {
       running = true;
       paused = false;
       gameOver = false;
-      showSplash = false;
       resetGame();
       pitchLoopActive = true;
       draw();
@@ -456,7 +524,7 @@ canvas.addEventListener("click", function (e) {
     mouseY >= btnY &&
     mouseY <= btnY + btnSize
   ) {
-    if (running || showSplash) stopGame();
+    if (running) stopGame();
     return;
   }
 });
@@ -486,3 +554,337 @@ function tryDrawInitial() {
   }
 }
 tryDrawInitial();
+
+// --- MENU & SKINS POPUP LOGIC ---
+
+// 20 skins, all using assets/bird.png for now
+/*
+for (let i = 1; i < 20; i++) {
+  SKINS.push({
+    id: "skin" + i,
+    name: "Skin " + (i + 1),
+    price: 1,
+    img: "assets/bird.png"
+  });
+}
+*/
+
+// DOM elements
+const mainMenu = document.getElementById("mainMenu");
+const skinsPopup = document.getElementById("skinsPopup");
+const skinsGrid = document.getElementById("skinsGrid");
+const pointsDisplay = document.getElementById("pointsDisplay");
+const highScoreDisplay = document.getElementById("highScoreDisplay");
+const skinsBtn = document.getElementById("skinsBtn");
+const closeSkinsBtn = document.getElementById("closeSkinsBtn");
+
+// DOM elements for new popups
+const howToBtn = document.getElementById("howToBtn");
+const creditsBtn = document.getElementById("creditsBtn");
+const howToPopup = document.getElementById("howToPopup");
+const creditsPopup = document.getElementById("creditsPopup");
+const closeHowToBtn = document.getElementById("closeHowToBtn");
+const closeCreditsBtn = document.getElementById("closeCreditsBtn");
+
+// --- SETTINGS POPUP LOGIC ---
+
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsPopup = document.getElementById("settingsPopup");
+const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+const bottomNoteBox = document.getElementById("bottomNoteBox");
+const topNoteBox = document.getElementById("topNoteBox");
+
+const noteSliderPopup = document.getElementById("noteSliderPopup");
+const noteSlider = document.getElementById("noteSlider");
+const sliderNoteDisplay = document.getElementById("sliderNoteDisplay");
+const closeNoteSliderBtn = document.getElementById("closeNoteSliderBtn");
+const sliderLabel = document.getElementById("sliderLabel");
+
+// Chromatic notes C1–C6 (MIDI 24–83)
+const NOTE_NAMES = [
+  "C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"
+];
+function midiToNoteName(midi) {
+  const octave = Math.floor(midi / 12) - 1;
+  const name = NOTE_NAMES[midi % 12];
+  return name + octave;
+}
+function noteNameToMidi(note) {
+  // Accepts e.g. "C3", "F#4", "G♯2"
+  let match = note.match(/^([A-G])([#♯]?)(\d)$/);
+  if (!match) return 60; // default C4
+  let [_, n, sharp, oct] = match;
+  let idx = NOTE_NAMES.findIndex(x => x[0] === n && (sharp ? x.includes(sharp) : x.length === 1));
+  return idx + (parseInt(oct) + 1) * 12;
+}
+
+// Default: C3 (MIDI 48), C4 (MIDI 60)
+let bottomMidi = 48;
+let topMidi = 60;
+
+// Load from localStorage if available
+if (localStorage.getItem("buzzyBirdPitchRange")) {
+  try {
+    const obj = JSON.parse(localStorage.getItem("buzzyBirdPitchRange"));
+    if (typeof obj.bottom === "number" && typeof obj.top === "number") {
+      bottomMidi = obj.bottom;
+      topMidi = obj.top;
+    }
+  } catch {}
+}
+bottomNoteBox.textContent = midiToNoteName(bottomMidi);
+topNoteBox.textContent = midiToNoteName(topMidi);
+
+// Save to localStorage
+function savePitchRange() {
+  localStorage.setItem("buzzyBirdPitchRange", JSON.stringify({ bottom: bottomMidi, top: topMidi }));
+}
+
+// Update game pitch mapping
+function updatePitchRange() {
+  window.PITCH_MIN = midiToFreq(bottomMidi);
+  window.PITCH_MAX = midiToFreq(topMidi);
+  savePitchRange();
+}
+
+// MIDI to frequency
+function midiToFreq(midi) {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+// Open/close settings popup
+settingsBtn.addEventListener("click", (e) => {
+  settingsPopup.classList.remove("hidden");
+  e.stopPropagation();
+});
+closeSettingsBtn.addEventListener("click", () => {
+  settingsPopup.classList.add("hidden");
+});
+settingsPopup.addEventListener("mousedown", (e) => {
+  if (e.target === settingsPopup) settingsPopup.classList.add("hidden");
+});
+
+// Note slider logic
+let sliderTarget = null; // "bottom" or "top"
+function openNoteSlider(target) {
+  sliderTarget = target;
+  noteSliderPopup.classList.remove("hidden");
+  // Set slider range: C1 (MIDI 24) to C6 (MIDI 84)
+  noteSlider.min = 24;
+  noteSlider.max = 84;
+  if (target === "bottom") {
+    noteSlider.value = bottomMidi;
+    sliderLabel.textContent = "Select Bottom Note";
+  } else {
+    noteSlider.value = topMidi;
+    sliderLabel.textContent = "Select Top Note";
+  }
+  sliderNoteDisplay.textContent = midiToNoteName(Number(noteSlider.value));
+}
+bottomNoteBox.addEventListener("click", () => openNoteSlider("bottom"));
+topNoteBox.addEventListener("click", () => openNoteSlider("top"));
+
+noteSlider.addEventListener("input", () => {
+  sliderNoteDisplay.textContent = midiToNoteName(Number(noteSlider.value));
+});
+
+closeNoteSliderBtn.addEventListener("click", () => {
+  const midiVal = Number(noteSlider.value);
+  if (sliderTarget === "bottom") {
+    bottomMidi = midiVal;
+    bottomNoteBox.textContent = midiToNoteName(bottomMidi);
+    // Prevent overlap
+    if (bottomMidi >= topMidi) {
+      topMidi = bottomMidi + 1;
+      topNoteBox.textContent = midiToNoteName(topMidi);
+    }
+  } else if (sliderTarget === "top") {
+    topMidi = midiVal;
+    topNoteBox.textContent = midiToNoteName(topMidi);
+    // Prevent overlap
+    if (topMidi <= bottomMidi) {
+      bottomMidi = topMidi - 1;
+      bottomNoteBox.textContent = midiToNoteName(bottomMidi);
+    }
+  }
+  updatePitchRange();
+  noteSliderPopup.classList.add("hidden");
+});
+noteSliderPopup.addEventListener("mousedown", (e) => {
+  if (e.target === noteSliderPopup) noteSliderPopup.classList.add("hidden");
+});
+
+// Initialize pitch range on load
+updatePitchRange();
+
+// Show menu on load and after game over
+function showMainMenu() {
+  updateMenuInfo();
+  mainMenu.style.display = "flex";
+  running = false;
+  paused = false;
+  gameOver = false;
+  tryDrawInitial();
+}
+function hideMainMenu() {
+  mainMenu.style.display = "none";
+}
+
+// Update points and high score in menu
+function updateMenuInfo() {
+  pointsDisplay.textContent = "Points: " + save.points;
+  highScoreDisplay.textContent = "High Score: " + save.highScore;
+}
+
+// Start game on tap/click anywhere on menu
+mainMenu.addEventListener("mousedown", startGameFromMenu);
+mainMenu.addEventListener("touchstart", startGameFromMenu, { passive: false });
+async function startGameFromMenu(e) {
+  if (e.target.closest("button")) return; // Ignore if clicking a button
+  hideMainMenu();
+  resetGame();
+  running = true;
+  paused = false;
+  gameOver = false;
+  pitchLoopActive = true;
+  await ensureMicAndStart();
+}
+
+async function ensureMicAndStart() {
+  try {
+    if (!micStream) {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    }
+    await setupAudio();
+    draw();
+  } catch (err) {
+    alert("Microphone access is required to play!");
+    showMainMenu();
+  }
+}
+
+// --- Skins Popup ---
+function showSkinsPopup() {
+  renderSkinsGrid();
+  skinsPopup.classList.remove("hidden");
+}
+function hideSkinsPopup() {
+  skinsPopup.classList.add("hidden");
+  updateMenuInfo();
+}
+
+// Render skins grid
+function renderSkinsGrid() {
+  skinsGrid.innerHTML = "";
+  for (const skin of SKINS) {
+    const owned = save.ownedSkins.includes(skin.id);
+    const equipped = save.equippedSkin === skin.id;
+    const box = document.createElement("div");
+    box.className = "skin-box" + (equipped ? " equipped" : "") + (owned ? "" : " locked");
+    box.title = skin.name;
+    // Sprite
+    const img = document.createElement("img");
+    img.src = skin.img;
+    img.className = "skin-sprite";
+    box.appendChild(img);
+    // Overlay for locked
+    if (!owned) {
+      const overlay = document.createElement("div");
+      overlay.className = "skin-overlay";
+      overlay.innerHTML = `<div class="skin-cost">${skin.price} pt</div>`;
+      box.appendChild(overlay);
+    }
+    // Click logic
+    box.addEventListener("click", () => {
+      if (owned) {
+        equipSkin(skin.id);
+        updateBirdImage();
+        renderSkinsGrid();
+      } else if (save.points >= skin.price) {
+        save.points -= skin.price;
+        unlockSkin(skin.id);
+        equipSkin(skin.id);
+        updateBirdImage();
+        renderSkinsGrid();
+        updateMenuInfo();
+      }
+    });
+    skinsGrid.appendChild(box);
+  }
+}
+
+// Button events
+skinsBtn.addEventListener("click", (e) => {
+  showSkinsPopup();
+  e.stopPropagation();
+});
+closeSkinsBtn.addEventListener("click", hideSkinsPopup);
+
+// Hide popup on outside click
+skinsPopup.addEventListener("mousedown", (e) => {
+  if (e.target === skinsPopup) hideSkinsPopup();
+});
+
+// Show menu after game over
+function onGameOverMenu() {
+  showMainMenu(); // Remove setTimeout, show immediately
+}
+
+// Patch game over logic to show menu
+const origStopGame = stopGame;
+stopGame = function() {
+  origStopGame();
+  onGameOverMenu();
+};
+
+// Show menu on load
+window.addEventListener("DOMContentLoaded", showMainMenu);
+
+// Example: inside your canvas click/tap handler
+canvas.addEventListener("mousedown", function(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  // Always check for exit button, even if gameOver
+  if (exitButtonClicked(x, y)) {
+    showMainMenu();
+    return;
+  }
+
+  // ...other game logic...
+});
+
+// Example exit button hit test
+function exitButtonClicked(x, y) {
+  // Replace these with your actual exit button coordinates and size
+  const btnX = canvas.width - 60;
+  const btnY = 20;
+  const btnW = 40;
+  const btnH = 40;
+  return x >= btnX && x <= btnX + btnW && y >= btnY && y <= btnY + btnH;
+}
+
+// Show/hide logic for How To Play
+howToBtn.addEventListener("click", (e) => {
+  howToPopup.classList.remove("hidden");
+  e.stopPropagation();
+});
+closeHowToBtn.addEventListener("click", () => {
+  howToPopup.classList.add("hidden");
+});
+howToPopup.addEventListener("mousedown", (e) => {
+  if (e.target === howToPopup) howToPopup.classList.add("hidden");
+});
+
+// Show/hide logic for Credits
+creditsBtn.addEventListener("click", (e) => {
+  creditsPopup.classList.remove("hidden");
+  e.stopPropagation();
+});
+closeCreditsBtn.addEventListener("click", () => {
+  creditsPopup.classList.add("hidden");
+});
+creditsPopup.addEventListener("mousedown", (e) => {
+  if (e.target === creditsPopup) creditsPopup.classList.add("hidden");
+});
