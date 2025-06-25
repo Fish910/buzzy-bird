@@ -2,6 +2,9 @@ let pitch = null;
 let birdY = 300;
 let smoothing = 0.8;
 
+let birdVelocity = 0; // Bird's vertical speed
+const GRAVITY = 0.7;  // Adjust as needed for smoothness
+
 let audioContext, mic, pitchDetector, micStream;
 let running = false;
 let paused = false;
@@ -52,8 +55,10 @@ let animationFrameId = null;
 let pitchLoopActive = false;
 
 // Pitch range for mapping to screen height (easy to adjust)
-const PITCH_MIN = 130;  // Lowest pitch (Hz) maps to bottom of screen
-const PITCH_MAX = 523;  // Highest pitch (Hz) maps to top of screen
+let bottomMidi = 48; // C3
+let topMidi = 60;   // C5
+let PITCH_MIN = midiToFreq(bottomMidi);  // Initialize with current bottomMidi
+let PITCH_MAX = midiToFreq(topMidi);     // Initialize with current topMidi
 
 // Responsive canvas
 function resizeCanvas() {
@@ -132,6 +137,32 @@ function drawGameButtons() {
 
 // Main draw function
 function draw() {
+  const yPadding = 20; 
+
+  // Use PITCH_MIN and PITCH_MAX for pitch mapping
+  const minPitch = PITCH_MIN;
+  const maxPitch = PITCH_MAX;
+
+  // Example usage in mapping pitch to birdY:
+  if (pitch !== null) {
+    // Clamp pitch to range
+    let clampedPitch = clamp(pitch, minPitch, maxPitch);
+
+    // Map pitch to vertical position
+    let availableHeight = canvas.height - yPadding * 2;
+    let targetY =
+      canvas.height -
+      yPadding -
+      ((clampedPitch - minPitch) / (maxPitch - minPitch)) * availableHeight;
+
+    birdY = smoothing * birdY + (1 - smoothing) * targetY;
+    birdVelocity = 0; // Reset velocity when pitch is detected
+  } else {
+    // No pitch detected: apply gravity for smooth fall
+    birdVelocity += GRAVITY;
+    birdY += birdVelocity;
+  }
+
   if (animationFrameId) {
     animationFrameId = null;
   }
@@ -140,26 +171,10 @@ function draw() {
 
   if (!running) return;
 
-  let yPadding = 30;
-  let targetY;
-
-  if (pitch) {
-    let clampedPitch = clamp(pitch, PITCH_MIN, PITCH_MAX);
-    let availableHeight = canvas.height - 2 * yPadding;
-    let targetY =
-      canvas.height -
-      yPadding -
-      ((clampedPitch - PITCH_MIN) / (PITCH_MAX - PITCH_MIN)) * availableHeight;
-    birdY = birdY * smoothing + targetY * (1 - smoothing);
-  } else {
-    // Smooth, consistent slow fall when no pitch is detected
-    const gravity = 8; // Lower value for slower, smoother fall
-    birdY += gravity;
-  }
-
   // Prevent bird from falling below the bottom of the screen
   if (birdY > canvas.height - BIRD_HEIGHT) {
     birdY = canvas.height - BIRD_HEIGHT;
+    birdVelocity = 0; // Stop falling at the bottom
   }
 
   // Pipes logic
@@ -247,11 +262,40 @@ function draw() {
   if (!gameOver) {
     for (let pipe of pipes) {
       const birdRect = { x: 100, y: birdY, w: BIRD_WIDTH, h: BIRD_HEIGHT };
-      const topRect = { x: pipe.x, y: 0, w: PIPE_WIDTH, h: pipe.gapY };
-      const bottomRect = { x: pipe.x, y: pipe.gapY + getPipeGap(), w: PIPE_WIDTH, h: canvas.height - (pipe.gapY + getPipeGap()) };
+      // Top pipe body (exclude cap)
+      const topRect = { 
+        x: pipe.x, 
+        y: 0, 
+        w: PIPE_WIDTH, 
+        h: Math.max(0, pipe.gapY - PIPE_CAP_HEIGHT) 
+      };
+      // Top pipe cap
+      const topCapRect = { 
+        x: pipe.x, 
+        y: Math.max(0, pipe.gapY - PIPE_CAP_HEIGHT), 
+        w: PIPE_WIDTH, 
+        h: PIPE_CAP_HEIGHT 
+      };
+      // Bottom pipe cap
+      const bottomPipeY = pipe.gapY + getPipeGap();
+      const bottomCapRect = { 
+        x: pipe.x, 
+        y: bottomPipeY, 
+        w: PIPE_WIDTH, 
+        h: PIPE_CAP_HEIGHT 
+      };
+      // Bottom pipe body (exclude cap)
+      const bottomRect = { 
+        x: pipe.x, 
+        y: bottomPipeY + PIPE_CAP_HEIGHT, 
+        w: PIPE_WIDTH, 
+        h: Math.max(0, canvas.height - (bottomPipeY + PIPE_CAP_HEIGHT)) 
+      };
       if (
         rectsOverlap(birdRect, topRect) ||
-        rectsOverlap(birdRect, bottomRect)
+        rectsOverlap(birdRect, topCapRect) ||
+        rectsOverlap(birdRect, bottomRect) ||
+        rectsOverlap(birdRect, bottomCapRect)
       ) {
         gameOver = true;
         break;
@@ -314,6 +358,7 @@ function clamp(val, min, max) {
 }
 function resetGame() {
   birdY = 300;
+  birdVelocity = 0; // Reset velocity
   pitch = null;
   pipes = [];
   pipeTimer = 0;
@@ -618,10 +663,6 @@ function noteNameToMidi(note) {
   return idx + (parseInt(oct) + 1) * 12;
 }
 
-// Default: C3 (MIDI 48), C4 (MIDI 60)
-let bottomMidi = 48;
-let topMidi = 60;
-
 // Load from localStorage if available
 if (localStorage.getItem("buzzyBirdPitchRange")) {
   try {
@@ -642,8 +683,8 @@ function savePitchRange() {
 
 // Update game pitch mapping
 function updatePitchRange() {
-  window.PITCH_MIN = midiToFreq(bottomMidi);
-  window.PITCH_MAX = midiToFreq(topMidi);
+  PITCH_MIN = midiToFreq(bottomMidi);
+  PITCH_MAX = midiToFreq(topMidi);
   savePitchRange();
 }
 
