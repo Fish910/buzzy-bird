@@ -191,7 +191,7 @@ function draw() {
       pipeTimer++;
       // Only add a pipe if we are not about to enter a break
       if (!pendingRest && pipesPassedSinceBreak < pipesPerBreak) {
-        if (pipeTimer >= PIPE_INTERVAL) {
+        if (pipeTimer >= getPipeIntervalFrames()) {
           pipeTimer = 0;
           if (skipNextPipe) {
             // Skip this spawn to create the gap, then reset the flag
@@ -210,14 +210,14 @@ function draw() {
       }
       // Move pipes
       for (let pipe of pipes) {
-        pipe.x -= getPipeSpeed();
+        pipe.x -= pipeSpeed;
       }
       pipes = pipes.filter((pipe) => pipe.x + PIPE_WIDTH > -canvas.width * 2); // Keep pipes until well off screen
 
       // If a rest is pending, wait for the last pipe to move off by canvas.width before starting break
       if (pendingRest && pipes.length > 0) {
         const lastPipe = pipes[0]; // leftmost pipe
-        if (lastPipe.x <= -canvas.width * 1.2) {
+        if (lastPipe.x <= -canvas.width * 1.5) {
           inRestBreak = true;
           restBreakTimer = 0;
         }
@@ -1064,19 +1064,90 @@ function drawRestAnimation() {
   }
 }
 
-// Replace this line at the top (or wherever PIPE_SPEED is used):
-// const PIPE_SPEED = 2;
-
-// Instead, define a function:
-function getPipeSpeed() {
-  // Start at 2, increase by 0.1 every 10 points, max out at 6
-  return Math.min(2 + Math.floor(score / 10) * 0.1, 6);
-}
 
 const bugBtn = document.getElementById("bugBtn");
 if (bugBtn) {
   bugBtn.addEventListener("click", () => {
     window.open("https://docs.google.com/forms/d/e/1FAIpQLScwbnly5GXgHmD5vIp9LcuWeZexq_y9r00n8ozvSEInXcCyQA/viewform?usp=dialog", "_blank"); // Replace with your actual link
   });
+}
+
+// --- Pipe Speed Feature Variables ---
+let pipeSpeed = 2; // Default value (will be set by slider)
+const storedPipeSpeed = localStorage.getItem("buzzyBirdPipeSpeed");
+if (storedPipeSpeed !== null) {
+  pipeSpeed = getPipeSpeedFromSlider(parseInt(storedPipeSpeed));
+}
+
+const pipeSpeedBox = document.getElementById("pipeSpeedBox");
+// Ensure the box displays the correct value and gradient on load
+const pipeSpeedSliderValue = storedPipeSpeed !== null ? parseInt(storedPipeSpeed) : 50;
+pipeSpeedBox.textContent = pipeSpeedSliderValue;
+pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
+
+// Slider popup for pipe speed
+const pipeSpeedSliderPopup = document.createElement("div");
+pipeSpeedSliderPopup.className = "popup hidden";
+pipeSpeedSliderPopup.id = "pipeSpeedSliderPopup";
+pipeSpeedSliderPopup.innerHTML = `
+  <div class="popup-content">
+    <h3>Pipe Speed</h3>
+    <input type="range" id="pipeSpeedSlider" min="1" max="100" value="${pipeSpeedSliderValue}" style="width: 220px;">
+    <div id="pipeSpeedSliderDisplay" style="margin-top: 12px; font-size: 1.2em;">${pipeSpeedSliderValue}</div>
+    <button id="closePipeSpeedSliderBtn">OK</button>
+  </div>
+`;
+document.body.appendChild(pipeSpeedSliderPopup);
+
+const pipeSpeedSlider = pipeSpeedSliderPopup.querySelector("#pipeSpeedSlider");
+const pipeSpeedSliderDisplay = pipeSpeedSliderPopup.querySelector("#pipeSpeedSliderDisplay");
+const closePipeSpeedSliderBtn = pipeSpeedSliderPopup.querySelector("#closePipeSpeedSliderBtn");
+
+// Open slider on box click
+pipeSpeedBox.addEventListener("click", () => {
+  pipeSpeedSlider.value = pipeSpeedSliderValue;
+  pipeSpeedSliderDisplay.textContent = pipeSpeedSlider.value;
+  pipeSpeedSliderPopup.classList.remove("hidden");
+});
+
+// Update display and gradient on slider input
+pipeSpeedSlider.addEventListener("input", () => {
+  pipeSpeedSliderDisplay.textContent = pipeSpeedSlider.value;
+  pipeSpeedBox.textContent = pipeSpeedSlider.value;
+  pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSlider.value);
+});
+
+// Save value and close popup
+closePipeSpeedSliderBtn.addEventListener("click", () => {
+  const sliderVal = parseInt(pipeSpeedSlider.value);
+  pipeSpeed = getPipeSpeedFromSlider(sliderVal);
+  pipeSpeedBox.textContent = sliderVal;
+  pipeSpeedBox.style.background = getPipeSpeedGradient(sliderVal);
+  localStorage.setItem("buzzyBirdPipeSpeed", sliderVal);
+  pipeSpeedSliderPopup.classList.add("hidden");
+});
+pipeSpeedSliderPopup.addEventListener("mousedown", (e) => {
+  if (e.target === pipeSpeedSliderPopup) pipeSpeedSliderPopup.classList.add("hidden");
+});
+
+// Helper for pipe speed gradient (green=slow, red=fast)
+function getPipeSpeedGradient(val) {
+  // 1 = green (hue 120), 100 = red (hue 0)
+  const percent = (val - 1) / (100 - 1);
+  const hue = 120 - percent * 120;
+  return `linear-gradient(90deg, hsl(${hue}, 80%, 90%) 0%, hsl(${hue}, 80%, 90%) 100%)`;
+}
+
+// Helper to map slider value to pipe speed (1=slowest, 100=fastest)
+function getPipeSpeedFromSlider(val) {
+  // Map 1 (slowest) to 100 (fastest) to a reasonable speed range, e.g. 1.5 to 4
+  return 1.5 + ((val - 1) / 99) * (4 - 1.5);
+}
+
+// --- Pipe Interval Calculation ---
+function getPipeIntervalFrames() {
+  // Desired distance between pipes in pixels
+  const desiredDistance = 320;
+  return Math.round(desiredDistance / pipeSpeed);
 }
 
