@@ -804,16 +804,24 @@ let pitchDetectorInitialized = false;
 
 async function ensureMicAndStart() {
   try {
+    // Only request micStream if not already available
     if (!micStream) {
       micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     }
-    if (!audioContext) {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    // Always create a new AudioContext for each game
+    if (audioContext) {
+      try { await audioContext.close(); } catch {}
     }
-    if (!pitchDetectorInitialized) {
-      await setupAudio();
-      pitchDetectorInitialized = true;
-    }
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    // Always create a new MediaStreamSource from the existing micStream
+    mic = audioContext.createMediaStreamSource(micStream);
+    // Always create a new pitchDetector
+    pitchDetector = await ml5.pitchDetection(
+      "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
+      audioContext,
+      micStream,
+      modelLoaded
+    );
     draw();
   } catch (err) {
     alert("Microphone access is required to play!");
