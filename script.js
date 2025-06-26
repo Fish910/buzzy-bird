@@ -102,27 +102,10 @@ function drawScore(x, y, score) {
 function drawGameButtons() {
   const btnSize = 48;
   const padding = 20;
-  const pauseX = canvas.width - btnSize * 2 - padding * 1.5;
   const quitX = canvas.width - btnSize - padding;
   const btnY = padding;
 
-  // Start/Pause button
-  ctx.save();
-  ctx.globalAlpha = 0.85;
-  ctx.fillStyle = "#1976d2";
-  ctx.fillRect(pauseX, btnY, btnSize, btnSize);
-  ctx.fillStyle = "#fff";
-  ctx.font = "bold 28px sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  if (!running) {
-    ctx.fillText("▶", pauseX + btnSize / 2, btnY + btnSize / 2 + 2);
-  } else {
-    ctx.fillText("II", pauseX + btnSize / 2, btnY + btnSize / 2);
-  }
-  ctx.restore();
-
-  // Quit button
+  // Quit button only
   ctx.save();
   ctx.globalAlpha = 0.85;
   ctx.fillStyle = "#d32f2f";
@@ -212,14 +195,14 @@ function draw() {
       for (let pipe of pipes) {
         pipe.x -= pipeSpeed;
       }
-      pipes = pipes.filter((pipe) => pipe.x + PIPE_WIDTH > -canvas.width * 2); // Keep pipes until well off screen
+      pipes = pipes.filter((pipe) => pipe.x + PIPE_WIDTH > -100); // Remove pipes 100px after they leave the screen
 
       // If a rest is pending, wait for the last pipe to move off by canvas.width before starting break
-      if (pendingRest && pipes.length > 0) {
-        const lastPipe = pipes[0]; // leftmost pipe
-        if (lastPipe.x <= -canvas.width * 1.5) {
+      if (pendingRest && lastPipeBeforeBreak) {
+        if (lastPipeBeforeBreak.x <= -60) { // Start break when last pipe is just off the left edge
           inRestBreak = true;
           restBreakTimer = 0;
+          lastPipeBeforeBreak = null; // Reset for next break
         }
       }
     }
@@ -283,6 +266,7 @@ function draw() {
         }
         if (pipesPassedSinceBreak >= pipesPerBreak) {
           pendingRest = true;
+          lastPipeBeforeBreak = pipe; // Track the last pipe that triggers the break
         }
       }
     }
@@ -402,6 +386,14 @@ function resetGame() {
   pipesPassedSinceBreak = 0;
   inRestBreak = false;
   restBreakTimer = 0;
+
+  // --- Fix: Cancel animation frame and pitch loop ---
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+  pitchLoopActive = true;
+  getPitch();
 }
 function rectsOverlap(a, b) {
   return (
@@ -438,18 +430,15 @@ function stopGame() {
 
 // Pitch detection
 async function setupAudio() {
-  if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  if (!micStream) {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  if (!mic) mic = audioContext.createMediaStreamSource(micStream);
+  if (!pitchDetector) {
+    pitchDetector = await ml5.pitchDetection(
+      "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
+      audioContext,
+      micStream,
+      modelLoaded
+    );
   }
-  mic = audioContext.createMediaStreamSource(micStream);
-
-  pitchDetector = await ml5.pitchDetection(
-    "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
-    audioContext,
-    micStream,
-    modelLoaded
-  );
 }
 function modelLoaded() {
   getPitch();
@@ -560,53 +549,36 @@ canvas.addEventListener("click", function (e) {
   const mouseX = e.clientX - rect.left;
   const mouseY = e.clientY - rect.top;
 
-  const btnSize = 48;
-  const padding = 20;
-  const pauseX = canvas.width - btnSize * 2 - padding * 1.5;
-  const quitX = canvas.width - btnSize - padding;
-  const btnY = padding;
-
-  // Start/Pause button area
-  if (
-    mouseX >= pauseX &&
-    mouseX <= pauseX + btnSize &&
-    mouseY >= btnY &&
-    mouseY <= btnY + btnSize
-  ) {
-    // STOP any previous loops before starting a new game
-    if (!running) {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
-      stopAudio(); // <--- Add this line
-
-      // START GAME logic
-      running = true;
-      paused = false;
-      gameOver = false;
-      resetGame();
-      pitchLoopActive = true;
-      draw();
-      setupAudio();
-    } else {
-      // Pause/unpause
-      paused = !paused;
-      if (!paused && !animationFrameId) {
-        animationFrameId = requestAnimationFrame(draw);
-      }
-    }
+  // Always check for exit button, even if gameOver
+  if (exitButtonClicked(mouseX, mouseY)) {
+    showMainMenu();
     return;
   }
 
-  // Quit button area
-  if (
-    mouseX >= quitX &&
-    mouseX <= quitX + btnSize &&
-    mouseY >= btnY &&
-    mouseY <= btnY + btnSize
-  ) {
-    if (running) stopGame();
+  // If game over, start a new game
+  if (gameOver) {
+    resetGame();
+    running = true;
+    paused = false;
+    gameOver = false;
+    pitchLoopActive = true;
+    ensureMicAndStart();
+    return;
+  }
+
+  // If running and not paused, pause on tap
+  if (running && !paused) {
+    paused = true;
+    draw();
+    return;
+  }
+
+  // If paused, unpause on tap
+  if (running && paused) {
+    paused = false;
+    if (!animationFrameId) {
+      animationFrameId = requestAnimationFrame(draw);
+    }
     return;
   }
 });
@@ -828,12 +800,20 @@ async function startGameFromMenu(e) {
   await ensureMicAndStart();
 }
 
+let pitchDetectorInitialized = false;
+
 async function ensureMicAndStart() {
   try {
     if (!micStream) {
       micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     }
-    await setupAudio();
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (!pitchDetectorInitialized) {
+      await setupAudio();
+      pitchDetectorInitialized = true;
+    }
     draw();
   } catch (err) {
     alert("Microphone access is required to play!");
@@ -974,6 +954,7 @@ let inRestBreak = false;
 let restBreakTimer = 0;
 let pendingRest = false;
 let skipNextPipe = false;
+let lastPipeBeforeBreak = null; // <-- Track the last pipe before break
 const REST_BREAK_DURATION = 3; // seconds
 const restImg = new Image();
 restImg.src = "assets/rest.png";
@@ -1165,3 +1146,63 @@ function getBoxBorderColor(val, min, max) {
   return `hsl(${hue}, 90%, 45%)`;
 }
 
+// Full refresh function
+function fullRefresh() {
+  // Cancel animation frame
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+
+  // Stop pitch detection loop
+  pitchLoopActive = false;
+
+  // Stop and close audio context and mic stream
+  if (audioContext) {
+    try { audioContext.close(); } catch {}
+    audioContext = null;
+  }
+  if (micStream) {
+    try {
+      if (micStream.getTracks) {
+        micStream.getTracks().forEach(track => track.stop());
+      }
+    } catch {}
+    micStream = null;
+  }
+  mic = null;
+  pitchDetector = null;
+
+  // Remove any other intervals/timeouts (if any)
+  let id = window.setTimeout(() => {}, 0);
+  while (id--) {
+    window.clearTimeout(id);
+    window.clearInterval(id);
+  }
+
+  // Remove any event listeners added dynamically (if any were)
+  // (If you add listeners dynamically elsewhere, remove them here)
+
+  // Reset all game state variables
+  running = false;
+  paused = false;
+  gameOver = false;
+  score = 0;
+  pipes = [];
+  pipeTimer = 0;
+  pipesPassedSinceBreak = 0;
+  inRestBreak = false;
+  restBreakTimer = 0;
+  pendingRest = false;
+  skipNextPipe = false;
+  lastPipeBeforeBreak = null;
+  birdY = 300;
+  birdVelocity = 0;
+  pitch = null;
+
+  // Clear the canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Show main menu or splash
+  showMainMenu();
+}
