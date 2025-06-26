@@ -1271,3 +1271,169 @@ function hideLoading() {
   const overlay = document.getElementById("loadingOverlay");
   if (overlay) overlay.classList.remove("active");
 }
+
+// --- Difficulty Button Logic ---
+const difficultyBtn = document.getElementById("difficultyBtn");
+const difficulties = [
+  {
+    name: "Easy",
+    pipesPerBreak: 3,
+    pipeSpeedSlider: 25,
+    bg: "#b6ffb6",
+    border: "#32cd32",
+    color: "#197d19"
+  },
+  {
+    name: "Normal",
+    pipesPerBreak: 5,
+    pipeSpeedSlider: 50,
+    bg: "#fff59d",
+    border: "#ffd600",
+    color: "#bfa600"
+  },
+  {
+    name: "Hard",
+    pipesPerBreak: 7,
+    pipeSpeedSlider: 75,
+    bg: "#ffb6b6",
+    border: "#e53935",
+    color: "#a31515"
+  },
+  {
+    name: "Insane",
+    pipesPerBreak: 10,
+    pipeSpeedSlider: 100,
+    bg: "#e1b6ff",
+    border: "#8e24aa",
+    color: "#5e1670"
+  }
+];
+const customDifficulty = {
+  name: "Custom",
+  bg: "#eeeeee",
+  border: "#444444",
+  color: "#444444"
+};
+
+let difficultyIndex = 1; // Start at "Normal" (index in difficulties)
+let isCustom = false;
+
+// --- Helper: Find difficulty index for current settings ---
+function getMatchingDifficultyIndex(pipes, speedSlider) {
+  for (let i = 0; i < difficulties.length; i++) {
+    if (
+      pipes === difficulties[i].pipesPerBreak &&
+      speedSlider === difficulties[i].pipeSpeedSlider
+    ) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+// --- Update Difficulty Button UI ---
+function updateDifficultyBtn() {
+  let pipes = pipesPerBreak;
+  let speedSlider = pipeSpeedSliderValue;
+  let idx = getMatchingDifficultyIndex(pipes, speedSlider);
+  isCustom = idx === -1;
+  if (isCustom) {
+    difficultyBtn.textContent = customDifficulty.name;
+    difficultyBtn.style.background = customDifficulty.bg;
+    difficultyBtn.style.border = `2.5px solid ${customDifficulty.border}`;
+    difficultyBtn.style.color = customDifficulty.color;
+  } else {
+    difficultyIndex = idx;
+    const d = difficulties[difficultyIndex];
+    difficultyBtn.textContent = d.name;
+    difficultyBtn.style.background = d.bg;
+    difficultyBtn.style.border = `2.5px solid ${d.border}`;
+    difficultyBtn.style.color = d.color;
+  }
+}
+
+// --- Set sliders and game values from difficulty ---
+function setDifficulty(idx) {
+  const d = difficulties[idx];
+  difficultyIndex = idx;
+  isCustom = false;
+  // Update pipesPerBreak and pipeSpeedSliderValue
+  pipesPerBreak = d.pipesPerBreak;
+  pipeSpeedSliderValue = d.pipeSpeedSlider;
+  pipeSpeed = getPipeSpeedFromSlider(pipeSpeedSliderValue);
+
+  // Update UI for settings popup
+  pipesPerBreakBox.textContent = pipesPerBreak;
+  pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
+  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 15)}`;
+  pipesSlider.value = pipesPerBreak;
+  pipesSliderDisplay.textContent = pipesPerBreak;
+
+  pipeSpeedBox.textContent = pipeSpeedSliderValue;
+  pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
+  pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
+  pipeSpeedSlider.value = pipeSpeedSliderValue;
+  pipeSpeedSliderDisplay.textContent = pipeSpeedSliderValue;
+
+  // Save to localStorage
+  localStorage.setItem("buzzyBirdPipesPerBreak", pipesPerBreak);
+  localStorage.setItem("buzzyBirdPipeSpeed", pipeSpeedSliderValue);
+
+  updateDifficultyBtn();
+}
+
+// --- Difficulty Button Click Handler ---
+difficultyBtn.addEventListener("click", () => {
+  let idx;
+  if (isCustom) {
+    idx = 0; // Snap to Easy if currently custom
+  } else {
+    idx = (difficultyIndex + 1) % difficulties.length;
+  }
+  setDifficulty(idx);
+});
+
+// --- When sliders change, update difficulty button ---
+function onAdvancedSettingChanged() {
+  // Update pipesPerBreak and pipeSpeedSliderValue from sliders
+  pipesPerBreak = parseInt(pipesSlider.value);
+  pipesPerBreakBox.textContent = pipesPerBreak;
+  pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
+  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 15)}`;
+
+  pipeSpeedSliderValue = parseInt(pipeSpeedSlider.value);
+  pipeSpeed = getPipeSpeedFromSlider(pipeSpeedSliderValue);
+  pipeSpeedBox.textContent = pipeSpeedSliderValue;
+  pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
+  pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
+
+  // Save to localStorage
+  localStorage.setItem("buzzyBirdPipesPerBreak", pipesPerBreak);
+  localStorage.setItem("buzzyBirdPipeSpeed", pipeSpeedSliderValue);
+
+  updateDifficultyBtn();
+}
+
+// --- Patch slider event listeners to use onAdvancedSettingChanged ---
+pipesSlider.addEventListener("input", onAdvancedSettingChanged);
+closePipesSliderBtn.addEventListener("click", () => {
+  pipesSliderPopup.classList.add("hidden");
+});
+
+pipeSpeedSlider.addEventListener("input", onAdvancedSettingChanged);
+closePipeSpeedSliderBtn.addEventListener("click", () => {
+  pipeSpeedSliderPopup.classList.add("hidden");
+});
+
+// --- On load, sync difficulty button to current settings ---
+updateDifficultyBtn();
+
+// --- On settings popup open, sync sliders to current settings ---
+settingsBtn.addEventListener("click", () => {
+  // Ensure sliders reflect current pipesPerBreak and pipeSpeedSliderValue
+  pipesSlider.value = pipesPerBreak;
+  pipesSliderDisplay.textContent = pipesPerBreak;
+  pipeSpeedSlider.value = pipeSpeedSliderValue;
+  pipeSpeedSliderDisplay.textContent = pipeSpeedSliderValue;
+  updateDifficultyBtn();
+});

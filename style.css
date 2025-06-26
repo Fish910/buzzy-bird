@@ -106,7 +106,7 @@ button {
 .menu-buttons button {
   background: #32cd32;
   color: #fff;
-  border: 2.5px solid #145214;
+  border: 2.5px solid #2e922e;
   border-radius: 18px;
   padding: 12px 28px;
   font-size: 1.1em;
@@ -247,7 +247,6 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 }
 #bugBtn {
   width: 180px;
-  align-self: center;
   margin-top: 10px;
 }
 #loadingOverlay {

@@ -18,7 +18,10 @@
         <button id="howToBtn">How to Play</button>
         <button id="creditsBtn">Credits</button>
       </div>
-      <button id="bugBtn">Report a Bug</button>
+      <div style="display: flex; flex-direction: row; gap: 12px; margin-top: 0;">
+        <button id="bugBtn">Report a Bug</button>
+        <button id="difficultyBtn">Normal</button>
+      </div>
     </div>
       <div class="menu-info">
       <span id="pointsDisplay">Points: 0</span>
@@ -74,13 +77,19 @@
     <div class="popup-content">
       <h2>Settings</h2>
       <div style="display: flex; flex-direction: column; gap: 18px; align-items: center;">
-        <div class="setting-row">
-          <label for="bottomNoteBox">Bottom Note:</label>
-          <div id="bottomNoteBox" class="note-box">C3</div>
+        <div style="width:100%; text-align:center; font-weight:bold; color:#14a625; margin: 8px 0 0 0; font-size:1.08em;">
+          Pitch Range:
         </div>
         <div class="setting-row">
           <label for="topNoteBox">Top Note:</label>
           <div id="topNoteBox" class="note-box">C4</div>
+        </div>
+        <div class="setting-row">
+          <label for="bottomNoteBox">Bottom Note:</label>
+          <div id="bottomNoteBox" class="note-box">C3</div>
+        </div>
+        <div style="width:100%; text-align:center; font-weight:bold; color:#14a625; margin: 8px 0 0 0; font-size:1.08em;">
+          Advanced difficulty settings:
         </div>
         <div class="setting-row">
           <label for="pipesPerBreakBox">Pipes per break:</label>
