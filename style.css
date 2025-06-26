@@ -264,3 +264,21 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 #loadingOverlay.active {
   display: flex;
 }
+.loading-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(30,30,30,0.85);
+  color: #fff;
+  font-size: 2.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.loading-overlay.active {
+  pointer-events: all;
+  opacity: 1;
+}

@@ -251,7 +251,15 @@ function draw() {
   }
 
   // Draw bird
-  ctx.drawImage(birdImg, 100, birdY, BIRD_WIDTH, BIRD_HEIGHT);
+  {
+    // Maintain constant height, scale width to preserve aspect ratio
+    const drawHeight = BIRD_HEIGHT;
+    const aspect = birdImg.naturalWidth && birdImg.naturalHeight
+      ? birdImg.naturalWidth / birdImg.naturalHeight
+      : BIRD_WIDTH / BIRD_HEIGHT; // fallback if not loaded
+    const drawWidth = drawHeight * aspect;
+    ctx.drawImage(birdImg, 100, birdY, drawWidth, drawHeight);
+  }
 
   // Score logic
   if (!gameOver && !inRestBreak) {
@@ -505,6 +513,8 @@ let save = loadSave();
 const SKINS = [
   ...DEFAULT_SKINS,
   { id: "red", name: "Red Bird", price: 5, img: "assets/skins/red.png" },
+  { id: "mustard", name: "Mustard", price: 10, img: "assets/skins/mustard.png" },
+  { id: "mango", name: "Mango", price: 10, img: "assets/skins/mango.png" }
 ];
 
 // Utility to get skin object by id
@@ -595,13 +605,18 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 // Draw initial splash/background/buttons as soon as possible
 function tryDrawInitial() {
+  showLoading("Loading...");
   if (bgImg.complete && splashImg.complete) {
+    hideLoading();
     draw();
   } else {
     let loaded = 0;
     function check() {
       loaded++;
-      if (bgImg.complete && splashImg.complete) draw();
+      if (bgImg.complete && splashImg.complete) {
+        hideLoading();
+        draw();
+      }
     }
     bgImg.onload = check;
     splashImg.onload = check;
@@ -769,6 +784,7 @@ updatePitchRange();
 
 // Show menu on load and after game over
 function showMainMenu() {
+  hideLoading();
   updateMenuInfo();
   mainMenu.style.display = "flex";
   running = false;
@@ -1005,7 +1021,7 @@ const pipesPerBreakBox = document.getElementById("pipesPerBreakBox");
 // Ensure the box displays the correct value and gradient on load
 pipesPerBreakBox.textContent = pipesPerBreak;
 pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
-pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 15)}`;
+pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
 
 // Slider popup for pipes per break
 const pipesSliderPopup = document.createElement("div");
@@ -1014,7 +1030,7 @@ pipesSliderPopup.id = "pipesSliderPopup";
 pipesSliderPopup.innerHTML = `
   <div class="popup-content">
     <h3>Pipes per Break</h3>
-    <input type="range" id="pipesSlider" min="3" max="15" value="${pipesPerBreak}" style="width: 220px;">
+    <input type="range" id="pipesSlider" min="3" max="10" value="${pipesPerBreak}" style="width: 220px;">
     <div id="pipesSliderDisplay" style="margin-top: 12px; font-size: 1.2em;">${pipesPerBreak}</div>
     <button id="closePipesSliderBtn">OK</button>
   </div>
@@ -1036,7 +1052,7 @@ pipesPerBreakBox.addEventListener("click", () => {
 pipesSlider.addEventListener("input", () => {
   pipesSliderDisplay.textContent = pipesSlider.value;
   pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesSlider.value);
-  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesSlider.value, 3, 15)}`;
+  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesSlider.value, 3, 10)}`;
 });
 
 // Save value and close popup
@@ -1044,18 +1060,15 @@ closePipesSliderBtn.addEventListener("click", () => {
   pipesPerBreak = parseInt(pipesSlider.value);
   pipesPerBreakBox.textContent = pipesPerBreak;
   pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
-  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 15)}`;
+  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
   localStorage.setItem("buzzyBirdPipesPerBreak", pipesPerBreak);
   pipesSliderPopup.classList.add("hidden");
-});
-pipesSliderPopup.addEventListener("mousedown", (e) => {
-  if (e.target === pipesSliderPopup) pipesSliderPopup.classList.add("hidden");
 });
 
 // Helper for green-to-red gradient
 function getPipesPerBreakGradient(val) {
-  // 3 = green (hue 120), 15 = red (hue 0)
-  const percent = (val - 3) / (15 - 3);
+  // 3 = green (hue 120), 10 = red (hue 0)
+  const percent = (val - 3) / (10 - 3);
   const hue = 120 - percent * 120; // 120 (green) to 0 (red)
   // Use lightness and saturation similar to your light green
   return `linear-gradient(90deg, hsl(${hue}, 80%, 90%) 0%, hsl(${hue}, 80%, 90%) 100%)`;
@@ -1365,7 +1378,7 @@ function setDifficulty(idx) {
   // Update UI for settings popup
   pipesPerBreakBox.textContent = pipesPerBreak;
   pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
-  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 15)}`;
+  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
   pipesSlider.value = pipesPerBreak;
   pipesSliderDisplay.textContent = pipesPerBreak;
 
@@ -1399,7 +1412,7 @@ function onAdvancedSettingChanged() {
   pipesPerBreak = parseInt(pipesSlider.value);
   pipesPerBreakBox.textContent = pipesPerBreak;
   pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
-  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 15)}`;
+  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
 
   pipeSpeedSliderValue = parseInt(pipeSpeedSlider.value);
   pipeSpeed = getPipeSpeedFromSlider(pipeSpeedSliderValue);
@@ -1435,5 +1448,7 @@ settingsBtn.addEventListener("click", () => {
   pipesSliderDisplay.textContent = pipesPerBreak;
   pipeSpeedSlider.value = pipeSpeedSliderValue;
   pipeSpeedSliderDisplay.textContent = pipeSpeedSliderValue;
+  pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
+  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
   updateDifficultyBtn();
 });
