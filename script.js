@@ -800,10 +800,26 @@ async function startGameFromMenu(e) {
   await ensureMicAndStart();
 }
 
-let pitchDetectorInitialized = false;
+let pitchModel = null; // Store the loaded model
+
+async function preloadPitchModel() {
+  // Load the model once and store it
+  if (!pitchModel) {
+    pitchModel = await ml5.pitchDetection(
+      "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
+      null, // No audioContext yet
+      null, // No stream yet
+      () => {}
+    );
+  }
+}
+
+// Call this once at startup
+preloadPitchModel();
 
 async function ensureMicAndStart() {
   try {
+    showLoading("Setting up microphone...");
     // Always stop and request a new mic stream for each game
     if (micStream) {
       micStream.getTracks().forEach(track => track.stop());
@@ -811,6 +827,7 @@ async function ensureMicAndStart() {
     }
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
+    showLoading("Loading pitch model...");
     // Always close and create a new AudioContext for each game
     if (audioContext) {
       try { await audioContext.close(); } catch {}
@@ -820,15 +837,21 @@ async function ensureMicAndStart() {
     // Always create a new MediaStreamSource from the new micStream
     mic = audioContext.createMediaStreamSource(micStream);
 
-    // Always create a new pitchDetector
+    // Use the preloaded model, but set up with the new context and stream
     pitchDetector = await ml5.pitchDetection(
       "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
       audioContext,
       micStream,
-      modelLoaded
+      () => {
+        hideLoading();
+        modelLoaded();
+      }
     );
+    // If modelLoaded is not called, hideLoading() after a timeout as fallback
+    setTimeout(hideLoading, 4000);
     draw();
   } catch (err) {
+    hideLoading();
     alert("Microphone access is required to play!");
     showMainMenu();
   }
@@ -1234,4 +1257,17 @@ async function ensureAudioContext() {
   } else if (audioContext.state === "suspended") {
     await audioContext.resume();
   }
+}
+
+// Loading overlay functions
+function showLoading(msg = "Loading...") {
+  const overlay = document.getElementById("loadingOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+    overlay.textContent = msg;
+  }
+}
+function hideLoading() {
+  const overlay = document.getElementById("loadingOverlay");
+  if (overlay) overlay.style.display = "none";
 }
