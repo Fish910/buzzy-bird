@@ -988,6 +988,7 @@ const pipesPerBreakBox = document.getElementById("pipesPerBreakBox");
 // Ensure the box displays the correct value and gradient on load
 pipesPerBreakBox.textContent = pipesPerBreak;
 pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
+pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 15)}`;
 
 // Slider popup for pipes per break
 const pipesSliderPopup = document.createElement("div");
@@ -1014,10 +1015,11 @@ pipesPerBreakBox.addEventListener("click", () => {
   pipesSliderPopup.classList.remove("hidden");
 });
 
-// Update display and gradient on slider input
+// Update display, background, and border on slider input
 pipesSlider.addEventListener("input", () => {
   pipesSliderDisplay.textContent = pipesSlider.value;
   pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesSlider.value);
+  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesSlider.value, 3, 15)}`;
 });
 
 // Save value and close popup
@@ -1025,6 +1027,7 @@ closePipesSliderBtn.addEventListener("click", () => {
   pipesPerBreak = parseInt(pipesSlider.value);
   pipesPerBreakBox.textContent = pipesPerBreak;
   pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
+  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 15)}`;
   localStorage.setItem("buzzyBirdPipesPerBreak", pipesPerBreak);
   pipesSliderPopup.classList.add("hidden");
 });
@@ -1081,9 +1084,10 @@ if (storedPipeSpeed !== null) {
 
 const pipeSpeedBox = document.getElementById("pipeSpeedBox");
 // Ensure the box displays the correct value and gradient on load
-const pipeSpeedSliderValue = storedPipeSpeed !== null ? parseInt(storedPipeSpeed) : 50;
+let pipeSpeedSliderValue = storedPipeSpeed !== null ? parseInt(storedPipeSpeed) : 50;
 pipeSpeedBox.textContent = pipeSpeedSliderValue;
 pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
+pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
 
 // Slider popup for pipe speed
 const pipeSpeedSliderPopup = document.createElement("div");
@@ -1110,19 +1114,22 @@ pipeSpeedBox.addEventListener("click", () => {
   pipeSpeedSliderPopup.classList.remove("hidden");
 });
 
-// Update display and gradient on slider input
+// Update display, background, and border on slider input
 pipeSpeedSlider.addEventListener("input", () => {
   pipeSpeedSliderDisplay.textContent = pipeSpeedSlider.value;
   pipeSpeedBox.textContent = pipeSpeedSlider.value;
   pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSlider.value);
+  pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSlider.value, 1, 100)}`;
 });
 
 // Save value and close popup
 closePipeSpeedSliderBtn.addEventListener("click", () => {
   const sliderVal = parseInt(pipeSpeedSlider.value);
   pipeSpeed = getPipeSpeedFromSlider(sliderVal);
+  pipeSpeedSliderValue = sliderVal; // <-- update the stored value!
   pipeSpeedBox.textContent = sliderVal;
   pipeSpeedBox.style.background = getPipeSpeedGradient(sliderVal);
+  pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(sliderVal, 1, 100)}`;
   localStorage.setItem("buzzyBirdPipeSpeed", sliderVal);
   pipeSpeedSliderPopup.classList.add("hidden");
 });
@@ -1149,5 +1156,12 @@ function getPipeIntervalFrames() {
   // Desired distance between pipes in pixels
   const desiredDistance = 320;
   return Math.round(desiredDistance / pipeSpeed);
+}
+
+// Helper for green-to-red border color (darker, more saturated than background)
+function getBoxBorderColor(val, min, max) {
+  const percent = (val - min) / (max - min);
+  const hue = 120 - percent * 120;
+  return `hsl(${hue}, 90%, 45%)`;
 }
 

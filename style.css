@@ -10,7 +10,7 @@ body {
   width: 100vw;
   height: 100vh;
   touch-action: none;
-  font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif;
+  font-family: 'Comic Neue', 'Comic Sans MS', 'Comic Sans', cursive !important;
 }
 
 canvas {
@@ -110,7 +110,7 @@ button {
   border-radius: 18px;
   padding: 12px 28px;
   font-size: 1.1em;
-  font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+  font-family: 'Comic Neue', 'Comic Sans MS', 'Comic Sans', cursive !important;
   cursor: pointer;
   transition: background 0.2s, box-shadow 0.2s;
   box-shadow: 0 2px 8px rgba(44, 120, 44, 0.08);
@@ -216,7 +216,7 @@ button {
   margin-top: 10px;
 }
 html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins-grid, .skin-cost {
-  font-family: 'Comic Sans MS', 'Comic Sans', cursive !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', 'Comic Sans', cursive !important;
 }
 .note-box {
   display: inline-block;
