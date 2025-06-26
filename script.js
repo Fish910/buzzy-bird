@@ -804,17 +804,22 @@ let pitchDetectorInitialized = false;
 
 async function ensureMicAndStart() {
   try {
-    // Only request micStream if not already available
-    if (!micStream) {
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Always stop and request a new mic stream for each game
+    if (micStream) {
+      micStream.getTracks().forEach(track => track.stop());
+      micStream = null;
     }
-    // Always create a new AudioContext for each game
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    // Always close and create a new AudioContext for each game
     if (audioContext) {
       try { await audioContext.close(); } catch {}
     }
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    // Always create a new MediaStreamSource from the existing micStream
+
+    // Always create a new MediaStreamSource from the new micStream
     mic = audioContext.createMediaStreamSource(micStream);
+
     // Always create a new pitchDetector
     pitchDetector = await ml5.pitchDetection(
       "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
@@ -1213,4 +1218,20 @@ function fullRefresh() {
 
   // Show main menu or splash
   showMainMenu();
+}
+
+// Resume audio context if suspended
+async function resumeAudioContext() {
+  if (audioContext && audioContext.state === "suspended") {
+    await audioContext.resume();
+  }
+}
+
+// Call this function to ensure audio context is running
+async function ensureAudioContext() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  } else if (audioContext.state === "suspended") {
+    await audioContext.resume();
+  }
 }
