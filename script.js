@@ -818,8 +818,8 @@ async function preloadPitchModel() {
 preloadPitchModel();
 
 async function ensureMicAndStart() {
+  showLoading("Setting up microphone...");
   try {
-    showLoading("Setting up microphone...");
     // Always stop and request a new mic stream for each game
     if (micStream) {
       micStream.getTracks().forEach(track => track.stop());
@@ -1263,11 +1263,11 @@ async function ensureAudioContext() {
 function showLoading(msg = "Loading...") {
   const overlay = document.getElementById("loadingOverlay");
   if (overlay) {
-    overlay.style.display = "flex";
+    overlay.classList.add("active");
     overlay.textContent = msg;
   }
 }
 function hideLoading() {
   const overlay = document.getElementById("loadingOverlay");
-  if (overlay) overlay.style.display = "none";
+  if (overlay) overlay.classList.remove("active");
 }

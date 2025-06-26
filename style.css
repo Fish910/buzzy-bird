@@ -250,3 +250,18 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   align-self: center;
   margin-top: 10px;
 }
+#loadingOverlay {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0; top: 0; width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.85);
+  align-items: center;
+  justify-content: center;
+  font-size: 2em;
+  color: #333;
+  font-family: inherit;
+}
+#loadingOverlay.active {
+  display: flex;
+}
