@@ -13,6 +13,7 @@ let score = 0;
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = false; // Disable image smoothing
 
 // Load images
 const bgImg = new Image();
@@ -20,7 +21,7 @@ bgImg.src = "assets/background.png";
 const splashImg = new Image();
 splashImg.src = "assets/splash.png";
 const birdImg = new Image();
-birdImg.src = "assets/bird.png";
+birdImg.src = "assets/skins/default.png"; // Default skin
 const pipeImg = new Image();
 pipeImg.src = "assets/pipe.png";
 const gameoverImg = new Image();
@@ -30,12 +31,11 @@ gameoverImg.src = "assets/gameover.png";
 const digitImgs = [];
 for (let i = 0; i <= 9; i++) {
   digitImgs[i] = new Image();
-  digitImgs[i].src = `assets/${i}.png`;
+  digitImgs[i].src = `assets/nums/${i}.png`; // <-- updated path
 }
 
 // Pipe settings
 const PIPE_WIDTH = 60;
-const PIPE_SPEED = 2;
 let pipes = [];
 let pipeTimer = 0;
 const PIPE_INTERVAL = 120; // frames
@@ -43,7 +43,7 @@ const PIPE_CAP_HEIGHT = 24; // Height of the pipe cap in pixels (now 24)
 
 function getPipeGap() {
   // 28% of the canvas height, but clamp between 120 and 260 pixels
-  return clamp(Math.floor(canvas.height * 0.28), 120, 260);
+  return clamp(Math.floor(canvas.height * 0.18), 120, 260);
 }
 
 // Bird settings
@@ -137,7 +137,7 @@ function drawGameButtons() {
 
 // Main draw function
 function draw() {
-  const yPadding = 20; 
+  const yPadding = 20;
 
   // Use PITCH_MIN and PITCH_MAX for pitch mapping
   const minPitch = PITCH_MIN;
@@ -163,9 +163,7 @@ function draw() {
     birdY += birdVelocity;
   }
 
-  if (animationFrameId) {
-    animationFrameId = null;
-  }
+  if (animationFrameId) animationFrameId = null;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
 
@@ -174,27 +172,57 @@ function draw() {
   // Prevent bird from falling below the bottom of the screen
   if (birdY > canvas.height - BIRD_HEIGHT) {
     birdY = canvas.height - BIRD_HEIGHT;
-    birdVelocity = 0; // Stop falling at the bottom
+    birdVelocity = 0;
   }
 
-  // Pipes logic
-  if (!paused && !gameOver) {
-    pipeTimer++;
-    if (pipeTimer >= PIPE_INTERVAL) {
-      pipeTimer = 0;
-      const gapY = Math.floor(
-        yPadding + Math.random() * (canvas.height - 2 * yPadding - getPipeGap())
-      );
-      pipes.push({
-        x: canvas.width,
-        gapY: gapY,
-        passed: false,
-      });
+  // --- Rest Break Logic ---
+  if (inRestBreak) {
+    if (!paused) restBreakTimer += 1 / 60; // assuming 60fps
+    drawRestAnimation();
+    if (restBreakTimer >= REST_BREAK_DURATION) {
+      inRestBreak = false;
+      restBreakTimer = 0;
+      pipesPassedSinceBreak = 0;
+      pendingRest = false;
+      skipNextPipe = true; // Skip the next pipe spawn after break
     }
-    for (let pipe of pipes) {
-      pipe.x -= PIPE_SPEED;
+  } else {
+    if (!paused && !gameOver) {
+      pipeTimer++;
+      // Only add a pipe if we are not about to enter a break
+      if (!pendingRest && pipesPassedSinceBreak < pipesPerBreak) {
+        if (pipeTimer >= PIPE_INTERVAL) {
+          pipeTimer = 0;
+          if (skipNextPipe) {
+            // Skip this spawn to create the gap, then reset the flag
+            skipNextPipe = false;
+          } else {
+            const gapY = Math.floor(
+              yPadding + Math.random() * (canvas.height - 2 * yPadding - getPipeGap())
+            );
+            pipes.push({
+              x: canvas.width,
+              gapY: gapY,
+              passed: false,
+            });
+          }
+        }
+      }
+      // Move pipes
+      for (let pipe of pipes) {
+        pipe.x -= getPipeSpeed();
+      }
+      pipes = pipes.filter((pipe) => pipe.x + PIPE_WIDTH > -canvas.width * 2); // Keep pipes until well off screen
+
+      // If a rest is pending, wait for the last pipe to move off by canvas.width before starting break
+      if (pendingRest && pipes.length > 0) {
+        const lastPipe = pipes[0]; // leftmost pipe
+        if (lastPipe.x <= -canvas.width * 1.2) {
+          inRestBreak = true;
+          restBreakTimer = 0;
+        }
+      }
     }
-    pipes = pipes.filter((pipe) => pipe.x + PIPE_WIDTH > 0);
   }
 
   // Draw pipes
@@ -203,11 +231,10 @@ function draw() {
     ctx.save();
     ctx.translate(pipe.x + PIPE_WIDTH / 2, pipe.gapY);
     ctx.rotate(Math.PI);
-    // Draw cap (stretch 56px to 60px, centered)
     ctx.drawImage(
       pipeImg,
-      2, 0, 56, PIPE_CAP_HEIGHT,         // source: skip 2px transparent border
-      -PIPE_WIDTH / 2, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT // dest: center 60px over body
+      2, 0, 56, PIPE_CAP_HEIGHT,
+      -PIPE_WIDTH / 2, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT
     );
     // Draw body (aligned with cap)
     if (pipe.gapY - PIPE_CAP_HEIGHT > 0) {
@@ -244,11 +271,19 @@ function draw() {
   ctx.drawImage(birdImg, 100, birdY, BIRD_WIDTH, BIRD_HEIGHT);
 
   // Score logic
-  if (!gameOver) {
+  if (!gameOver && !inRestBreak) {
     for (let pipe of pipes) {
       if (!pipe.passed && pipe.x + PIPE_WIDTH / 2 < 100 + BIRD_WIDTH / 2) {
         pipe.passed = true;
         score++;
+        pipesPassedSinceBreak++;
+        // Set skipNextPipe one pipe earlier
+        if (pipesPassedSinceBreak === pipesPerBreak - 1) {
+          skipNextPipe = true;
+        }
+        if (pipesPassedSinceBreak >= pipesPerBreak) {
+          pendingRest = true;
+        }
       }
     }
   }
@@ -364,6 +399,9 @@ function resetGame() {
   pipeTimer = 0;
   gameOver = false;
   score = 0;
+  pipesPassedSinceBreak = 0;
+  inRestBreak = false;
+  restBreakTimer = 0;
 }
 function rectsOverlap(a, b) {
   return (
@@ -435,7 +473,7 @@ function getPitch() {
 // --- Persistent Storage Manager ---
 const STORAGE_KEY = "buzzyBirdSave";
 const DEFAULT_SKINS = [
-  { id: "default", name: "Classic", price: 0, img: "assets/bird.png" },
+  { id: "default", name: "Classic", price: 0, img: "assets/skins/default.png" },
   // Example: { id: "red", name: "Red Bird", price: 100, img: "assets/skins/red.png" },
   // Add more skins as needed
 ];
@@ -477,8 +515,7 @@ let save = loadSave();
 // --- Skin Management ---
 const SKINS = [
   ...DEFAULT_SKINS,
-  // Add more skins here, e.g.:
-  // { id: "red", name: "Red Bird", price: 100, img: "assets/skins/red.png" },
+  { id: "red", name: "Red Bird", price: 5, img: "assets/skins/red.png" },
 ];
 
 // Utility to get skin object by id
@@ -929,3 +966,117 @@ closeCreditsBtn.addEventListener("click", () => {
 creditsPopup.addEventListener("mousedown", (e) => {
   if (e.target === creditsPopup) creditsPopup.classList.add("hidden");
 });
+
+// --- Rest Break Feature Variables ---
+let pipesPerBreak = 5; // Default value
+let pipesPassedSinceBreak = 0;
+let inRestBreak = false;
+let restBreakTimer = 0;
+let pendingRest = false;
+let skipNextPipe = false;
+const REST_BREAK_DURATION = 3; // seconds
+const restImg = new Image();
+restImg.src = "assets/rest.png";
+
+// Load pipesPerBreak from localStorage if available
+const storedPipesPerBreak = localStorage.getItem("buzzyBirdPipesPerBreak");
+if (storedPipesPerBreak !== null) {
+  pipesPerBreak = parseInt(storedPipesPerBreak) || 5;
+}
+
+const pipesPerBreakBox = document.getElementById("pipesPerBreakBox");
+// Ensure the box displays the correct value and gradient on load
+pipesPerBreakBox.textContent = pipesPerBreak;
+pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
+
+// Slider popup for pipes per break
+const pipesSliderPopup = document.createElement("div");
+pipesSliderPopup.className = "popup hidden";
+pipesSliderPopup.id = "pipesSliderPopup";
+pipesSliderPopup.innerHTML = `
+  <div class="popup-content">
+    <h3>Pipes per Break</h3>
+    <input type="range" id="pipesSlider" min="3" max="15" value="${pipesPerBreak}" style="width: 220px;">
+    <div id="pipesSliderDisplay" style="margin-top: 12px; font-size: 1.2em;">${pipesPerBreak}</div>
+    <button id="closePipesSliderBtn">OK</button>
+  </div>
+`;
+document.body.appendChild(pipesSliderPopup);
+
+const pipesSlider = pipesSliderPopup.querySelector("#pipesSlider");
+const pipesSliderDisplay = pipesSliderPopup.querySelector("#pipesSliderDisplay");
+const closePipesSliderBtn = pipesSliderPopup.querySelector("#closePipesSliderBtn");
+
+// Open slider on box click
+pipesPerBreakBox.addEventListener("click", () => {
+  pipesSlider.value = pipesPerBreak;
+  pipesSliderDisplay.textContent = pipesPerBreak;
+  pipesSliderPopup.classList.remove("hidden");
+});
+
+// Update display and gradient on slider input
+pipesSlider.addEventListener("input", () => {
+  pipesSliderDisplay.textContent = pipesSlider.value;
+  pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesSlider.value);
+});
+
+// Save value and close popup
+closePipesSliderBtn.addEventListener("click", () => {
+  pipesPerBreak = parseInt(pipesSlider.value);
+  pipesPerBreakBox.textContent = pipesPerBreak;
+  pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
+  localStorage.setItem("buzzyBirdPipesPerBreak", pipesPerBreak);
+  pipesSliderPopup.classList.add("hidden");
+});
+pipesSliderPopup.addEventListener("mousedown", (e) => {
+  if (e.target === pipesSliderPopup) pipesSliderPopup.classList.add("hidden");
+});
+
+// Helper for green-to-red gradient
+function getPipesPerBreakGradient(val) {
+  // 3 = green (hue 120), 15 = red (hue 0)
+  const percent = (val - 3) / (15 - 3);
+  const hue = 120 - percent * 120; // 120 (green) to 0 (red)
+  // Use lightness and saturation similar to your light green
+  return `linear-gradient(90deg, hsl(${hue}, 80%, 90%) 0%, hsl(${hue}, 80%, 90%) 100%)`;
+}
+
+// --- Rest Animation ---
+function drawRestAnimation() {
+  // Draw animated "rest" in the center of the screen, 2x larger for crispness
+  const letterCount = 4;
+  const scale = 2; // 2x instead of 4x
+  const letterWidth = 20 * scale; // 40
+  const letterHeight = 32 * scale; // 64
+  const imgY = canvas.height / 2 - letterHeight / 2;
+  const baseX = canvas.width / 2 - (letterCount * letterWidth) / 2;
+  const t = restBreakTimer;
+  for (let i = 0; i < letterCount; i++) {
+    // Sine wave: amplitude 32px, period 1s, staggered by 0.7 per letter
+    const phase = t * 2 * Math.PI + i * 0.7;
+    const yOffset = Math.sin(phase) * 32;
+    // Crop 1px from left and right of each letter
+    ctx.drawImage(
+      restImg,
+      i * 20 + 1, 0, 18, 32, // src: crop 1px from each side
+      baseX + i * letterWidth, imgY + yOffset, letterWidth, letterHeight // dest (2x)
+    );
+  }
+}
+
+// Replace this line at the top (or wherever PIPE_SPEED is used):
+// const PIPE_SPEED = 2;
+
+// Instead, define a function:
+function getPipeSpeed() {
+  // Start at 2, increase by 0.1 every 10 points, max out at 6
+  return Math.min(2 + Math.floor(score / 10) * 0.1, 6);
+}
+
+const bugBtn = document.getElementById("bugBtn");
+if (bugBtn) {
+  bugBtn.addEventListener("click", () => {
+    window.open("https://docs.google.com/forms/d/e/1FAIpQLScwbnly5GXgHmD5vIp9LcuWeZexq_y9r00n8ozvSEInXcCyQA/viewform?usp=dialog", "_blank"); // Replace with your actual link
+  });
+}
+

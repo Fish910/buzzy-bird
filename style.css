@@ -47,11 +47,60 @@ button {
   margin-bottom: 24px;
 }
 .menu-buttons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-gap: 16px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 18px;
-  justify-items: center;
+}
+
+.main-menu-btns {
+  display: grid;
+  grid-template-columns: repeat(2, 160px);
+  gap: 12px;
+}
+
+.main-menu-btns button {
+  width: 160px;
+}
+
+button {
+  margin: 5px;
+  padding: 10px 20px;
+  font-size: 1em;
+}
+
+.menu {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(240, 248, 255, 0.128);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.splash-img {
+  width: 320px;
+  max-width: 80vw;
+  margin-bottom: 24px;
+}
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.main-menu-btns {
+  display: grid;
+  grid-template-columns: repeat(2, 160px);
+  gap: 12px;
+}
+
+.main-menu-btns button {
+  width: 160px;
 }
 .menu-buttons button {
   background: #32cd32;
@@ -185,4 +234,18 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 .note-box:hover {
   background: #caffca;
   border-color: #197d19;
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.setting-row label {
+  margin-right: 10px;
+  font-size: 1.1em;
+}
+#bugBtn {
+  width: 180px;
+  align-self: center;
+  margin-top: 10px;
 }
