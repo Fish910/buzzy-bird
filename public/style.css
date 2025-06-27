@@ -2,7 +2,7 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  background: #f0f8ff;
+  background: #232323; /* Dark grey background for empty space */
   overflow: hidden;
 }
 
