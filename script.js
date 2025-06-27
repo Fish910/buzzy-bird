@@ -513,8 +513,12 @@ let save = loadSave();
 const SKINS = [
   ...DEFAULT_SKINS,
   { id: "red", name: "Red Bird", price: 5, img: "assets/skins/red.png" },
-  { id: "mustard", name: "Mustard", price: 10, img: "assets/skins/mustard.png" },
-  { id: "mango", name: "Mango", price: 10, img: "assets/skins/mango.png" }
+  { id: "poop", name: "Poop Bird", price: 5, img: "assets/skins/poop.png" },
+  { id: "rainbow", name: "Rainbow Bird", price: 10, img: "assets/skins/rainbow.png" },
+  { id: "diamond", name: "Diamond Bird", price: 20, img: "assets/skins/diamond.png" },
+  { id: "retro", name: "Retro Bird", price: 20, img: "assets/skins/retro.png" },
+  { id: "mustard", name: "Mustard", price: 30, img: "assets/skins/mustard.png" },
+  { id: "mango", name: "Mango", price: 30, img: "assets/skins/mango.png" }
 ];
 
 // Utility to get skin object by id
