@@ -353,11 +353,12 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   flex: 1 1 auto;
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-x: auto;
+  text-overflow: unset;
   white-space: nowrap;
   margin-left: 0;
   margin-right: 0;
+  scrollbar-width: thin; /* For Firefox */
 }
 
 .leaderboard-list .entry-score {

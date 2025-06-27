@@ -1031,10 +1031,12 @@ async function updateHighScore(name, newScore) {
 
 async function fetchLeaderboard() {
   const snapshot = await db.ref('users').orderByChild('highScore').once('value');
-  console.log('LEADERBOARD SNAPSHOT:', snapshot.val()); // Debug: see raw data
   const users = [];
-  snapshot.forEach(child => users.push(child.val()));
-  console.log('LEADERBOARD USERS ARRAY:', users); // Debug: see processed array
+  snapshot.forEach(child => {
+    //console.log('Child:', child.key, child.val());
+    users.push(child.val());
+  });
+  //console.log('LEADERBOARD USERS ARRAY:', users); // Debug: see processed array
   // Sort descending by highScore
   users.sort((a, b) => (b.highScore || 0) - (a.highScore || 0));
   return users;
@@ -1834,5 +1836,20 @@ if (logInCancelBtn && logInModal) {
 if (signUpCancelBtn && signUpModal) {
   signUpCancelBtn.addEventListener('click', () => {
     signUpModal.classList.add('hidden');
+  });
+}
+if (changeNameBtn && changeNameModal) {
+  changeNameBtn.addEventListener('click', (e) => {
+    changeNameModal.classList.remove('hidden');
+    changeNameError.textContent = '';
+    changeNameNew.value = '';
+    changeNamePasscode.value = '';
+    e.stopPropagation();
+  });
+}
+
+if (changeNameCancelBtn && changeNameModal) {
+  changeNameCancelBtn.addEventListener('click', () => {
+    changeNameModal.classList.add('hidden');
   });
 }
