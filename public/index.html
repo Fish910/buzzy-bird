@@ -116,5 +116,28 @@
   <canvas id="gameCanvas"></canvas>
   <div id="loadingOverlay" class="loading-overlay"></div>
   <script type="module" src="script.js"></script>
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyDh-UejLP_DLWWuWDwUM0PeOSG6IYqBO0U",
+      authDomain: "pitch-bird.firebaseapp.com",
+      projectId: "pitch-bird",
+      storageBucket: "pitch-bird.firebasestorage.app",
+      messagingSenderId: "356300745950",
+      appId: "1:356300745950:web:bef4de640276fac4c8264f",
+      measurementId: "G-8SS9R2QGRW"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+</script>
 </body>
 </html>
