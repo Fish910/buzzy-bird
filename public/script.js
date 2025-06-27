@@ -1731,6 +1731,10 @@ if (logInSubmitBtn) {
       logInModal.classList.add('hidden');
       updateAuthUI();
       renderLeaderboard();
+      // After successful login:
+      updateMenuInfo();
+      renderSkinsGrid();
+      // ...add any other UI update functions if needed...
     } catch (err) {
       logInError.textContent = err.message || 'Log in failed.';
     }
