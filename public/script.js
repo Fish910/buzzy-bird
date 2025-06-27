@@ -577,6 +577,48 @@ function showMainMenu() {
   tryDrawInitial();
 }
 
+// --- Fetch and overwrite local user data from DB on main menu open ---
+async function syncLoggedInUserFromDb() {
+  const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
+  if (!user || !user.name) return;
+  try {
+    const username = user.name.trim().toLowerCase();
+    const userRef = db.ref('users/' + username);
+    const snapshot = await userRef.get();
+    if (snapshot.exists()) {
+      const dbUser = snapshot.val();
+      // Overwrite all local data with DB data
+      save = {
+        points: dbUser.points || 0,
+        highScore: dbUser.highScore || 0,
+        ownedSkins: dbUser.ownedSkins || ["default"],
+        equippedSkin: dbUser.equippedSkin || "default"
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
+      localStorage.setItem('buzzyBirdUser', JSON.stringify(dbUser));
+      updateMenuInfo && updateMenuInfo();
+      renderSkinsGrid && renderSkinsGrid();
+      updateAuthUI && updateAuthUI();
+    }
+  } catch (e) {
+    // If fetch fails, do nothing (keep local data)
+  }
+}
+
+// Patch showMainMenu to sync user from DB before showing menu
+const origShowMainMenu = showMainMenu;
+showMainMenu = async function() {
+  await syncLoggedInUserFromDb();
+  origShowMainMenu();
+};
+
+// On site load, also sync user before showing menu
+window.addEventListener('DOMContentLoaded', async () => {
+  await syncLoggedInUserFromDb();
+  updateAuthUI();
+  renderLeaderboard();
+});
+
 function hideMainMenu() {
   mainMenu.style.display = "none";
 }
@@ -989,14 +1031,22 @@ async function logIn(name, passcode, localData) {
   const passcodeHash = await hashPasscode(passcode);
   if (userData.passcodeHash !== passcodeHash) throw new Error("Incorrect passcode.");
 
-  // Merge logic
+  // --- Only add new local progress since last sync ---
+  // Get last synced points from localStorage (or 0 if not set)
+  const lastSyncedPoints = Number(localStorage.getItem('buzzyBirdLastSyncedPoints') || 0);
+  const newLocalPoints = Math.max(0, (localData.points || 0) - lastSyncedPoints);
+
   const merged = {
     ...userData,
     highScore: Math.max(userData.highScore || 0, localData.highScore || 0),
-    points: (userData.points || 0) + (localData.points || 0),
+    points: (userData.points || 0) + newLocalPoints,
     ownedSkins: Array.from(new Set([...(userData.ownedSkins || []), ...(localData.ownedSkins || [])]))
   };
   await userRef.update(merged);
+
+  // Update last synced points
+  localStorage.setItem('buzzyBirdLastSyncedPoints', merged.points);
+
   return merged;
 }
 
