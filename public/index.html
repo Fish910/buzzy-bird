@@ -7,10 +7,27 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css?family=Comic+Neue:400,700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <!-- Firebase Realtime Database -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
   <div id="mainMenu" class="menu">
-    <img src="assets/splash.png" alt="Splash" class="splash-img" />
+    <!-- Leaderboard replaces splash image -->
+    <div id="leaderboardContainer" class="leaderboard-container">
+      <div class="leaderboard-header">
+        <h2>Leaderboard</h2>
+        <button id="changeNameBtn" class="top-right-btn hidden">Change Name</button>
+      </div>
+      <div id="leaderboardList" class="leaderboard-list">
+        <!-- Leaderboard entries will be rendered here -->
+      </div>
+      <div class="leaderboard-footer">
+        <button id="signUpBtn" class="bottom-right-btn">Sign Up</button>
+        <button id="logInBtn" class="bottom-right-btn">Log In</button>
+      </div>
+    </div>
     <div class="menu-buttons">
       <div class="main-menu-btns">
         <button id="skinsBtn">Skins</button>
@@ -23,7 +40,7 @@
         <button id="difficultyBtn">Normal</button>
       </div>
     </div>
-      <div class="menu-info">
+    <div class="menu-info">
       <span id="pointsDisplay">Points: 0</span>
       <span id="highScoreDisplay">High Score: 0</span>
     </div>
@@ -32,8 +49,62 @@
          Pitch Bird v4.4.0
     </div>
   </div>
+
+  <!-- Sign Up Modal -->
+  <div id="signUpModal" class="popup hidden">
+    <div class="popup-content">
+      <h2>Sign Up</h2>
+      <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; margin-bottom: 12px;">
+        <label for="signUpName">Name (max 20 chars):</label>
+        <input type="text" id="signUpName" maxlength="20" autocomplete="off" style="width: 100%; box-sizing: border-box;">
+      </div>
+      <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; margin-bottom: 12px;">
+        <label for="signUpPasscode">4-digit Passcode:</label>
+        <input type="password" id="signUpPasscode" maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="off" style="width: 100%; box-sizing: border-box;">
+      </div>
+      <button id="signUpSubmitBtn" style="width: 100%; margin-top: 8px;">Create Account</button>
+      <button id="signUpCancelBtn" style="width: 100%; margin-top: 4px;">Cancel</button>
+      <div id="signUpError" class="error-msg" style="margin-top: 10px; color: #c00; width: 100%; text-align: left;"></div>
+    </div>
   </div>
 
+  <!-- Log In Modal -->
+  <div id="logInModal" class="popup hidden">
+    <div class="popup-content">
+      <h2>Log In</h2>
+      <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; margin-bottom: 12px;">
+        <label for="logInName">Name:</label>
+        <input type="text" id="logInName" maxlength="20" autocomplete="off" style="width: 100%; box-sizing: border-box;">
+      </div>
+      <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; margin-bottom: 12px;">
+        <label for="logInPasscode">4-digit Passcode:</label>
+        <input type="password" id="logInPasscode" maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="off" style="width: 100%; box-sizing: border-box;">
+      </div>
+      <button id="logInSubmitBtn" style="width: 100%; margin-top: 8px;">Log In</button>
+      <button id="logInCancelBtn" style="width: 100%; margin-top: 4px;">Cancel</button>
+      <div id="logInError" class="error-msg" style="margin-top: 10px; color: #c00; width: 100%; text-align: left;"></div>
+    </div>
+  </div>
+
+  <!-- Change Name Modal -->
+  <div id="changeNameModal" class="popup hidden">
+    <div class="popup-content">
+      <h2>Change Name</h2>
+      <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; margin-bottom: 12px;">
+        <label for="changeNameNew">New Name (max 20 chars):</label>
+        <input type="text" id="changeNameNew" maxlength="20" autocomplete="off" style="width: 100%; box-sizing: border-box;">
+      </div>
+      <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; margin-bottom: 12px;">
+        <label for="changeNamePasscode">Your 4-digit Passcode:</label>
+        <input type="password" id="changeNamePasscode" maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="off" style="width: 100%; box-sizing: border-box;">
+      </div>
+      <button id="changeNameSubmitBtn" style="width: 100%; margin-top: 8px;">Change Name</button>
+      <button id="changeNameCancelBtn" style="width: 100%; margin-top: 4px;">Cancel</button>
+      <div id="changeNameError" class="error-msg" style="margin-top: 10px; color: #c00; width: 100%; text-align: left;"></div>
+    </div>
+  </div>
+
+  <!-- Existing popups and canvas/game elements below -->
   <div id="skinsPopup" class="popup hidden">
     <div class="popup-content">
       <h2>Skins</h2>
@@ -42,12 +113,10 @@
     </div>
   </div>
 
-  <!-- How To Play Popup -->
   <div id="howToPopup" class="popup hidden">
     <div class="popup-content">
       <h2>How to Play</h2>
       <div id="howToText" style="max-width: 340px; text-align: left;">
-        <!-- Write your instructions here! -->
         <p>Use your voice or instrument to control the bird's height! The higher the pitch, the higher the bird flies. Avoid the pipes and try to get the highest score possible. Pause by tapping/clicking the screen.</p>
         <p></p>
         <p>Click on settings to choose the pitch range that the game will be played in and determine how often you get breaks!</p>
@@ -58,12 +127,10 @@
     </div>
   </div>
 
-  <!-- Credits Popup -->
   <div id="creditsPopup" class="popup hidden">
     <div class="popup-content">
       <h2>Credits</h2>
       <div id="creditsText" style="max-width: 340px; text-align: left;">
-        <!-- Write your credits here! -->
         <p>Game by Liam Downing.<br>
         Powered by ml5.js and the Web Audio API.<br>
         </p>
@@ -72,7 +139,6 @@
     </div>
   </div>
 
-  <!-- Settings Popup -->
   <div id="settingsPopup" class="popup hidden">
     <div class="popup-content">
       <h2>Settings</h2>
@@ -104,7 +170,6 @@
     </div>
   </div>
 
-  <!-- Note Slider Popup -->
   <div id="noteSliderPopup" class="popup hidden">
     <div class="popup-content">
       <h3 id="sliderLabel">Select Note</h3>
@@ -115,29 +180,6 @@
   </div>
   <canvas id="gameCanvas"></canvas>
   <div id="loadingOverlay" class="loading-overlay"></div>
-  <script type="module" src="script.js"></script>
-  <script type="module">
-    // Import the functions you need from the SDKs you need
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
-    // TODO: Add SDKs for Firebase products that you want to use
-    // https://firebase.google.com/docs/web/setup#available-libraries
-
-    // Your web app's Firebase configuration
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-    const firebaseConfig = {
-      apiKey: "AIzaSyDh-UejLP_DLWWuWDwUM0PeOSG6IYqBO0U",
-      authDomain: "pitch-bird.firebaseapp.com",
-      projectId: "pitch-bird",
-      storageBucket: "pitch-bird.firebasestorage.app",
-      messagingSenderId: "356300745950",
-      appId: "1:356300745950:web:bef4de640276fac4c8264f",
-      measurementId: "G-8SS9R2QGRW"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-</script>
+  <script src="script.js"></script>
 </body>
 </html>

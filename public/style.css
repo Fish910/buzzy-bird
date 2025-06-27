@@ -282,3 +282,157 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   pointer-events: all;
   opacity: 1;
 }
+
+/* Leaderboard container as a big black box */
+#leaderboardContainer {
+  background: rgba(17, 17, 17, 0.88); /* Was #111, now slightly transparent */
+  color: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.5);
+  padding: 16px 24px 24px 24px; /* Reduced top padding from 32px to 16px */
+  margin: 32px auto 24px auto;
+  width: 90%;
+  max-width: 340px; /* Reduced from 420px */
+  height: 30vh;         /* Dynamic height: one third of the viewport */
+  min-height: 240px;    /* Optional: minimum height for small screens */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: relative;
+}
+
+/* Leaderboard header and footer */
+.leaderboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px; /* Reduced from 18px to 12px */
+  margin-top: 0; /* Ensure no extra margin at the top */
+}
+
+.leaderboard-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+/* Leaderboard list styling */
+.leaderboard-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  background: rgba(0,0,0,0.7);
+  border-radius: 10px;
+  padding: 12px 6px; /* Increased side padding to prevent outline cutoff */
+  margin-bottom: 8px;
+  max-height: 320px;
+}
+
+/* Leaderboard entry styling */
+.leaderboard-list .entry {
+  display: flex;
+  align-items: center;
+  padding: 8px 18px; /* Reduced horizontal padding to fit with new container padding */
+  font-size: 1.1em;
+  border-radius: 10px; /* Match outline curve */
+  margin-bottom: 4px;
+  transition: background 0.2s;
+}
+
+.leaderboard-list .entry-rank {
+  flex: 0 0 32px;
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  text-align: right;
+  margin-right: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.leaderboard-list .entry-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.leaderboard-list .entry-score {
+  flex: 0 0 56px;
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  text-align: right;
+  margin-left: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Gold, silver, bronze for top 3 */
+.leaderboard-list .entry.gold {
+  background: linear-gradient(90deg, #111 60%, #e6b800 100%); /* Black to rich gold */
+  color: #fff;
+  font-weight: bold;
+  border: 2.5px solid #e6b800;
+}
+.leaderboard-list .entry.silver {
+  background: linear-gradient(90deg, #111 60%, #bfc1c2 100%); /* Black to silver */
+  color: #fff;
+  font-weight: bold;
+  border: 2.5px solid #bfc1c2;
+}
+.leaderboard-list .entry.bronze {
+  background: linear-gradient(90deg, #111 60%, #b87333 100%); /* Black to bronze */
+  color: #fff;
+  font-weight: bold;
+  border: 2.5px solid #b87333;
+}
+
+/* Highlight for logged-in user */
+.leaderboard-list .entry.me {
+  outline: 3px solid #14a625;
+  outline-offset: 2px;
+  font-weight: bold;
+  z-index: 1;
+  position: relative;
+  /* Do NOT set background or border here, so gold/silver/bronze show through */
+}
+
+/* Buttons in leaderboard */
+#leaderboardContainer button {
+  background: #000 !important;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 1em;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: background 0.2s;
+}
+#leaderboardContainer button:hover {
+  background: #14a625 !important;
+  color: #fff;
+}
+
+/* Name column in leaderboard */
+.leaderboard-list .entry-name {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+/* Responsive for mobile */
+@media (max-width: 600px) {
+  #leaderboardContainer {
+    max-width: 98vw;
+    padding: 12px 4vw 16px 4vw;
+    min-height: 320px;
+  }
+}

@@ -1,64 +1,21 @@
-let pitch = null;
-let birdY = 300;
-let smoothing = 0.8;
-
-let birdVelocity = 0; // Bird's vertical speed
-const GRAVITY = 0.7;  // Adjust as needed for smoothness
-
-let audioContext, mic, pitchDetector, micStream;
-let running = false;
-let paused = false;
-let gameOver = false;
-let score = 0;
-
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-ctx.imageSmoothingEnabled = false; // Disable image smoothing
-
-// Load images
-const bgImg = new Image();
-bgImg.src = "assets/background.png";
-const splashImg = new Image();
-splashImg.src = "assets/splash.png";
-const birdImg = new Image();
-birdImg.src = "assets/skins/default.png"; // Default skin
-const pipeImg = new Image();
-pipeImg.src = "assets/pipe.png";
-const gameoverImg = new Image();
-gameoverImg.src = "assets/gameover.png";
-
-// Load digit images for score display
-const digitImgs = [];
-for (let i = 0; i <= 9; i++) {
-  digitImgs[i] = new Image();
-  digitImgs[i].src = `assets/nums/${i}.png`; // <-- updated path
-}
-
-// Pipe settings
-const PIPE_WIDTH = 60;
-let pipes = [];
-let pipeTimer = 0;
-const PIPE_INTERVAL = 120; // frames
-const PIPE_CAP_HEIGHT = 24; // Height of the pipe cap in pixels (now 24)
+// --- Firebase Initialization ---
+// (Config from your index.html, update if needed)
+const firebaseConfig = {
+  apiKey: "AIzaSyDh-UejLP_DLWWuWDwUM0PeOSG6IYqBO0U",
+  authDomain: "pitch-bird.firebaseapp.com",
+  projectId: "pitch-bird",
+  storageBucket: "pitch-bird.firebasestorage.app",
+  messagingSenderId: "356300745950",
+  appId: "1:356300745950:web:bef4de640276fac4c8264f",
+  measurementId: "G-8SS9R2QGRW"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 function getPipeGap() {
   // 28% of the canvas height, but clamp between 120 and 260 pixels
   return clamp(Math.floor(canvas.height * 0.18), 120, 260);
 }
-
-// Bird settings
-const BIRD_WIDTH = 40;
-const BIRD_HEIGHT = 32;
-
-// Animation and pitch loop
-let animationFrameId = null;
-let pitchLoopActive = false;
-
-// Pitch range for mapping to screen height (easy to adjust)
-let bottomMidi = 48; // C3
-let topMidi = 60;   // C5
-let PITCH_MIN = midiToFreq(bottomMidi);  // Initialize with current bottomMidi
-let PITCH_MAX = midiToFreq(topMidi);     // Initialize with current topMidi
 
 // Responsive canvas
 function resizeCanvas() {
@@ -80,9 +37,6 @@ function resizeCanvas() {
   // Only redraw if not running (so splash/buttons show up)
   if (!running) draw();
 }
-window.addEventListener('resize', resizeCanvas);
-window.addEventListener('orientationchange', resizeCanvas);
-resizeCanvas();
 
 // Draw score using digit images
 function drawScore(x, y, score) {
@@ -383,6 +337,7 @@ function draw() {
 function clamp(val, min, max) {
   return Math.max(min, Math.min(max, val));
 }
+
 function resetGame() {
   birdY = 300;
   birdVelocity = 0; // Reset velocity
@@ -403,6 +358,7 @@ function resetGame() {
   pitchLoopActive = true;
   getPitch();
 }
+
 function rectsOverlap(a, b) {
   return (
     a.x < b.x + b.w &&
@@ -411,6 +367,7 @@ function rectsOverlap(a, b) {
     a.y + a.h > b.y
   );
 }
+
 function stopAudio() {
   pitchLoopActive = false;
   pitch = null;
@@ -421,6 +378,7 @@ function stopAudio() {
   mic = null;
   pitchDetector = null;
 }
+
 function stopGame() {
   running = false;
   paused = false;
@@ -448,9 +406,11 @@ async function setupAudio() {
     );
   }
 }
+
 function modelLoaded() {
   getPitch();
 }
+
 function getPitch() {
   if (!running || !pitchLoopActive || paused) return;
   pitchDetector.getPitch((err, frequency) => {
@@ -466,14 +426,6 @@ function getPitch() {
     if (pitchLoopActive) getPitch();
   });
 }
-
-// --- Persistent Storage Manager ---
-const STORAGE_KEY = "buzzyBirdSave";
-const DEFAULT_SKINS = [
-  { id: "default", name: "Classic", price: 0, img: "assets/skins/default.png" },
-  // Example: { id: "red", name: "Red Bird", price: 100, img: "assets/skins/red.png" },
-  // Add more skins as needed
-];
 
 // Load or initialize save data
 function loadSave() {
@@ -494,6 +446,7 @@ function loadSave() {
   }
   return createDefaultSave();
 }
+
 function createDefaultSave() {
   return {
     points: 0,
@@ -502,9 +455,663 @@ function createDefaultSave() {
     equippedSkin: "default",
   };
 }
+
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
 }
+
+// Utility to get skin object by id
+function getSkin(id) {
+  return SKINS.find(s => s.id === id) || SKINS[0];
+}
+
+// --- Points & High Score Logic ---
+function addPoints(amount) {
+  save.points += amount;
+  saveData();
+}
+
+function setHighScoreIfNeeded(newScore) {
+  if (newScore > save.highScore) {
+    save.highScore = newScore;
+    saveData();
+  }
+}
+
+function unlockSkin(skinId) {
+  if (!save.ownedSkins.includes(skinId)) {
+    save.ownedSkins.push(skinId);
+    saveData();
+  }
+}
+
+function equipSkin(skinId) {
+  if (save.ownedSkins.includes(skinId)) {
+    save.equippedSkin = skinId;
+    saveData();
+  }
+}
+
+// --- Use equipped skin for bird ---
+function updateBirdImage() {
+  const skin = getSkin(save.equippedSkin);
+  birdImg.src = skin.img;
+}
+
+// Draw initial splash/background/buttons as soon as possible
+function tryDrawInitial() {
+  showLoading("Loading...");
+  if (bgImg.complete && splashImg.complete) {
+    hideLoading();
+    draw();
+  } else {
+    let loaded = 0;
+    function check() {
+      loaded++;
+      if (bgImg.complete && splashImg.complete) {
+        hideLoading();
+        draw();
+      }
+    }
+    bgImg.onload = check;
+    splashImg.onload = check;
+  }
+}
+
+function midiToNoteName(midi) {
+  const octave = Math.floor(midi / 12) - 1;
+  const name = NOTE_NAMES[midi % 12];
+  return name + octave;
+}
+
+function noteNameToMidi(note) {
+  // Accepts e.g. "C3", "F#4", "G♯2"
+  let match = note.match(/^([A-G])([#♯]?)(\d)$/);
+  if (!match) return 60; // default C4
+  let [_, n, sharp, oct] = match;
+  let idx = NOTE_NAMES.findIndex(x => x[0] === n && (sharp ? x.includes(sharp) : x.length === 1));
+  return idx + (parseInt(oct) + 1) * 12;
+}
+
+// Save to localStorage
+function savePitchRange() {
+  localStorage.setItem("buzzyBirdPitchRange", JSON.stringify({ bottom: bottomMidi, top: topMidi }));
+}
+
+// Update game pitch mapping
+function updatePitchRange() {
+  PITCH_MIN = midiToFreq(bottomMidi);
+  PITCH_MAX = midiToFreq(topMidi);
+  savePitchRange();
+}
+
+// MIDI to frequency
+function midiToFreq(midi) {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+function openNoteSlider(target) {
+  sliderTarget = target;
+  noteSliderPopup.classList.remove("hidden");
+  // Set slider range: C1 (MIDI 24) to C6 (MIDI 84)
+  noteSlider.min = 24;
+  noteSlider.max = 84;
+  if (target === "bottom") {
+    noteSlider.value = bottomMidi;
+    sliderLabel.textContent = "Select Bottom Note";
+  } else {
+    noteSlider.value = topMidi;
+    sliderLabel.textContent = "Select Top Note";
+  }
+  sliderNoteDisplay.textContent = midiToNoteName(Number(noteSlider.value));
+}
+
+// Show menu on load and after game over
+function showMainMenu() {
+  hideLoading();
+  updateMenuInfo();
+  mainMenu.style.display = "flex";
+  running = false;
+  paused = false;
+  gameOver = false;
+  tryDrawInitial();
+}
+
+function hideMainMenu() {
+  mainMenu.style.display = "none";
+}
+
+// Update points and high score in menu
+function updateMenuInfo() {
+  pointsDisplay.textContent = "Points: " + save.points;
+  highScoreDisplay.textContent = "High Score: " + save.highScore;
+}
+
+// Start game on tap/click anywhere on menu
+async function startGameFromMenu(e) {
+  if (e.target.closest("button")) return; // Ignore if clicking a button
+  hideMainMenu();
+  resetGame();
+  running = true;
+  paused = false;
+  gameOver = false;
+  pitchLoopActive = true;
+  await ensureMicAndStart();
+}
+
+async function preloadPitchModel() {
+  // Load the model once and store it
+  if (!pitchModel) {
+    pitchModel = await ml5.pitchDetection(
+      "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
+      null, // No audioContext yet
+      null, // No stream yet
+      () => {}
+    );
+  }
+}
+
+async function ensureMicAndStart() {
+  showLoading("Setting up microphone...");
+  try {
+    // Always stop and request a new mic stream for each game
+    if (micStream) {
+      micStream.getTracks().forEach(track => track.stop());
+      micStream = null;
+    }
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    showLoading("Loading pitch model...");
+    // Always close and create a new AudioContext for each game
+    if (audioContext) {
+      try { await audioContext.close(); } catch {}
+    }
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Always create a new MediaStreamSource from the new micStream
+    mic = audioContext.createMediaStreamSource(micStream);
+
+    // Use the preloaded model, but set up with the new context and stream
+    pitchDetector = await ml5.pitchDetection(
+      "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
+      audioContext,
+      micStream,
+      () => {
+        hideLoading();
+        modelLoaded();
+      }
+    );
+    // If modelLoaded is not called, hideLoading() after a timeout as fallback
+    setTimeout(hideLoading, 4000);
+    draw();
+  } catch (err) {
+    hideLoading();
+    alert("Microphone access is required to play!");
+    showMainMenu();
+  }
+}
+
+// --- Skins Popup ---
+function showSkinsPopup() {
+  renderSkinsGrid();
+  skinsPopup.classList.remove("hidden");
+}
+
+function hideSkinsPopup() {
+  skinsPopup.classList.add("hidden");
+  updateMenuInfo();
+}
+
+// Render skins grid
+function renderSkinsGrid() {
+  skinsGrid.innerHTML = "";
+  for (const skin of SKINS) {
+    const owned = save.ownedSkins.includes(skin.id);
+    const equipped = save.equippedSkin === skin.id;
+    const box = document.createElement("div");
+    box.className = "skin-box" + (equipped ? " equipped" : "") + (owned ? "" : " locked");
+    box.title = skin.name;
+    // Sprite
+    const img = document.createElement("img");
+    img.src = skin.img;
+    img.className = "skin-sprite";
+    box.appendChild(img);
+    // Overlay for locked
+    if (!owned) {
+      const overlay = document.createElement("div");
+      overlay.className = "skin-overlay";
+      overlay.innerHTML = `<div class="skin-cost">${skin.price} pt</div>`;
+      box.appendChild(overlay);
+    }
+    // Click logic
+    box.addEventListener("click", () => {
+      if (owned) {
+        equipSkin(skin.id);
+        updateBirdImage();
+        renderSkinsGrid();
+      } else if (save.points >= skin.price) {
+        save.points -= skin.price;
+        unlockSkin(skin.id);
+        equipSkin(skin.id);
+        updateBirdImage();
+        renderSkinsGrid();
+        updateMenuInfo();
+      }
+    });
+    skinsGrid.appendChild(box);
+  }
+}
+
+// Show menu after game over
+function onGameOverMenu() {
+  showMainMenu(); // Remove setTimeout, show immediately
+}
+
+// Example exit button hit test
+function exitButtonClicked(x, y) {
+  // Replace these with your actual exit button coordinates and size
+  const btnX = canvas.width - 60;
+  const btnY = 20;
+  const btnW = 40;
+  const btnH = 40;
+  return x >= btnX && x <= btnX + btnW && y >= btnY && y <= btnY + btnH;
+}
+
+// Helper for green-to-red gradient
+function getPipesPerBreakGradient(val) {
+  // 3 = green (hue 120), 10 = red (hue 0)
+  const percent = (val - 3) / (10 - 3);
+  const hue = 120 - percent * 120; // 120 (green) to 0 (red)
+  // Use lightness and saturation similar to your light green
+  return `linear-gradient(90deg, hsl(${hue}, 80%, 90%) 0%, hsl(${hue}, 80%, 90%) 100%)`;
+}
+
+// --- Rest Animation ---
+function drawRestAnimation() {
+  // Draw animated "rest" in the center of the screen, 2x larger for crispness
+  const letterCount = 4;
+  const scale = 2; // 2x instead of 4x
+  const letterWidth = 20 * scale; // 40
+  const letterHeight = 32 * scale; // 64
+  const imgY = canvas.height / 2 - letterHeight / 2;
+  const baseX = canvas.width / 2 - (letterCount * letterWidth) / 2;
+  const t = restBreakTimer;
+  for (let i = 0; i < letterCount; i++) {
+    // Sine wave: amplitude 32px, period 1s, staggered by 0.7 per letter
+    const phase = t * 2 * Math.PI + i * 0.7;
+    const yOffset = Math.sin(phase) * 32;
+    // Crop 1px from left and right of each letter
+    ctx.drawImage(
+      restImg,
+      i * 20 + 1, 0, 18, 32, // src: crop 1px from each side
+      baseX + i * letterWidth, imgY + yOffset, letterWidth, letterHeight // dest (2x)
+    );
+  }
+}
+
+// Helper for pipe speed gradient (green=slow, red=fast)
+function getPipeSpeedGradient(val) {
+  // 1 = green (hue 120), 100 = red (hue 0)
+  const percent = (val - 1) / (100 - 1);
+  const hue = 120 - percent * 120;
+  return `linear-gradient(90deg, hsl(${hue}, 80%, 90%) 0%, hsl(${hue}, 80%, 90%) 100%)`;
+}
+
+// Helper to map slider value to pipe speed (1=slowest, 100=fastest)
+function getPipeSpeedFromSlider(val) {
+  // Map 1 (slowest) to 100 (fastest) to a reasonable speed range, e.g. 1.5 to 4
+  return 1.5 + ((val - 1) / 99) * (4 - 1.5);
+}
+
+// --- Pipe Interval Calculation ---
+function getPipeIntervalFrames() {
+  // Desired distance between pipes in pixels
+  const desiredDistance = 320;
+  return Math.round(desiredDistance / pipeSpeed);
+}
+
+// Helper for green-to-red border color (darker, more saturated than background)
+function getBoxBorderColor(val, min, max) {
+  const percent = (val - min) / (max - min);
+  const hue = 120 - percent * 120;
+  return `hsl(${hue}, 90%, 45%)`;
+}
+
+// Full refresh function
+function fullRefresh() {
+  // Cancel animation frame
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+
+  // Stop pitch detection loop
+  pitchLoopActive = false;
+
+  // Stop and close audio context and mic stream
+  if (audioContext) {
+    try { audioContext.close(); } catch {}
+    audioContext = null;
+  }
+  if (micStream) {
+    try {
+      if (micStream.getTracks) {
+        micStream.getTracks().forEach(track => track.stop());
+      }
+    } catch {}
+    micStream = null;
+  }
+  mic = null;
+  pitchDetector = null;
+
+  // Remove any other intervals/timeouts (if any)
+  let id = window.setTimeout(() => {}, 0);
+  while (id--) {
+    window.clearTimeout(id);
+    window.clearInterval(id);
+  }
+
+  // Remove any event listeners added dynamically (if any were)
+  // (If you add listeners dynamically elsewhere, remove them here)
+
+  // Reset all game state variables
+  running = false;
+  paused = false;
+  gameOver = false;
+  score = 0;
+  pipes = [];
+  pipeTimer = 0;
+  pipesPassedSinceBreak = 0;
+  inRestBreak = false;
+  restBreakTimer = 0;
+  pendingRest = false;
+  skipNextPipe = false;
+  lastPipeBeforeBreak = null; // <-- Track the last pipe before break
+  birdY = 300;
+  birdVelocity = 0;
+  pitch = null;
+
+  // Clear the canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Show main menu or splash
+  showMainMenu();
+}
+
+// Resume audio context if suspended
+async function resumeAudioContext() {
+  if (audioContext && audioContext.state === "suspended") {
+    await audioContext.resume();
+  }
+}
+
+// Call this function to ensure audio context is running
+async function ensureAudioContext() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  } else if (audioContext.state === "suspended") {
+    await audioContext.resume();
+  }
+}
+
+// Loading overlay functions
+function showLoading(msg = "Loading...") {
+  const overlay = document.getElementById("loadingOverlay");
+  if (overlay) {
+    overlay.classList.add("active");
+    overlay.textContent = msg;
+  }
+}
+
+function hideLoading() {
+  const overlay = document.getElementById("loadingOverlay");
+  if (overlay) overlay.classList.remove("active");
+}
+
+// --- Helper: Find difficulty index for current settings ---
+function getMatchingDifficultyIndex(pipes, speedSlider) {
+  for (let i = 0; i < difficulties.length; i++) {
+    if (
+      pipes === difficulties[i].pipesPerBreak &&
+      speedSlider === difficulties[i].pipeSpeedSlider
+    ) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+// --- Update Difficulty Button UI ---
+function updateDifficultyBtn() {
+  let pipes = pipesPerBreak;
+  let speedSlider = pipeSpeedSliderValue;
+  let idx = getMatchingDifficultyIndex(pipes, speedSlider);
+  isCustom = idx === -1;
+  if (isCustom) {
+    difficultyBtn.textContent = customDifficulty.name;
+    difficultyBtn.style.background = customDifficulty.bg;
+    difficultyBtn.style.border = `2.5px solid ${customDifficulty.border}`;
+    difficultyBtn.style.color = customDifficulty.color;
+  } else {
+    difficultyIndex = idx;
+    const d = difficulties[difficultyIndex];
+    difficultyBtn.textContent = d.name;
+    difficultyBtn.style.background = d.bg;
+    difficultyBtn.style.border = `2.5px solid ${d.border}`;
+    difficultyBtn.style.color = d.color;
+  }
+}
+
+// --- Set sliders and game values from difficulty ---
+function setDifficulty(idx) {
+  const d = difficulties[idx];
+  difficultyIndex = idx;
+  isCustom = false;
+  // Update pipesPerBreak and pipeSpeedSliderValue
+  pipesPerBreak = d.pipesPerBreak;
+  pipeSpeedSliderValue = d.pipeSpeedSlider;
+  pipeSpeed = getPipeSpeedFromSlider(pipeSpeedSliderValue);
+
+  // Update UI for settings popup
+  pipesPerBreakBox.textContent = pipesPerBreak;
+  pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
+  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
+  pipesSlider.value = pipesPerBreak;
+  pipesSliderDisplay.textContent = pipesPerBreak;
+
+  pipeSpeedBox.textContent = pipeSpeedSliderValue;
+  pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
+  pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
+  pipeSpeedSlider.value = pipeSpeedSliderValue;
+  pipeSpeedSliderDisplay.textContent = pipeSpeedSliderValue;
+
+  // Save to localStorage
+  localStorage.setItem("buzzyBirdPipesPerBreak", pipesPerBreak);
+  localStorage.setItem("buzzyBirdPipeSpeed", pipeSpeedSliderValue);
+
+  updateDifficultyBtn();
+}
+
+// --- When sliders change, update difficulty button ---
+function onAdvancedSettingChanged() {
+  // Update pipesPerBreak and pipeSpeedSliderValue from sliders
+  pipesPerBreak = parseInt(pipesSlider.value);
+  pipesPerBreakBox.textContent = pipesPerBreak;
+  pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
+  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
+
+  pipeSpeedSliderValue = parseInt(pipeSpeedSlider.value);
+  pipeSpeed = getPipeSpeedFromSlider(pipeSpeedSliderValue);
+  pipeSpeedBox.textContent = pipeSpeedSliderValue;
+  pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
+  pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
+
+  // Save to localStorage
+  localStorage.setItem("buzzyBirdPipesPerBreak", pipesPerBreak);
+  localStorage.setItem("buzzyBirdPipeSpeed", pipeSpeedSliderValue);
+
+  updateDifficultyBtn();
+}
+
+async function hashPasscode(passcode) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(passcode);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function signUp(name, passcode, localData) {
+  const username = name.trim().toLowerCase();
+  const userRef = db.ref('users/' + username);
+  const snapshot = await userRef.get();
+  if (snapshot.exists()) {
+    throw new Error("Name is already taken.");
+  }
+  const passcodeHash = await hashPasscode(passcode);
+  // Merge local data
+  const userData = {
+    name: name.trim(),
+    passcodeHash,
+    highScore: localData.highScore || 0,
+    points: localData.points || 0,
+    ownedSkins: localData.ownedSkins || ["default"]
+  };
+  await userRef.set(userData);
+  return userData;
+}
+
+async function logIn(name, passcode, localData) {
+  const username = name.trim().toLowerCase();
+  const userRef = db.ref('users/' + username);
+  const snapshot = await userRef.get();
+  if (!snapshot.exists()) throw new Error("Account not found.");
+  const userData = snapshot.val();
+  const passcodeHash = await hashPasscode(passcode);
+  if (userData.passcodeHash !== passcodeHash) throw new Error("Incorrect passcode.");
+
+  // Merge logic
+  const merged = {
+    ...userData,
+    highScore: Math.max(userData.highScore || 0, localData.highScore || 0),
+    points: (userData.points || 0) + (localData.points || 0),
+    ownedSkins: Array.from(new Set([...(userData.ownedSkins || []), ...(localData.ownedSkins || [])]))
+  };
+  await userRef.update(merged);
+  return merged;
+}
+
+async function changeName(oldName, passcode, newName) {
+  const oldUsername = oldName.trim().toLowerCase();
+  const newUsername = newName.trim().toLowerCase();
+  if (oldUsername === newUsername) throw new Error("New name must be different.");
+  const oldRef = db.ref('users/' + oldUsername);
+  const newRef = db.ref('users/' + newUsername);
+
+  const [oldSnap, newSnap] = await Promise.all([oldRef.get(), newRef.get()]);
+  if (!oldSnap.exists()) throw new Error("Current account not found.");
+  if (newSnap.exists()) throw new Error("New name is already taken.");
+
+  const userData = oldSnap.val();
+  const passcodeHash = await hashPasscode(passcode);
+  if (userData.passcodeHash !== passcodeHash) throw new Error("Incorrect passcode.");
+
+  // Copy data to new name and delete old
+  await newRef.set({ ...userData, name: newName.trim() });
+  await oldRef.remove();
+}
+
+async function updateHighScore(name, newScore) {
+  const username = name.trim().toLowerCase();
+  const userRef = db.ref('users/' + username + '/highScore');
+  const snapshot = await userRef.get();
+  if (!snapshot.exists() || newScore > snapshot.val()) {
+    await userRef.set(newScore);
+  }
+}
+
+async function fetchLeaderboard() {
+  const snapshot = await db.ref('users').orderByChild('highScore').once('value');
+  const users = [];
+  snapshot.forEach(child => users.push(child.val()));
+  // Sort descending by highScore
+  users.sort((a, b) => (b.highScore || 0) - (a.highScore || 0));
+  return users;
+}
+
+
+
+// -------------------------------------------------
+// ---------------- FUNCTIONAL CODE ----------------
+// -------------------------------------------------
+
+let pitch = null;
+let birdY = 300;
+let smoothing = 0.8;
+
+let birdVelocity = 0; // Bird's vertical speed
+const GRAVITY = 0.7;  // Adjust as needed for smoothness
+
+let audioContext, mic, pitchDetector, micStream;
+let running = false;
+let paused = false;
+let gameOver = false;
+let score = 0;
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = false; // Disable image smoothing
+
+// Load images
+const bgImg = new Image();
+bgImg.src = "assets/background.png";
+const splashImg = new Image();
+splashImg.src = "assets/splash.png";
+const birdImg = new Image();
+birdImg.src = "assets/skins/default.png"; // Default skin
+const pipeImg = new Image();
+pipeImg.src = "assets/pipe.png";
+const gameoverImg = new Image();
+gameoverImg.src = "assets/gameover.png";
+
+// Load digit images for score display
+const digitImgs = [];
+for (let i = 0; i <= 9; i++) {
+  digitImgs[i] = new Image();
+  digitImgs[i].src = `assets/nums/${i}.png`; // <-- updated path
+}
+
+// Pipe settings
+const PIPE_WIDTH = 60;
+let pipes = [];
+let pipeTimer = 0;
+const PIPE_INTERVAL = 120; // frames
+const PIPE_CAP_HEIGHT = 24; // Height of the pipe cap in pixels (now 24)
+
+// Bird settings
+const BIRD_WIDTH = 40;
+const BIRD_HEIGHT = 32;
+
+// Animation and pitch loop
+let animationFrameId = null;
+let pitchLoopActive = false;
+
+// Pitch range for mapping to screen height (easy to adjust)
+let bottomMidi = 48; // C3
+let topMidi = 60;   // C5
+let PITCH_MIN = midiToFreq(bottomMidi);  // Initialize with current bottomMidi
+let PITCH_MAX = midiToFreq(topMidi);     // Initialize with current topMidi
+
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', resizeCanvas);
+resizeCanvas();
+
+// --- Persistent Storage Manager ---
+const STORAGE_KEY = "buzzyBirdSave";
+const DEFAULT_SKINS = [
+  { id: "default", name: "Classic", price: 0, img: "assets/skins/default.png" },
+  // Example: { id: "red", name: "Red Bird", price: 100, img: "assets/skins/red.png" },
+  // Add more skins as needed
+];
 
 // Global save object
 let save = loadSave();
@@ -521,40 +1128,6 @@ const SKINS = [
   { id: "mango", name: "Mango", price: 30, img: "assets/skins/mango.png" }
 ];
 
-// Utility to get skin object by id
-function getSkin(id) {
-  return SKINS.find(s => s.id === id) || SKINS[0];
-}
-
-// --- Points & High Score Logic ---
-function addPoints(amount) {
-  save.points += amount;
-  saveData();
-}
-function setHighScoreIfNeeded(newScore) {
-  if (newScore > save.highScore) {
-    save.highScore = newScore;
-    saveData();
-  }
-}
-function unlockSkin(skinId) {
-  if (!save.ownedSkins.includes(skinId)) {
-    save.ownedSkins.push(skinId);
-    saveData();
-  }
-}
-function equipSkin(skinId) {
-  if (save.ownedSkins.includes(skinId)) {
-    save.equippedSkin = skinId;
-    saveData();
-  }
-}
-
-// --- Use equipped skin for bird ---
-function updateBirdImage() {
-  const skin = getSkin(save.equippedSkin);
-  birdImg.src = skin.img;
-}
 updateBirdImage();
 
 // Handle in-canvas button clicks
@@ -607,40 +1180,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// Draw initial splash/background/buttons as soon as possible
-function tryDrawInitial() {
-  showLoading("Loading...");
-  if (bgImg.complete && splashImg.complete) {
-    hideLoading();
-    draw();
-  } else {
-    let loaded = 0;
-    function check() {
-      loaded++;
-      if (bgImg.complete && splashImg.complete) {
-        hideLoading();
-        draw();
-      }
-    }
-    bgImg.onload = check;
-    splashImg.onload = check;
-  }
-}
 tryDrawInitial();
-
-// --- MENU & SKINS POPUP LOGIC ---
-
-// 20 skins, all using assets/bird.png for now
-/*
-for (let i = 1; i < 20; i++) {
-  SKINS.push({
-    id: "skin" + i,
-    name: "Skin " + (i + 1),
-    price: 1,
-    img: "assets/bird.png"
-  });
-}
-*/
 
 // DOM elements
 const mainMenu = document.getElementById("mainMenu");
@@ -677,19 +1217,6 @@ const sliderLabel = document.getElementById("sliderLabel");
 const NOTE_NAMES = [
   "C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"
 ];
-function midiToNoteName(midi) {
-  const octave = Math.floor(midi / 12) - 1;
-  const name = NOTE_NAMES[midi % 12];
-  return name + octave;
-}
-function noteNameToMidi(note) {
-  // Accepts e.g. "C3", "F#4", "G♯2"
-  let match = note.match(/^([A-G])([#♯]?)(\d)$/);
-  if (!match) return 60; // default C4
-  let [_, n, sharp, oct] = match;
-  let idx = NOTE_NAMES.findIndex(x => x[0] === n && (sharp ? x.includes(sharp) : x.length === 1));
-  return idx + (parseInt(oct) + 1) * 12;
-}
 
 // Load from localStorage if available
 if (localStorage.getItem("buzzyBirdPitchRange")) {
@@ -703,23 +1230,6 @@ if (localStorage.getItem("buzzyBirdPitchRange")) {
 }
 bottomNoteBox.textContent = midiToNoteName(bottomMidi);
 topNoteBox.textContent = midiToNoteName(topMidi);
-
-// Save to localStorage
-function savePitchRange() {
-  localStorage.setItem("buzzyBirdPitchRange", JSON.stringify({ bottom: bottomMidi, top: topMidi }));
-}
-
-// Update game pitch mapping
-function updatePitchRange() {
-  PITCH_MIN = midiToFreq(bottomMidi);
-  PITCH_MAX = midiToFreq(topMidi);
-  savePitchRange();
-}
-
-// MIDI to frequency
-function midiToFreq(midi) {
-  return 440 * Math.pow(2, (midi - 69) / 12);
-}
 
 // Open/close settings popup
 settingsBtn.addEventListener("click", (e) => {
@@ -735,23 +1245,10 @@ settingsPopup.addEventListener("mousedown", (e) => {
 
 // Note slider logic
 let sliderTarget = null; // "bottom" or "top"
-function openNoteSlider(target) {
-  sliderTarget = target;
-  noteSliderPopup.classList.remove("hidden");
-  // Set slider range: C1 (MIDI 24) to C6 (MIDI 84)
-  noteSlider.min = 24;
-  noteSlider.max = 84;
-  if (target === "bottom") {
-    noteSlider.value = bottomMidi;
-    sliderLabel.textContent = "Select Bottom Note";
-  } else {
-    noteSlider.value = topMidi;
-    sliderLabel.textContent = "Select Top Note";
-  }
-  sliderNoteDisplay.textContent = midiToNoteName(Number(noteSlider.value));
-}
+
 bottomNoteBox.addEventListener("click", () => openNoteSlider("bottom"));
 topNoteBox.addEventListener("click", () => openNoteSlider("top"));
+
 
 noteSlider.addEventListener("input", () => {
   sliderNoteDisplay.textContent = midiToNoteName(Number(noteSlider.value));
@@ -779,6 +1276,7 @@ closeNoteSliderBtn.addEventListener("click", () => {
   updatePitchRange();
   noteSliderPopup.classList.add("hidden");
 });
+
 noteSliderPopup.addEventListener("mousedown", (e) => {
   if (e.target === noteSliderPopup) noteSliderPopup.classList.add("hidden");
 });
@@ -786,146 +1284,14 @@ noteSliderPopup.addEventListener("mousedown", (e) => {
 // Initialize pitch range on load
 updatePitchRange();
 
-// Show menu on load and after game over
-function showMainMenu() {
-  hideLoading();
-  updateMenuInfo();
-  mainMenu.style.display = "flex";
-  running = false;
-  paused = false;
-  gameOver = false;
-  tryDrawInitial();
-}
-function hideMainMenu() {
-  mainMenu.style.display = "none";
-}
-
-// Update points and high score in menu
-function updateMenuInfo() {
-  pointsDisplay.textContent = "Points: " + save.points;
-  highScoreDisplay.textContent = "High Score: " + save.highScore;
-}
-
-// Start game on tap/click anywhere on menu
 mainMenu.addEventListener("mousedown", startGameFromMenu);
 mainMenu.addEventListener("touchstart", startGameFromMenu, { passive: false });
-async function startGameFromMenu(e) {
-  if (e.target.closest("button")) return; // Ignore if clicking a button
-  hideMainMenu();
-  resetGame();
-  running = true;
-  paused = false;
-  gameOver = false;
-  pitchLoopActive = true;
-  await ensureMicAndStart();
-}
 
 let pitchModel = null; // Store the loaded model
 
-async function preloadPitchModel() {
-  // Load the model once and store it
-  if (!pitchModel) {
-    pitchModel = await ml5.pitchDetection(
-      "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
-      null, // No audioContext yet
-      null, // No stream yet
-      () => {}
-    );
-  }
-}
 
 // Call this once at startup
 preloadPitchModel();
-
-async function ensureMicAndStart() {
-  showLoading("Setting up microphone...");
-  try {
-    // Always stop and request a new mic stream for each game
-    if (micStream) {
-      micStream.getTracks().forEach(track => track.stop());
-      micStream = null;
-    }
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-    showLoading("Loading pitch model...");
-    // Always close and create a new AudioContext for each game
-    if (audioContext) {
-      try { await audioContext.close(); } catch {}
-    }
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-    // Always create a new MediaStreamSource from the new micStream
-    mic = audioContext.createMediaStreamSource(micStream);
-
-    // Use the preloaded model, but set up with the new context and stream
-    pitchDetector = await ml5.pitchDetection(
-      "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
-      audioContext,
-      micStream,
-      () => {
-        hideLoading();
-        modelLoaded();
-      }
-    );
-    // If modelLoaded is not called, hideLoading() after a timeout as fallback
-    setTimeout(hideLoading, 4000);
-    draw();
-  } catch (err) {
-    hideLoading();
-    alert("Microphone access is required to play!");
-    showMainMenu();
-  }
-}
-
-// --- Skins Popup ---
-function showSkinsPopup() {
-  renderSkinsGrid();
-  skinsPopup.classList.remove("hidden");
-}
-function hideSkinsPopup() {
-  skinsPopup.classList.add("hidden");
-  updateMenuInfo();
-}
-
-// Render skins grid
-function renderSkinsGrid() {
-  skinsGrid.innerHTML = "";
-  for (const skin of SKINS) {
-    const owned = save.ownedSkins.includes(skin.id);
-    const equipped = save.equippedSkin === skin.id;
-    const box = document.createElement("div");
-    box.className = "skin-box" + (equipped ? " equipped" : "") + (owned ? "" : " locked");
-    box.title = skin.name;
-    // Sprite
-    const img = document.createElement("img");
-    img.src = skin.img;
-    img.className = "skin-sprite";
-    box.appendChild(img);
-    // Overlay for locked
-    if (!owned) {
-      const overlay = document.createElement("div");
-      overlay.className = "skin-overlay";
-      overlay.innerHTML = `<div class="skin-cost">${skin.price} pt</div>`;
-      box.appendChild(overlay);
-    }
-    // Click logic
-    box.addEventListener("click", () => {
-      if (owned) {
-        equipSkin(skin.id);
-        updateBirdImage();
-        renderSkinsGrid();
-      } else if (save.points >= skin.price) {
-        save.points -= skin.price;
-        unlockSkin(skin.id);
-        equipSkin(skin.id);
-        updateBirdImage();
-        renderSkinsGrid();
-        updateMenuInfo();
-      }
-    });
-    skinsGrid.appendChild(box);
-  }
-}
 
 // Button events
 skinsBtn.addEventListener("click", (e) => {
@@ -939,17 +1305,13 @@ skinsPopup.addEventListener("mousedown", (e) => {
   if (e.target === skinsPopup) hideSkinsPopup();
 });
 
-// Show menu after game over
-function onGameOverMenu() {
-  showMainMenu(); // Remove setTimeout, show immediately
-}
-
 // Patch game over logic to show menu
 const origStopGame = stopGame;
 stopGame = function() {
   origStopGame();
   onGameOverMenu();
 };
+
 
 // Show menu on load
 window.addEventListener("DOMContentLoaded", showMainMenu);
@@ -968,16 +1330,6 @@ canvas.addEventListener("mousedown", function(e) {
 
   // ...other game logic...
 });
-
-// Example exit button hit test
-function exitButtonClicked(x, y) {
-  // Replace these with your actual exit button coordinates and size
-  const btnX = canvas.width - 60;
-  const btnY = 20;
-  const btnW = 40;
-  const btnH = 40;
-  return x >= btnX && x <= btnX + btnW && y >= btnY && y <= btnY + btnH;
-}
 
 // Show/hide logic for How To Play
 howToBtn.addEventListener("click", (e) => {
@@ -1069,39 +1421,6 @@ closePipesSliderBtn.addEventListener("click", () => {
   pipesSliderPopup.classList.add("hidden");
 });
 
-// Helper for green-to-red gradient
-function getPipesPerBreakGradient(val) {
-  // 3 = green (hue 120), 10 = red (hue 0)
-  const percent = (val - 3) / (10 - 3);
-  const hue = 120 - percent * 120; // 120 (green) to 0 (red)
-  // Use lightness and saturation similar to your light green
-  return `linear-gradient(90deg, hsl(${hue}, 80%, 90%) 0%, hsl(${hue}, 80%, 90%) 100%)`;
-}
-
-// --- Rest Animation ---
-function drawRestAnimation() {
-  // Draw animated "rest" in the center of the screen, 2x larger for crispness
-  const letterCount = 4;
-  const scale = 2; // 2x instead of 4x
-  const letterWidth = 20 * scale; // 40
-  const letterHeight = 32 * scale; // 64
-  const imgY = canvas.height / 2 - letterHeight / 2;
-  const baseX = canvas.width / 2 - (letterCount * letterWidth) / 2;
-  const t = restBreakTimer;
-  for (let i = 0; i < letterCount; i++) {
-    // Sine wave: amplitude 32px, period 1s, staggered by 0.7 per letter
-    const phase = t * 2 * Math.PI + i * 0.7;
-    const yOffset = Math.sin(phase) * 32;
-    // Crop 1px from left and right of each letter
-    ctx.drawImage(
-      restImg,
-      i * 20 + 1, 0, 18, 32, // src: crop 1px from each side
-      baseX + i * letterWidth, imgY + yOffset, letterWidth, letterHeight // dest (2x)
-    );
-  }
-}
-
-
 const bugBtn = document.getElementById("bugBtn");
 if (bugBtn) {
   bugBtn.addEventListener("click", () => {
@@ -1171,124 +1490,6 @@ pipeSpeedSliderPopup.addEventListener("mousedown", (e) => {
   if (e.target === pipeSpeedSliderPopup) pipeSpeedSliderPopup.classList.add("hidden");
 });
 
-// Helper for pipe speed gradient (green=slow, red=fast)
-function getPipeSpeedGradient(val) {
-  // 1 = green (hue 120), 100 = red (hue 0)
-  const percent = (val - 1) / (100 - 1);
-  const hue = 120 - percent * 120;
-  return `linear-gradient(90deg, hsl(${hue}, 80%, 90%) 0%, hsl(${hue}, 80%, 90%) 100%)`;
-}
-
-// Helper to map slider value to pipe speed (1=slowest, 100=fastest)
-function getPipeSpeedFromSlider(val) {
-  // Map 1 (slowest) to 100 (fastest) to a reasonable speed range, e.g. 1.5 to 4
-  return 1.5 + ((val - 1) / 99) * (4 - 1.5);
-}
-
-// --- Pipe Interval Calculation ---
-function getPipeIntervalFrames() {
-  // Desired distance between pipes in pixels
-  const desiredDistance = 320;
-  return Math.round(desiredDistance / pipeSpeed);
-}
-
-// Helper for green-to-red border color (darker, more saturated than background)
-function getBoxBorderColor(val, min, max) {
-  const percent = (val - min) / (max - min);
-  const hue = 120 - percent * 120;
-  return `hsl(${hue}, 90%, 45%)`;
-}
-
-// Full refresh function
-function fullRefresh() {
-  // Cancel animation frame
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
-  }
-
-  // Stop pitch detection loop
-  pitchLoopActive = false;
-
-  // Stop and close audio context and mic stream
-  if (audioContext) {
-    try { audioContext.close(); } catch {}
-    audioContext = null;
-  }
-  if (micStream) {
-    try {
-      if (micStream.getTracks) {
-        micStream.getTracks().forEach(track => track.stop());
-      }
-    } catch {}
-    micStream = null;
-  }
-  mic = null;
-  pitchDetector = null;
-
-  // Remove any other intervals/timeouts (if any)
-  let id = window.setTimeout(() => {}, 0);
-  while (id--) {
-    window.clearTimeout(id);
-    window.clearInterval(id);
-  }
-
-  // Remove any event listeners added dynamically (if any were)
-  // (If you add listeners dynamically elsewhere, remove them here)
-
-  // Reset all game state variables
-  running = false;
-  paused = false;
-  gameOver = false;
-  score = 0;
-  pipes = [];
-  pipeTimer = 0;
-  pipesPassedSinceBreak = 0;
-  inRestBreak = false;
-  restBreakTimer = 0;
-  pendingRest = false;
-  skipNextPipe = false;
-  lastPipeBeforeBreak = null;
-  birdY = 300;
-  birdVelocity = 0;
-  pitch = null;
-
-  // Clear the canvas
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Show main menu or splash
-  showMainMenu();
-}
-
-// Resume audio context if suspended
-async function resumeAudioContext() {
-  if (audioContext && audioContext.state === "suspended") {
-    await audioContext.resume();
-  }
-}
-
-// Call this function to ensure audio context is running
-async function ensureAudioContext() {
-  if (!audioContext) {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  } else if (audioContext.state === "suspended") {
-    await audioContext.resume();
-  }
-}
-
-// Loading overlay functions
-function showLoading(msg = "Loading...") {
-  const overlay = document.getElementById("loadingOverlay");
-  if (overlay) {
-    overlay.classList.add("active");
-    overlay.textContent = msg;
-  }
-}
-function hideLoading() {
-  const overlay = document.getElementById("loadingOverlay");
-  if (overlay) overlay.classList.remove("active");
-}
-
 // --- Difficulty Button Logic ---
 const difficultyBtn = document.getElementById("difficultyBtn");
 const difficulties = [
@@ -1335,70 +1536,6 @@ const customDifficulty = {
 let difficultyIndex = 1; // Start at "Normal" (index in difficulties)
 let isCustom = false;
 
-// --- Helper: Find difficulty index for current settings ---
-function getMatchingDifficultyIndex(pipes, speedSlider) {
-  for (let i = 0; i < difficulties.length; i++) {
-    if (
-      pipes === difficulties[i].pipesPerBreak &&
-      speedSlider === difficulties[i].pipeSpeedSlider
-    ) {
-      return i;
-    }
-  }
-  return -1;
-}
-
-// --- Update Difficulty Button UI ---
-function updateDifficultyBtn() {
-  let pipes = pipesPerBreak;
-  let speedSlider = pipeSpeedSliderValue;
-  let idx = getMatchingDifficultyIndex(pipes, speedSlider);
-  isCustom = idx === -1;
-  if (isCustom) {
-    difficultyBtn.textContent = customDifficulty.name;
-    difficultyBtn.style.background = customDifficulty.bg;
-    difficultyBtn.style.border = `2.5px solid ${customDifficulty.border}`;
-    difficultyBtn.style.color = customDifficulty.color;
-  } else {
-    difficultyIndex = idx;
-    const d = difficulties[difficultyIndex];
-    difficultyBtn.textContent = d.name;
-    difficultyBtn.style.background = d.bg;
-    difficultyBtn.style.border = `2.5px solid ${d.border}`;
-    difficultyBtn.style.color = d.color;
-  }
-}
-
-// --- Set sliders and game values from difficulty ---
-function setDifficulty(idx) {
-  const d = difficulties[idx];
-  difficultyIndex = idx;
-  isCustom = false;
-  // Update pipesPerBreak and pipeSpeedSliderValue
-  pipesPerBreak = d.pipesPerBreak;
-  pipeSpeedSliderValue = d.pipeSpeedSlider;
-  pipeSpeed = getPipeSpeedFromSlider(pipeSpeedSliderValue);
-
-  // Update UI for settings popup
-  pipesPerBreakBox.textContent = pipesPerBreak;
-  pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
-  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
-  pipesSlider.value = pipesPerBreak;
-  pipesSliderDisplay.textContent = pipesPerBreak;
-
-  pipeSpeedBox.textContent = pipeSpeedSliderValue;
-  pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
-  pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
-  pipeSpeedSlider.value = pipeSpeedSliderValue;
-  pipeSpeedSliderDisplay.textContent = pipeSpeedSliderValue;
-
-  // Save to localStorage
-  localStorage.setItem("buzzyBirdPipesPerBreak", pipesPerBreak);
-  localStorage.setItem("buzzyBirdPipeSpeed", pipeSpeedSliderValue);
-
-  updateDifficultyBtn();
-}
-
 // --- Difficulty Button Click Handler ---
 difficultyBtn.addEventListener("click", () => {
   let idx;
@@ -1409,27 +1546,6 @@ difficultyBtn.addEventListener("click", () => {
   }
   setDifficulty(idx);
 });
-
-// --- When sliders change, update difficulty button ---
-function onAdvancedSettingChanged() {
-  // Update pipesPerBreak and pipeSpeedSliderValue from sliders
-  pipesPerBreak = parseInt(pipesSlider.value);
-  pipesPerBreakBox.textContent = pipesPerBreak;
-  pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
-  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
-
-  pipeSpeedSliderValue = parseInt(pipeSpeedSlider.value);
-  pipeSpeed = getPipeSpeedFromSlider(pipeSpeedSliderValue);
-  pipeSpeedBox.textContent = pipeSpeedSliderValue;
-  pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
-  pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
-
-  // Save to localStorage
-  localStorage.setItem("buzzyBirdPipesPerBreak", pipesPerBreak);
-  localStorage.setItem("buzzyBirdPipeSpeed", pipeSpeedSliderValue);
-
-  updateDifficultyBtn();
-}
 
 // --- Patch slider event listeners to use onAdvancedSettingChanged ---
 pipesSlider.addEventListener("input", onAdvancedSettingChanged);
@@ -1456,3 +1572,238 @@ settingsBtn.addEventListener("click", () => {
   pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
   updateDifficultyBtn();
 });
+
+// --- Leaderboard Auth Buttons and Modals ---
+const signUpBtn = document.getElementById('signUpBtn');
+const logInBtn = document.getElementById('logInBtn');
+const changeNameBtn = document.getElementById('changeNameBtn');
+const signUpModal = document.getElementById('signUpModal');
+const logInModal = document.getElementById('logInModal');
+const changeNameModal = document.getElementById('changeNameModal');
+const signUpCancelBtn = document.getElementById('signUpCancelBtn');
+const logInCancelBtn = document.getElementById('logInCancelBtn');
+const changeNameCancelBtn = document.getElementById('changeNameCancelBtn');
+const signUpSubmitBtn = document.getElementById('signUpSubmitBtn');
+const logInSubmitBtn = document.getElementById('logInSubmitBtn');
+const changeNameSubmitBtn = document.getElementById('changeNameSubmitBtn');
+const signUpName = document.getElementById('signUpName');
+const signUpPasscode = document.getElementById('signUpPasscode');
+const signUpError = document.getElementById('signUpError');
+const logInName = document.getElementById('logInName');
+const logInPasscode = document.getElementById('logInPasscode');
+const logInError = document.getElementById('logInError');
+const changeNameNew = document.getElementById('changeNameNew');
+const changeNamePasscode = document.getElementById('changeNamePasscode');
+const changeNameError = document.getElementById('changeNameError');
+const usernameDisplay = document.createElement('span');
+usernameDisplay.id = 'usernameDisplay';
+usernameDisplay.style.position = 'absolute';
+usernameDisplay.style.right = '24px';
+usernameDisplay.style.bottom = '12px';
+usernameDisplay.style.color = '#fff';
+usernameDisplay.style.fontWeight = 'bold';
+usernameDisplay.style.fontSize = '1.1em';
+usernameDisplay.style.pointerEvents = 'none';
+
+function showUsername(name) {
+  usernameDisplay.textContent = `Signed in as: ${name}`;
+  const leaderboard = document.getElementById('leaderboardContainer');
+  if (leaderboard && !leaderboard.contains(usernameDisplay)) {
+    leaderboard.appendChild(usernameDisplay);
+  }
+}
+function hideUsername() {
+  if (usernameDisplay.parentNode) usernameDisplay.parentNode.removeChild(usernameDisplay);
+}
+
+function updateAuthUI() {
+  const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
+  if (user && user.name) {
+    if (signUpBtn) signUpBtn.style.display = 'none';
+    if (logInBtn) logInBtn.style.display = 'none';
+    if (changeNameBtn) changeNameBtn.classList.remove('hidden');
+    showUsername(user.name);
+  } else {
+    if (signUpBtn) signUpBtn.style.display = '';
+    if (logInBtn) logInBtn.style.display = '';
+    if (changeNameBtn) changeNameBtn.classList.add('hidden');
+    hideUsername();
+  }
+}
+
+if (signUpBtn && signUpModal) {
+  signUpBtn.addEventListener('click', (e) => {
+    signUpModal.classList.remove('hidden');
+    signUpError.textContent = '';
+    signUpName.value = '';
+    signUpPasscode.value = '';
+    e.stopPropagation();
+  });
+}
+if (logInBtn && logInModal) {
+  logInBtn.addEventListener('click', (e) => {
+    logInModal.classList.remove('hidden');
+    logInError.textContent = '';
+    logInName.value = '';
+    logInPasscode.value = '';
+    e.stopPropagation();
+  });
+}
+if (changeNameBtn && changeNameModal) {
+  changeNameBtn.addEventListener('click', (e) => {
+    changeNameModal.classList.remove('hidden');
+    changeNameError.textContent = '';
+    changeNameNew.value = '';
+    changeNamePasscode.value = '';
+    e.stopPropagation();
+  });
+}
+if (signUpCancelBtn && signUpModal) {
+  signUpCancelBtn.addEventListener('click', () => signUpModal.classList.add('hidden'));
+}
+if (logInCancelBtn && logInModal) {
+  logInCancelBtn.addEventListener('click', () => logInModal.classList.add('hidden'));
+}
+if (changeNameCancelBtn && changeNameModal) {
+  changeNameCancelBtn.addEventListener('click', () => changeNameModal.classList.add('hidden'));
+}
+
+// --- Sign Up Logic ---
+if (signUpSubmitBtn) {
+  signUpSubmitBtn.addEventListener('click', async () => {
+    const name = signUpName.value.trim();
+    const passcode = signUpPasscode.value.trim();
+    signUpError.textContent = '';
+    if (!name || name.length > 20) {
+      signUpError.textContent = 'Name required (max 20 chars).';
+      return;
+    }
+    if (!/^\d{4}$/.test(passcode)) {
+      signUpError.textContent = 'Passcode must be 4 digits.';
+      return;
+    }
+    try {
+      const userData = await signUp(name, passcode, save);
+      localStorage.setItem('buzzyBirdUser', JSON.stringify(userData));
+      // Update local save and persist
+      save = {
+        points: userData.points || 0,
+        highScore: userData.highScore || 0,
+        ownedSkins: userData.ownedSkins || ["default"],
+        equippedSkin: save.equippedSkin || "default"
+      };
+      saveData();
+      signUpModal.classList.add('hidden');
+      updateAuthUI();
+      renderLeaderboard();
+    } catch (err) {
+      signUpError.textContent = err.message || 'Sign up failed.';
+    }
+  });
+}
+// --- Log In Logic ---
+if (logInSubmitBtn) {
+  logInSubmitBtn.addEventListener('click', async () => {
+    const name = logInName.value.trim();
+    const passcode = logInPasscode.value.trim();
+    logInError.textContent = '';
+    if (!name) {
+      logInError.textContent = 'Name required.';
+      return;
+    }
+    if (!/^\d{4}$/.test(passcode)) {
+      logInError.textContent = 'Passcode must be 4 digits.';
+      return;
+    }
+    try {
+      const userData = await logIn(name, passcode, save);
+      localStorage.setItem('buzzyBirdUser', JSON.stringify(userData));
+      // Update local save and persist
+      save = {
+        points: userData.points || 0,
+        highScore: userData.highScore || 0,
+        ownedSkins: userData.ownedSkins || ["default"],
+        equippedSkin: save.equippedSkin || "default"
+      };
+      saveData();
+      logInModal.classList.add('hidden');
+      updateAuthUI();
+      renderLeaderboard();
+    } catch (err) {
+      logInError.textContent = err.message || 'Log in failed.';
+    }
+  });
+}
+// --- Change Name Logic ---
+if (changeNameSubmitBtn) {
+  changeNameSubmitBtn.addEventListener('click', async () => {
+    const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
+    if (!user) {
+      changeNameError.textContent = 'You must be logged in.';
+      return;
+    }
+    const oldName = user.name;
+    const newName = changeNameNew.value.trim();
+    const passcode = changeNamePasscode.value.trim();
+    changeNameError.textContent = '';
+    if (!newName || newName.length > 20) {
+      changeNameError.textContent = 'New name required (max 20 chars).';
+      return;
+    }
+    if (!/^\d{4}$/.test(passcode)) {
+      changeNameError.textContent = 'Passcode must be 4 digits.';
+      return;
+    }
+    try {
+      await changeName(oldName, passcode, newName);
+      // Update localStorage
+      const updatedUser = { ...user, name: newName };
+      localStorage.setItem('buzzyBirdUser', JSON.stringify(updatedUser));
+      changeNameModal.classList.add('hidden');
+      updateAuthUI();
+      renderLeaderboard(); // Refresh leaderboard after name change
+    } catch (err) {
+      changeNameError.textContent = err.message || 'Change name failed.';
+    }
+  });
+}
+// --- Auto-login on page load ---
+window.addEventListener('DOMContentLoaded', () => {
+  updateAuthUI();
+  renderLeaderboard();
+});
+
+// --- Leaderboard Rendering ---
+async function renderLeaderboard() {
+  const leaderboardList = document.getElementById('leaderboardList');
+  if (!leaderboardList) return;
+  leaderboardList.innerHTML = '<div style="color:#aaa;text-align:center;">Loading...</div>';
+  try {
+    const users = await fetchLeaderboard();
+    leaderboardList.innerHTML = '';
+    const currentUser = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
+    users.forEach((user, idx) => {
+      const entry = document.createElement('div');
+      entry.className = 'entry';
+      if (idx === 0) entry.classList.add('gold');
+      else if (idx === 1) entry.classList.add('silver');
+      else if (idx === 2) entry.classList.add('bronze');
+      if (currentUser && user.name === currentUser.name) entry.classList.add('me');
+      entry.innerHTML = `<span style="min-width:2em;display:inline-block;">${idx+1}.</span> <span style="font-weight:bold;">${user.name}</span> <span style="flex:1 1 auto;"></span> <span style="font-family:monospace;">${user.highScore || 0}</span>`;
+      leaderboardList.appendChild(entry);
+    });
+    if (users.length === 0) {
+      leaderboardList.innerHTML = '<div style="color:#aaa;text-align:center;">No scores yet.</div>';
+    }
+  } catch (e) {
+    leaderboardList.innerHTML = '<div style="color:#f66;text-align:center;">Failed to load leaderboard.</div>';
+  }
+}
+
+// Prevent leaderboard clicks from starting the game
+const leaderboardContainer = document.getElementById("leaderboardContainer");
+if (leaderboardContainer) {
+  leaderboardContainer.addEventListener("mousedown", (e) => e.stopPropagation());
+  leaderboardContainer.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: false });
+}
+
