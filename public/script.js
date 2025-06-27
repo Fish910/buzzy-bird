@@ -1031,8 +1031,10 @@ async function updateHighScore(name, newScore) {
 
 async function fetchLeaderboard() {
   const snapshot = await db.ref('users').orderByChild('highScore').once('value');
+  console.log('LEADERBOARD SNAPSHOT:', snapshot.val()); // Debug: see raw data
   const users = [];
   snapshot.forEach(child => users.push(child.val()));
+  console.log('LEADERBOARD USERS ARRAY:', users); // Debug: see processed array
   // Sort descending by highScore
   users.sort((a, b) => (b.highScore || 0) - (a.highScore || 0));
   return users;
@@ -1598,12 +1600,37 @@ const changeNameError = document.getElementById('changeNameError');
 const usernameDisplay = document.createElement('span');
 usernameDisplay.id = 'usernameDisplay';
 usernameDisplay.style.position = 'absolute';
-usernameDisplay.style.right = '24px';
-usernameDisplay.style.bottom = '12px';
+usernameDisplay.style.right = '120px';
+usernameDisplay.style.bottom = '18px';
 usernameDisplay.style.color = '#fff';
 usernameDisplay.style.fontWeight = 'bold';
 usernameDisplay.style.fontSize = '1.1em';
 usernameDisplay.style.pointerEvents = 'none';
+
+// Create logout button
+const logoutBtn = document.createElement('button');
+logoutBtn.id = 'logoutBtn';
+logoutBtn.textContent = 'Log Out';
+logoutBtn.style.position = 'absolute';
+logoutBtn.style.right = '18px';
+logoutBtn.style.bottom = '14px';
+logoutBtn.style.zIndex = '2';
+logoutBtn.style.pointerEvents = 'auto';
+logoutBtn.style.background = '#000';
+logoutBtn.style.color = '#fff';
+logoutBtn.style.border = 'none';
+logoutBtn.style.borderRadius = '8px';
+logoutBtn.style.padding = '8px 18px';
+logoutBtn.style.fontSize = '1em';
+logoutBtn.style.cursor = 'pointer';
+logoutBtn.style.transition = 'background 0.2s';
+logoutBtn.addEventListener('mouseenter', () => logoutBtn.style.background = '#14a625');
+logoutBtn.addEventListener('mouseleave', () => logoutBtn.style.background = '#000');
+logoutBtn.addEventListener('click', () => {
+  localStorage.removeItem('buzzyBirdUser');
+  updateAuthUI();
+  renderLeaderboard();
+});
 
 function showUsername(name) {
   usernameDisplay.textContent = `Signed in as: ${name}`;
@@ -1611,61 +1638,34 @@ function showUsername(name) {
   if (leaderboard && !leaderboard.contains(usernameDisplay)) {
     leaderboard.appendChild(usernameDisplay);
   }
+  if (leaderboard && !leaderboard.contains(logoutBtn)) {
+    leaderboard.appendChild(logoutBtn);
+  }
+  usernameDisplay.style.display = '';
+  logoutBtn.style.display = '';
 }
 function hideUsername() {
   if (usernameDisplay.parentNode) usernameDisplay.parentNode.removeChild(usernameDisplay);
+  if (logoutBtn.parentNode) logoutBtn.parentNode.removeChild(logoutBtn);
 }
 
 function updateAuthUI() {
   const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
   if (user && user.name) {
-    if (signUpBtn) signUpBtn.style.display = 'none';
-    if (logInBtn) logInBtn.style.display = 'none';
-    if (changeNameBtn) changeNameBtn.classList.remove('hidden');
+    // Hide sign up/log in, show change name, show username and logout
+    signUpBtn.style.display = 'none';
+    logInBtn.style.display = 'none';
+    changeNameBtn.style.display = '';
+    changeNameBtn.classList.remove('hidden');
     showUsername(user.name);
   } else {
-    if (signUpBtn) signUpBtn.style.display = '';
-    if (logInBtn) logInBtn.style.display = '';
-    if (changeNameBtn) changeNameBtn.classList.add('hidden');
+    // Show sign up/log in, hide change name, hide username and logout
+    signUpBtn.style.display = '';
+    logInBtn.style.display = '';
+    changeNameBtn.style.display = 'none';
+    changeNameBtn.classList.add('hidden');
     hideUsername();
   }
-}
-
-if (signUpBtn && signUpModal) {
-  signUpBtn.addEventListener('click', (e) => {
-    signUpModal.classList.remove('hidden');
-    signUpError.textContent = '';
-    signUpName.value = '';
-    signUpPasscode.value = '';
-    e.stopPropagation();
-  });
-}
-if (logInBtn && logInModal) {
-  logInBtn.addEventListener('click', (e) => {
-    logInModal.classList.remove('hidden');
-    logInError.textContent = '';
-    logInName.value = '';
-    logInPasscode.value = '';
-    e.stopPropagation();
-  });
-}
-if (changeNameBtn && changeNameModal) {
-  changeNameBtn.addEventListener('click', (e) => {
-    changeNameModal.classList.remove('hidden');
-    changeNameError.textContent = '';
-    changeNameNew.value = '';
-    changeNamePasscode.value = '';
-    e.stopPropagation();
-  });
-}
-if (signUpCancelBtn && signUpModal) {
-  signUpCancelBtn.addEventListener('click', () => signUpModal.classList.add('hidden'));
-}
-if (logInCancelBtn && logInModal) {
-  logInCancelBtn.addEventListener('click', () => logInModal.classList.add('hidden'));
-}
-if (changeNameCancelBtn && changeNameModal) {
-  changeNameCancelBtn.addEventListener('click', () => changeNameModal.classList.add('hidden'));
 }
 
 // --- Sign Up Logic ---
@@ -1807,3 +1807,32 @@ if (leaderboardContainer) {
   leaderboardContainer.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: false });
 }
 
+// Restore the event listeners for the sign up and log in buttons
+if (signUpBtn && signUpModal) {
+  signUpBtn.addEventListener('click', (e) => {
+    signUpModal.classList.remove('hidden');
+    signUpError.textContent = '';
+    signUpName.value = '';
+    signUpPasscode.value = '';
+    e.stopPropagation();
+  });
+}
+if (logInBtn && logInModal) {
+  logInBtn.addEventListener('click', (e) => {
+    logInModal.classList.remove('hidden');
+    logInError.textContent = '';
+    logInName.value = '';
+    logInPasscode.value = '';
+    e.stopPropagation();
+  });
+}
+if (logInCancelBtn && logInModal) {
+  logInCancelBtn.addEventListener('click', () => {
+    logInModal.classList.add('hidden');
+  });
+}
+if (signUpCancelBtn && signUpModal) {
+  signUpCancelBtn.addEventListener('click', () => {
+    signUpModal.classList.add('hidden');
+  });
+}

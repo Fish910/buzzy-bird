@@ -314,7 +314,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 18px;
+  margin-top: 18px; /* Reduced to allow more space for names */
 }
 
 /* Leaderboard list styling */
@@ -324,7 +324,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   background: rgba(0,0,0,0.7);
   border-radius: 10px;
   padding: 12px 6px; /* Increased side padding to prevent outline cutoff */
-  margin-bottom: 8px;
+  margin-bottom: 24px; /* Increased for more space above footer */
   max-height: 320px;
 }
 
@@ -435,4 +435,8 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     padding: 12px 4vw 16px 4vw;
     min-height: 320px;
   }
+}
+
+.hidden {
+  display: none !important;
 }
