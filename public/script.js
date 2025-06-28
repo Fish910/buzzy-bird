@@ -12,7 +12,7 @@ let save;
 
 // --- High Score Sync Tracking ---
 let highScoreSyncInProgress = false;
-window.highScoreSyncInProgress = false;
+window.highScoreSyncInProgress = false;rogress = false;
 
 // Handle exit to menu with high score sync waiting
 async function handleExitToMenu() {
@@ -449,15 +449,17 @@ if (settingsPopup) {
 
 // Note selector boxes
 if (bottomNoteBox) bottomNoteBox.addEventListener("click", (e) => {
-  if (shouldBlockInteraction()) {
+  if (shouldBlockIOSAction()) {
     e.preventDefault();
+    handleBlockedIOSAction();
     return;
   }
   openNoteSlider("bottom");
 });
 if (topNoteBox) topNoteBox.addEventListener("click", (e) => {
-  if (shouldBlockInteraction()) {
+  if (shouldBlockIOSAction()) {
     e.preventDefault();
+    handleBlockedIOSAction();
     return;
   }
   openNoteSlider("top");
@@ -578,109 +580,117 @@ if (bugBtn) {
 }
 
 // --- Dynamic Slider Creation & Event Handlers ---
+// These will be initialized in DOMContentLoaded to ensure DOM elements are available
 
-// Create pipes per break slider popup
-const pipesSliderPopup = document.createElement("div");
-pipesSliderPopup.className = "popup hidden";
-pipesSliderPopup.id = "pipesSliderPopup";
-pipesSliderPopup.innerHTML = `
-  <div class="popup-content">
-    <h3>Pipes per Break</h3>
-    <input type="range" id="pipesSlider" min="3" max="10" value="${pipesPerBreak}" style="width: 220px;">
-    <div id="pipesSliderDisplay" style="margin-top: 12px; font-size: 1.2em;">${pipesPerBreak}</div>
-    <button id="closePipesSliderBtn">OK</button>
-  </div>
-`;
-document.body.appendChild(pipesSliderPopup);
+let pipesSliderPopup, pipesSlider, pipesSliderDisplay, closePipesSliderBtn, pipesPerBreakBox;
+let pipeSpeedSliderPopup, pipeSpeedSlider, pipeSpeedSliderDisplay, closePipeSpeedSliderBtn, pipeSpeedBox;
 
-const pipesSlider = pipesSliderPopup.querySelector("#pipesSlider");
-const pipesSliderDisplay = pipesSliderPopup.querySelector("#pipesSliderDisplay");
-const closePipesSliderBtn = pipesSliderPopup.querySelector("#closePipesSliderBtn");
-const pipesPerBreakBox = document.getElementById("pipesPerBreakBox");
+function initializeSettingsSliders() {
+  // Create pipes per break slider popup
+  pipesSliderPopup = document.createElement("div");
+  pipesSliderPopup.className = "popup hidden";
+  pipesSliderPopup.id = "pipesSliderPopup";
+  pipesSliderPopup.innerHTML = `
+    <div class="popup-content">
+      <h3>Pipes per Break</h3>
+      <input type="range" id="pipesSlider" min="3" max="10" value="${pipesPerBreak}" style="width: 220px;">
+      <div id="pipesSliderDisplay" style="margin-top: 12px; font-size: 1.2em;">${pipesPerBreak}</div>
+      <button id="closePipesSliderBtn">OK</button>
+    </div>
+  `;
+  document.body.appendChild(pipesSliderPopup);
 
-// Pipes per break box and slider events
-if (pipesPerBreakBox) {
-  pipesPerBreakBox.textContent = pipesPerBreak;
-  pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
-  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
+  pipesSlider = pipesSliderPopup.querySelector("#pipesSlider");
+  pipesSliderDisplay = pipesSliderPopup.querySelector("#pipesSliderDisplay");
+  closePipesSliderBtn = pipesSliderPopup.querySelector("#closePipesSliderBtn");
+  pipesPerBreakBox = document.getElementById("pipesPerBreakBox");
 
-  pipesPerBreakBox.addEventListener("click", (e) => {
-    if (shouldBlockInteraction()) {
-      e.preventDefault();
-      return;
-    }
-    pipesSlider.value = pipesPerBreak;
-    pipesSliderDisplay.textContent = pipesPerBreak;
-    pipesSliderPopup.classList.remove("hidden");
-  });
-}
-
-pipesSlider.addEventListener("input", () => {
-  pipesSliderDisplay.textContent = pipesSlider.value;
+  // Pipes per break box and slider events
   if (pipesPerBreakBox) {
-    pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesSlider.value);
-    pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesSlider.value, 3, 10)}`;
+    pipesPerBreakBox.textContent = pipesPerBreak;
+    pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
+    pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
+
+    pipesPerBreakBox.addEventListener("click", (e) => {
+      if (shouldBlockIOSAction()) {
+        e.preventDefault();
+        handleBlockedIOSAction();
+        return;
+      }
+      pipesSlider.value = pipesPerBreak;
+      pipesSliderDisplay.textContent = pipesPerBreak;
+      pipesSliderPopup.classList.remove("hidden");
+    });
   }
-  onAdvancedSettingChanged();
-});
 
-closePipesSliderBtn.addEventListener("click", () => {
-  pipesSliderPopup.classList.add("hidden");
-});
-
-// Create pipe speed slider popup
-const pipeSpeedSliderPopup = document.createElement("div");
-pipeSpeedSliderPopup.className = "popup hidden";
-pipeSpeedSliderPopup.id = "pipeSpeedSliderPopup";
-pipeSpeedSliderPopup.innerHTML = `
-  <div class="popup-content">
-    <h3>Pipe Speed</h3>
-    <input type="range" id="pipeSpeedSlider" min="1" max="100" value="${pipeSpeedSliderValue}" style="width: 220px;">
-    <div id="pipeSpeedSliderDisplay" style="margin-top: 12px; font-size: 1.2em;">${pipeSpeedSliderValue}</div>
-    <button id="closePipeSpeedSliderBtn">OK</button>
-  </div>
-`;
-document.body.appendChild(pipeSpeedSliderPopup);
-
-const pipeSpeedSlider = pipeSpeedSliderPopup.querySelector("#pipeSpeedSlider");
-const pipeSpeedSliderDisplay = pipeSpeedSliderPopup.querySelector("#pipeSpeedSliderDisplay");
-const closePipeSpeedSliderBtn = pipeSpeedSliderPopup.querySelector("#closePipeSpeedSliderBtn");
-const pipeSpeedBox = document.getElementById("pipeSpeedBox");
-
-// Pipe speed box and slider events
-if (pipeSpeedBox) {
-  pipeSpeedBox.textContent = pipeSpeedSliderValue;
-  pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
-  pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
-
-  pipeSpeedBox.addEventListener("click", (e) => {
-    if (shouldBlockInteraction()) {
-      e.preventDefault();
-      return;
+  pipesSlider.addEventListener("input", () => {
+    pipesSliderDisplay.textContent = pipesSlider.value;
+    if (pipesPerBreakBox) {
+      pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesSlider.value);
+      pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesSlider.value, 3, 10)}`;
     }
-    pipeSpeedSlider.value = pipeSpeedSliderValue;
+    onAdvancedSettingChanged();
+  });
+
+  closePipesSliderBtn.addEventListener("click", () => {
+    pipesSliderPopup.classList.add("hidden");
+  });
+
+  // Create pipe speed slider popup
+  pipeSpeedSliderPopup = document.createElement("div");
+  pipeSpeedSliderPopup.className = "popup hidden";
+  pipeSpeedSliderPopup.id = "pipeSpeedSliderPopup";
+  pipeSpeedSliderPopup.innerHTML = `
+    <div class="popup-content">
+      <h3>Pipe Speed</h3>
+      <input type="range" id="pipeSpeedSlider" min="1" max="100" value="${pipeSpeedSliderValue}" style="width: 220px;">
+      <div id="pipeSpeedSliderDisplay" style="margin-top: 12px; font-size: 1.2em;">${pipeSpeedSliderValue}</div>
+      <button id="closePipeSpeedSliderBtn">OK</button>
+    </div>
+  `;
+  document.body.appendChild(pipeSpeedSliderPopup);
+
+  pipeSpeedSlider = pipeSpeedSliderPopup.querySelector("#pipeSpeedSlider");
+  pipeSpeedSliderDisplay = pipeSpeedSliderPopup.querySelector("#pipeSpeedSliderDisplay");
+  closePipeSpeedSliderBtn = pipeSpeedSliderPopup.querySelector("#closePipeSpeedSliderBtn");
+  pipeSpeedBox = document.getElementById("pipeSpeedBox");
+
+  // Pipe speed box and slider events
+  if (pipeSpeedBox) {
+    pipeSpeedBox.textContent = pipeSpeedSliderValue;
+    pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
+    pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
+
+    pipeSpeedBox.addEventListener("click", (e) => {
+      if (shouldBlockIOSAction()) {
+        e.preventDefault();
+        handleBlockedIOSAction();
+        return;
+      }
+      pipeSpeedSlider.value = pipeSpeedSliderValue;
+      pipeSpeedSliderDisplay.textContent = pipeSpeedSlider.value;
+      pipeSpeedSliderPopup.classList.remove("hidden");
+    });
+  }
+
+  pipeSpeedSlider.addEventListener("input", () => {
     pipeSpeedSliderDisplay.textContent = pipeSpeedSlider.value;
-    pipeSpeedSliderPopup.classList.remove("hidden");
+    if (pipeSpeedBox) {
+      pipeSpeedBox.textContent = pipeSpeedSlider.value;
+      pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSlider.value);
+      pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSlider.value, 1, 100)}`;
+    }
+    onAdvancedSettingChanged();
+  });
+
+  closePipeSpeedSliderBtn.addEventListener("click", () => {
+    pipeSpeedSliderPopup.classList.add("hidden");
+  });
+
+  pipeSpeedSliderPopup.addEventListener("mousedown", (e) => {
+    if (e.target === pipeSpeedSliderPopup) pipeSpeedSliderPopup.classList.add("hidden");
   });
 }
-
-pipeSpeedSlider.addEventListener("input", () => {
-  pipeSpeedSliderDisplay.textContent = pipeSpeedSlider.value;
-  if (pipeSpeedBox) {
-    pipeSpeedBox.textContent = pipeSpeedSlider.value;
-    pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSlider.value);
-    pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSlider.value, 1, 100)}`;
-  }
-  onAdvancedSettingChanged();
-});
-
-closePipeSpeedSliderBtn.addEventListener("click", () => {
-  pipeSpeedSliderPopup.classList.add("hidden");
-});
-
-pipeSpeedSliderPopup.addEventListener("mousedown", (e) => {
-  if (e.target === pipeSpeedSliderPopup) pipeSpeedSliderPopup.classList.add("hidden");
-});
 
 // --- Authentication Event Handlers ---
 
@@ -872,6 +882,9 @@ window.addEventListener("DOMContentLoaded", async () => {
   
   // Initialize cosmetics after save is loaded
   updateCosmeticImages();
+  
+  // Initialize settings sliders after DOM is loaded
+  initializeSettingsSliders();
   
   try {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });

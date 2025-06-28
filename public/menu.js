@@ -92,9 +92,9 @@ function onGameOverMenu() {
 function openNoteSlider(target) {
   sliderTarget = target;
   noteSliderPopup.classList.remove("hidden");
-  // Set slider range: C1 (MIDI 24) to C6 (MIDI 84)
+  // Set slider range: C1 (MIDI 24) to C7 (MIDI 96)
   noteSlider.min = 24;
-  noteSlider.max = 84;
+  noteSlider.max = 96;
   if (target === "bottom") {
     noteSlider.value = bottomMidi;
     sliderLabel.textContent = "Select Bottom Note";
@@ -199,17 +199,29 @@ function setDifficulty(idx) {
   pipeSpeed = getPipeSpeedFromSlider(pipeSpeedSliderValue);
 
   // Update UI elements
-  pipesPerBreakBox.textContent = pipesPerBreak;
-  pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
-  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
-  pipesSlider.value = pipesPerBreak;
-  pipesSliderDisplay.textContent = pipesPerBreak;
+  if (pipesPerBreakBox) {
+    pipesPerBreakBox.textContent = pipesPerBreak;
+    pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
+    pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
+  }
+  if (pipesSlider) {
+    pipesSlider.value = pipesPerBreak;
+  }
+  if (pipesSliderDisplay) {
+    pipesSliderDisplay.textContent = pipesPerBreak;
+  }
 
-  pipeSpeedBox.textContent = pipeSpeedSliderValue;
-  pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
-  pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
-  pipeSpeedSlider.value = pipeSpeedSliderValue;
-  pipeSpeedSliderDisplay.textContent = pipeSpeedSliderValue;
+  if (pipeSpeedBox) {
+    pipeSpeedBox.textContent = pipeSpeedSliderValue;
+    pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
+    pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
+  }
+  if (pipeSpeedSlider) {
+    pipeSpeedSlider.value = pipeSpeedSliderValue;
+  }
+  if (pipeSpeedSliderDisplay) {
+    pipeSpeedSliderDisplay.textContent = pipeSpeedSliderValue;
+  }
 
   // Save to localStorage
   localStorage.setItem("buzzyBirdPipesPerBreak", pipesPerBreak);
@@ -222,15 +234,19 @@ function setDifficulty(idx) {
 function onAdvancedSettingChanged() {
   // Update pipesPerBreak and pipeSpeedSliderValue from sliders
   pipesPerBreak = parseInt(pipesSlider.value);
-  pipesPerBreakBox.textContent = pipesPerBreak;
-  pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
-  pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
+  if (pipesPerBreakBox) {
+    pipesPerBreakBox.textContent = pipesPerBreak;
+    pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
+    pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
+  }
 
   pipeSpeedSliderValue = parseInt(pipeSpeedSlider.value);
   pipeSpeed = getPipeSpeedFromSlider(pipeSpeedSliderValue);
-  pipeSpeedBox.textContent = pipeSpeedSliderValue;
-  pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
-  pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
+  if (pipeSpeedBox) {
+    pipeSpeedBox.textContent = pipeSpeedSliderValue;
+    pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
+    pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
+  }
 
   // Save to localStorage
   localStorage.setItem("buzzyBirdPipesPerBreak", pipesPerBreak);

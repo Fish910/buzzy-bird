@@ -54,7 +54,7 @@ let PITCH_MAX = midiToFreq(topMidi);
 
 // Note names for MIDI conversion
 const NOTE_NAMES = [
-  "C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"
+  "C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"
 ];
 
 // --- Image Assets ---
@@ -109,11 +109,11 @@ function midiToNoteName(midi) {
 
 // Convert note name to MIDI number
 function noteNameToMidi(note) {
-  // Accepts e.g. "C3", "F#4", "G♯2"
-  let match = note.match(/^([A-G])([#♯]?)(\d)$/);
+  // Accepts e.g. "C3", "F#4", "Eb2", "Ab5"
+  let match = note.match(/^([A-G])([#b]?)(\d)$/);
   if (!match) return 60; // default C4
-  let [_, n, sharp, oct] = match;
-  let idx = NOTE_NAMES.findIndex(x => x[0] === n && (sharp ? x.includes(sharp) : x.length === 1));
+  let [_, n, accidental, oct] = match;
+  let idx = NOTE_NAMES.findIndex(x => x[0] === n && (accidental ? x.includes(accidental) : x.length === 1));
   return idx + (parseInt(oct) + 1) * 12;
 }
 
