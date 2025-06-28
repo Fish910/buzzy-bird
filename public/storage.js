@@ -97,9 +97,19 @@ function addPoints(amount) {
 }
 
 function setHighScoreIfNeeded(newScore) {
+  console.log('Checking high score:', newScore, 'vs current:', save.highScore);
   if (newScore > save.highScore) {
+    console.log('New high score achieved:', newScore);
     save.highScore = newScore;
     saveData();
+    
+    // Immediately sync to Firebase if user is logged in
+    const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
+    if (user && user.userId) {
+      syncPurchaseToDb().catch(err => {
+        console.log('Failed to sync high score to Firebase:', err);
+      });
+    }
   }
 }
 
@@ -271,15 +281,21 @@ async function syncLoggedInUserFromDb() {
   const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
   if (!user || !user.userId) return; // Need userId to sync
   
+  console.log('Syncing user data from DB...');
+  
   try {
     const userRef = db.ref('users/' + user.userId);
     const snapshot = await userRef.get();
     if (snapshot.exists()) {
       const dbUser = snapshot.val();
-      // Overwrite all local data with DB data
+      
+      // Merge data intelligently - take the maximum values where appropriate
+      const currentLocalData = save || getDefaultSave();
+      console.log('Current local high score:', currentLocalData.highScore, 'DB high score:', dbUser.highScore);
+      
       save = {
-        points: dbUser.points || 0,
-        highScore: dbUser.highScore || 0,
+        points: Math.max(dbUser.points || 0, currentLocalData.points || 0),
+        highScore: Math.max(dbUser.highScore || 0, currentLocalData.highScore || 0),
         ownedSkins: dbUser.ownedSkins || ["default"],
         equippedSkin: dbUser.equippedSkin || "default",
         ownedPipes: dbUser.ownedPipes || ["default"],
@@ -287,13 +303,27 @@ async function syncLoggedInUserFromDb() {
         ownedBackdrops: dbUser.ownedBackdrops || ["default"],
         equippedBackdrop: dbUser.equippedBackdrop || "default"
       };
+      
+      console.log('Merged high score:', save.highScore);
+      
+      // If we merged higher local values, sync them back to the database
+      if (save.points > (dbUser.points || 0) || save.highScore > (dbUser.highScore || 0)) {
+        console.log('Syncing higher local values back to DB');
+        await syncPurchaseToDb();
+      }
+      
       localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
-      localStorage.setItem('buzzyBirdUser', JSON.stringify(dbUser));
+      localStorage.setItem('buzzyBirdUser', JSON.stringify({
+        ...dbUser,
+        points: save.points,
+        highScore: save.highScore
+      }));
       updateMenuInfo && updateMenuInfo();
       renderCosmeticsGrid && renderCosmeticsGrid();
       updateAuthUI && updateAuthUI();
     }
   } catch (e) {
+    console.log('Sync from DB failed:', e);
     // If fetch fails, do nothing (keep local data)
   }
 }

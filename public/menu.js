@@ -24,6 +24,7 @@ function hideLoading() {
 // Show the main menu
 function showMainMenu() {
   hideLoading();
+  console.log('Showing main menu, current high score:', save.highScore);
   updateMenuInfo();
   mainMenu.style.display = "flex";
   running = false;
