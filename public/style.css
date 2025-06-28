@@ -112,6 +112,7 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative; /* Added for close button positioning */
 }
 .popup-content h2 {
   margin-top: 0;
@@ -143,7 +144,7 @@ button {
   justify-content: flex-start; /* Align tabs to the left */
   align-self: flex-start; /* Ensure the tabs container aligns to the left */
   position: absolute; /* Position tabs absolutely */
-  top: -40px; /* Move tabs higher up to poke out more */
+  top: -55px; /* Move tabs higher up to poke out more */
   left: 0; /* Align to left edge */
 }
 
@@ -538,4 +539,46 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 
 .hidden {
   display: none !important;
+}
+
+/* Settings tab content styling */
+.settings-tab-content {
+  min-height: 160px;
+  display: block;
+}
+
+.settings-tab-content.hidden {
+  display: none;
+}
+
+/* X button styling for popups */
+.popup-close-x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 48px;
+  font-weight: bold;
+  color: #666;
+  cursor: pointer;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.15s, color 0.15s;
+  margin: 0;
+  padding: 0;
+}
+
+.popup-close-x:hover {
+  background-color: rgba(0, 0, 0, 0.008);
+  color: #333;
+}
+
+/* Ensure popup content has relative positioning for absolute X button */
+.popup-content {
+  position: relative;
 }

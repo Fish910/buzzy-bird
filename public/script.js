@@ -128,6 +128,70 @@ logoutBtn.style.fontSize = '1em';
 logoutBtn.style.cursor = 'pointer';
 logoutBtn.style.transition = 'background 0.2s';
 
+// --- Settings Tab Management ---
+
+let activeSettingsTab = "pitchRange";
+
+// Switch settings tab
+function switchSettingsTab(tabName) {
+  console.log('switchSettingsTab called with:', tabName);
+  activeSettingsTab = tabName;
+  updateSettingsTabButtons();
+  showSettingsTabContent();
+}
+
+// Update settings tab button appearances
+function updateSettingsTabButtons() {
+  console.log('updateSettingsTabButtons called, activeSettingsTab:', activeSettingsTab);
+  const pitchRangeTab = document.getElementById("pitchRangeTab");
+  const advancedTab = document.getElementById("advancedTab");
+  
+  console.log('Found tabs:', { pitchRangeTab, advancedTab });
+  
+  // Remove active class from all tabs
+  [pitchRangeTab, advancedTab].forEach(tab => {
+    if (tab) tab.classList.remove("active");
+  });
+  
+  // Add active class to current tab
+  switch(activeSettingsTab) {
+    case "pitchRange":
+      if (pitchRangeTab) pitchRangeTab.classList.add("active");
+      console.log('Set pitchRange tab as active');
+      break;
+    case "advanced":
+      if (advancedTab) advancedTab.classList.add("active");
+      console.log('Set advanced tab as active');
+      break;
+  }
+}
+
+// Show the content for the active settings tab
+function showSettingsTabContent() {
+  console.log('showSettingsTabContent called, activeSettingsTab:', activeSettingsTab);
+  const pitchRangeContent = document.getElementById("pitchRangeContent");
+  const advancedContent = document.getElementById("advancedContent");
+  
+  console.log('Found content elements:', { pitchRangeContent, advancedContent });
+  
+  // Hide all content
+  [pitchRangeContent, advancedContent].forEach(content => {
+    if (content) content.classList.add("hidden");
+  });
+  
+  // Show active content
+  switch(activeSettingsTab) {
+    case "pitchRange":
+      if (pitchRangeContent) pitchRangeContent.classList.remove("hidden");
+      console.log('Showing pitchRange content');
+      break;
+    case "advanced":
+      if (advancedContent) advancedContent.classList.remove("hidden");
+      console.log('Showing advanced content');
+      break;
+  }
+}
+
 // --- Initialization & Settings Loading ---
 
 // Load pitch range from localStorage if available
@@ -287,7 +351,13 @@ if (backdropsTab) {
 // Settings popup
 if (settingsBtn) {
   settingsBtn.addEventListener("click", (e) => {
+    // Initialize settings tabs
+    activeSettingsTab = "pitchRange"; // Default to pitch range tab
+    updateSettingsTabButtons();
+    showSettingsTabContent();
+    
     settingsPopup.classList.remove("hidden");
+    
     // Sync sliders to current settings
     if (pipesSlider) {
       pipesSlider.value = pipesPerBreak;
@@ -682,6 +752,8 @@ if (changeNameCancelBtn && changeNameModal) {
   });
 }
 
+
+
 // --- Initialization Functions ---
 
 // Initialize pitch range
@@ -730,3 +802,21 @@ preloadPitchModel();
 
 // Try to draw initial screen
 tryDrawInitial();
+
+// Settings tab buttons
+const pitchRangeTab = document.getElementById("pitchRangeTab");
+const advancedTab = document.getElementById("advancedTab");
+
+if (pitchRangeTab) {
+  pitchRangeTab.addEventListener("click", (e) => {
+    switchSettingsTab("pitchRange");
+    e.stopPropagation();
+  });
+}
+
+if (advancedTab) {
+  advancedTab.addEventListener("click", (e) => {
+    switchSettingsTab("advanced");
+    e.stopPropagation();
+  });
+}

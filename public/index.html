@@ -108,18 +108,19 @@
   <!-- Existing popups and canvas/game elements below -->
   <div id="skinsPopup" class="popup hidden">
     <div class="popup-content cosmetics-popup">
+      <button class="popup-close-x" id="closeSkinsBtn">×</button>
       <div class="cosmetics-tabs">
         <button id="birdsTab" class="cosmetics-tab active">Birds</button>
         <button id="pipesTab" class="cosmetics-tab">Pipes</button>
         <button id="backdropsTab" class="cosmetics-tab">Backdrops</button>
       </div>
       <div id="cosmeticsGrid" class="cosmetics-grid"></div>
-      <button id="closeSkinsBtn">Close</button>
     </div>
   </div>
 
   <div id="howToPopup" class="popup hidden">
     <div class="popup-content">
+      <button class="popup-close-x" id="closeHowToBtn">×</button>
       <h2>How to Play</h2>
       <div id="howToText" style="max-width: 340px; text-align: left;">
         <p>Use your voice or instrument to control the bird's height! The higher the pitch, the higher the bird flies. Avoid the pipes and try to get the highest score possible. Pause by tapping/clicking the screen. To start the game, tap anywhere.</p>
@@ -128,50 +129,56 @@
         <p></p>
         <p>More skins coming soon!</p>
       </div>
-      <button id="closeHowToBtn">Close</button>
     </div>
   </div>
 
   <div id="creditsPopup" class="popup hidden">
     <div class="popup-content">
+      <button class="popup-close-x" id="closeCreditsBtn">×</button>
       <h2>Credits</h2>
-      <div id="creditsText" style="max-width: 340px; text-align: left;">
+      <div id="creditsText" style="max-width: 340px; text-align: left; line-height: 30px;">
         <p>Game by Liam Downing.<br>
-        Powered by ml5.js and the Web Audio API.<br>
-        </p>
+        - Powered by ml5.js and the Web Audio API.<br>
+        - Uses Firebase for backend storage.<br>
+        - Special thanks to Brynn Di Anni and Tyler Caralho for bug testing and feedback.<br>
+      </p>
       </div>
-      <button id="closeCreditsBtn">Close</button>
     </div>
   </div>
 
   <div id="settingsPopup" class="popup hidden">
-    <div class="popup-content">
-      <h2>Settings</h2>
-      <div style="display: flex; flex-direction: column; gap: 18px; align-items: center;">
-        <div style="width:100%; text-align:center; font-weight:bold; color:#14a625; margin: 8px 0 0 0; font-size:1.08em;">
-          Pitch Range:
+    <div class="popup-content cosmetics-popup">
+      <button class="popup-close-x" id="closeSettingsBtn">×</button>
+      <div class="cosmetics-tabs">
+        <button class="cosmetics-tab active" id="pitchRangeTab">Pitch Range</button>
+        <button class="cosmetics-tab" id="advancedTab">Advanced Difficulty</button>
+      </div>
+      <div id="settingsContent" style="margin-top: 20px;">
+        <div id="pitchRangeContent" class="settings-tab-content">
+          <div style="display: flex; flex-direction: column; gap: 18px; align-items: center;">
+            <div class="setting-row">
+              <label for="topNoteBox">Top Note:</label>
+              <div id="topNoteBox" class="note-box">C4</div>
+            </div>
+            <div class="setting-row">
+              <label for="bottomNoteBox">Bottom Note:</label>
+              <div id="bottomNoteBox" class="note-box">C3</div>
+            </div>
+          </div>
         </div>
-        <div class="setting-row">
-          <label for="topNoteBox">Top Note:</label>
-          <div id="topNoteBox" class="note-box">C4</div>
-        </div>
-        <div class="setting-row">
-          <label for="bottomNoteBox">Bottom Note:</label>
-          <div id="bottomNoteBox" class="note-box">C3</div>
-        </div>
-        <div style="width:100%; text-align:center; font-weight:bold; color:#14a625; margin: 8px 0 0 0; font-size:1.08em;">
-          Advanced difficulty settings:
-        </div>
-        <div class="setting-row">
-          <label for="pipesPerBreakBox">Pipes per break:</label>
-          <div id="pipesPerBreakBox" class="note-box">5</div>
-        </div>
-        <div class="setting-row">
-          <label for="pipeSpeedBox">Pipe speed:</label>
-          <div id="pipeSpeedBox" class="note-box">50</div>
+        <div id="advancedContent" class="settings-tab-content hidden">
+          <div style="display: flex; flex-direction: column; gap: 18px; align-items: center;">
+            <div class="setting-row">
+              <label for="pipesPerBreakBox">Pipes per break:</label>
+              <div id="pipesPerBreakBox" class="note-box">5</div>
+            </div>
+            <div class="setting-row">
+              <label for="pipeSpeedBox">Pipe speed:</label>
+              <div id="pipeSpeedBox" class="note-box">50</div>
+            </div>
+          </div>
         </div>
       </div>
-      <button id="closeSettingsBtn">Close</button>
     </div>
   </div>
 

@@ -337,3 +337,5 @@ async function renderLeaderboard() {
     leaderboardList.innerHTML = '<div style="color:#f66;text-align:center;">Failed to load leaderboard.</div>';
   }
 }
+
+

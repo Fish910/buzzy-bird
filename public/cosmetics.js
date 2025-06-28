@@ -165,7 +165,13 @@ function updateBackdropImage() {
 
 // Update the main menu background to match the equipped backdrop
 function updateMainMenuBackground() {
-  console.log('updateMainMenuBackground called - applying backdrop to body');
+  console.log('updateMainMenuBackground called - applying backdrop to body with canvas overlay');
+  
+  // Remove any existing overlay
+  const existingOverlay = document.getElementById("canvasOverlay");
+  if (existingOverlay) {
+    existingOverlay.remove();
+  }
   
   if (!save) return;
   const backdrop = getCosmetic("backdrops", save.equippedBackdrop || "default");
@@ -178,7 +184,32 @@ function updateMainMenuBackground() {
   document.body.style.backgroundRepeat = 'no-repeat';
   document.body.style.backgroundAttachment = 'fixed';
   
-  console.log('Applied backdrop to body:', backdrop.img);
+  // Create overlay that covers everything except the canvas area
+  const overlay = document.createElement("div");
+  overlay.id = "canvasOverlay";
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.width = "100vw";
+  overlay.style.height = "100vh";
+  overlay.style.zIndex = "5"; // Below menu (z-index 10) but above backdrop
+  overlay.style.pointerEvents = "none";
+  overlay.style.background = "rgba(255, 255, 255, 0.48)";
+  
+  // Create a cutout for the canvas area using clip-path
+  if (window.innerWidth > window.innerHeight) {
+    // Landscape: canvas is 480px wide, centered
+    const canvasLeft = (window.innerWidth - 480) / 2;
+    const canvasRight = canvasLeft + 480;
+    overlay.style.clipPath = `polygon(0 0, ${canvasLeft}px 0, ${canvasLeft}px 100%, 0 100%, 0 0, ${canvasRight}px 0, ${canvasRight}px 100%, 100% 100%, 100% 0)`;
+  } else {
+    // Portrait: canvas fills entire screen, so no overlay needed
+    overlay.style.display = "none";
+  }
+  
+  document.body.appendChild(overlay);
+  
+  console.log('Applied backdrop to body with canvas overlay:', backdrop.img);
 }
 
 // Clear the main menu background when starting the game
@@ -192,7 +223,13 @@ function clearMainMenuBackground() {
   document.body.style.backgroundRepeat = '';
   document.body.style.backgroundAttachment = '';
   
-  console.log('Backdrop cleared from body');
+  // Remove canvas overlay
+  const existingOverlay = document.getElementById("canvasOverlay");
+  if (existingOverlay) {
+    existingOverlay.remove();
+  }
+  
+  console.log('Backdrop and overlay cleared from body');
 }
 
 // --- Cosmetics Popup Management ---
@@ -319,3 +356,23 @@ function renderCosmeticsGrid() {
 function renderSkinsGrid() {
   renderCosmeticsGrid();
 }
+
+// Handle window resize to update canvas overlay
+function handleCanvasOverlayResize() {
+  const overlay = document.getElementById("canvasOverlay");
+  if (!overlay) return;
+  
+  if (window.innerWidth > window.innerHeight) {
+    // Landscape: canvas is 480px wide, centered
+    const canvasLeft = (window.innerWidth - 480) / 2;
+    const canvasRight = canvasLeft + 480;
+    overlay.style.clipPath = `polygon(0 0, ${canvasLeft}px 0, ${canvasLeft}px 100%, 0 100%, 0 0, ${canvasRight}px 0, ${canvasRight}px 100%, 100% 100%, 100% 0)`;
+    overlay.style.display = "block";
+  } else {
+    // Portrait: canvas fills entire screen, so no overlay needed
+    overlay.style.display = "none";
+  }
+}
+
+// Add window resize listener for canvas overlay
+window.addEventListener('resize', handleCanvasOverlayResize);
