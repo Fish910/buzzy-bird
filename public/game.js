@@ -308,23 +308,43 @@ async function ensureAudioContext() {
 
 // --- Canvas Rendering ---
 
-// Responsive canvas sizing
+// Responsive canvas sizing with performance optimization
 function resizeCanvas() {
+  // Calculate optimal pixel ratio for performance (cap at 2x, reduce to 75% for pixelated games)
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2) * 0.75;
+  
+  let displayWidth, displayHeight;
+  
   if (window.innerWidth > window.innerHeight) {
     // Landscape: fixed width, full height, horizontally centered
-    canvas.height = window.innerHeight;
-    canvas.width = 480;
-    canvas.style.left = `${(window.innerWidth - canvas.width) / 2}px`;
+    displayHeight = window.innerHeight;
+    displayWidth = 480;
+    canvas.style.left = `${(window.innerWidth - displayWidth) / 2}px`;
     canvas.style.top = `0px`;
     canvas.style.position = 'absolute';
   } else {
     // Portrait: fill the screen
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    displayWidth = window.innerWidth;
+    displayHeight = window.innerHeight;
     canvas.style.left = `0px`;
     canvas.style.top = `0px`;
     canvas.style.position = 'absolute';
   }
+  
+  // Set CSS display size
+  canvas.style.width = displayWidth + 'px';
+  canvas.style.height = displayHeight + 'px';
+  
+  // Set actual canvas resolution (lower for better performance)
+  canvas.width = Math.floor(displayWidth * pixelRatio);
+  canvas.height = Math.floor(displayHeight * pixelRatio);
+  
+  // Scale the drawing context to match the device pixel ratio
+  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  
+  // Ensure pixelated rendering for better performance
+  ctx.imageSmoothingEnabled = false;
+  
   // Only redraw if not running (so splash/buttons show up)
   if (!running) draw();
 }
@@ -445,7 +465,7 @@ function draw() {
 
   if (animationFrameId) animationFrameId = null;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+  drawBackdrop();
 
   if (!running) return;
 
@@ -756,4 +776,26 @@ function fullRefresh() {
 
   // Show main menu or splash
   showMainMenu();
+}
+
+// Draw backdrop with width-based scaling and center cropping
+function drawBackdrop() {
+  if (bgImg && bgImg.complete) {
+    const imgAspect = bgImg.naturalWidth / bgImg.naturalHeight;
+    const canvasAspect = canvas.width / canvas.height;
+    
+    let drawWidth, drawHeight, offsetX, offsetY;
+    
+    // Scale based on width (fit width, allow height clipping)
+    drawWidth = canvas.width;
+    drawHeight = drawWidth / imgAspect;
+    offsetX = 0;
+    offsetY = (canvas.height - drawHeight) / 2; // Center vertically
+    
+    ctx.drawImage(bgImg, offsetX, offsetY, drawWidth, drawHeight);
+  } else {
+    // Fallback if image isn't loaded
+    ctx.fillStyle = "#e0f7fa";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
 }
