@@ -46,6 +46,11 @@ function showMainMenu() {
 // Hide the main menu
 function hideMainMenu() {
   mainMenu.style.display = "none";
+  
+  // Clear the main menu backdrop when starting the game
+  if (typeof clearMainMenuBackground === 'function') {
+    clearMainMenuBackground();
+  }
 }
 
 // Update points and high score display in menu
