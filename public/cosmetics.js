@@ -165,30 +165,59 @@ function updateBackdropImage() {
 
 // Update the main menu background to match the equipped backdrop
 function updateMainMenuBackground() {
-  // Clear any backdrop backgrounds that were previously applied to prevent backdrop from covering whole page
+  // Clear any CSS backdrop backgrounds that were previously applied
   const mainMenu = document.getElementById("mainMenu");
   if (mainMenu) {
-    console.log('Clearing main menu backdrop to prevent full-page coverage - v2');
-    // Force clear all possible background properties
     mainMenu.style.backgroundImage = 'none';
-    mainMenu.style.backgroundSize = 'auto';
-    mainMenu.style.backgroundPosition = 'initial';
-    mainMenu.style.backgroundRepeat = 'repeat';
-    mainMenu.style.backgroundColor = '#e0f7fa'; // Set solid background to override any backdrop
-    mainMenu.style.backgroundBlendMode = 'normal';
-    mainMenu.style.background = '#e0f7fa'; // Force override any shorthand background
-    
-    // Also clear any potential cached styles
-    mainMenu.removeAttribute('style');
     mainMenu.style.background = '#e0f7fa';
   }
   
-  // Also clear body background in case backdrop was applied there
-  document.body.style.backgroundImage = 'none';
-  document.body.style.background = '#232323';
+  // Remove any existing backdrop canvas
+  const existingBackdropCanvas = document.getElementById("backdropCanvas");
+  if (existingBackdropCanvas) {
+    existingBackdropCanvas.remove();
+  }
   
-  console.log('Main menu and body backdrop clearing complete');
-  // Backdrops should only be visible in the game canvas during gameplay, not as a CSS background on the menu
+  if (!save) return;
+  const backdrop = getCosmetic("backdrops", save.equippedBackdrop || "default");
+  if (!backdrop || !backdrop.img) return;
+  
+  // Create a backdrop canvas that uses the same sizing logic as the game canvas
+  const backdropCanvas = document.createElement("canvas");
+  backdropCanvas.id = "backdropCanvas";
+  backdropCanvas.style.position = "absolute";
+  backdropCanvas.style.left = "0";
+  backdropCanvas.style.top = "0";
+  backdropCanvas.style.zIndex = "-1"; // Behind menu content
+  backdropCanvas.style.pointerEvents = "none";
+  
+  // Apply the same sizing logic as the game canvas
+  if (window.innerWidth > window.innerHeight) {
+    // Landscape: fixed width, full height, horizontally centered
+    backdropCanvas.height = window.innerHeight;
+    backdropCanvas.width = 480;
+    backdropCanvas.style.left = `${(window.innerWidth - backdropCanvas.width) / 2}px`;
+    backdropCanvas.style.top = `0px`;
+  } else {
+    // Portrait: fill the screen
+    backdropCanvas.width = window.innerWidth;
+    backdropCanvas.height = window.innerHeight;
+    backdropCanvas.style.left = `0px`;
+    backdropCanvas.style.top = `0px`;
+  }
+  
+  // Draw the backdrop image on the canvas (same as game logic)
+  const ctx = backdropCanvas.getContext("2d");
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0, backdropCanvas.width, backdropCanvas.height);
+  };
+  img.src = backdrop.img;
+  
+  // Add the backdrop canvas to the main menu
+  mainMenu.appendChild(backdropCanvas);
+  
+  console.log('Main menu backdrop canvas created with game canvas sizing logic');
 }
 
 // --- Cosmetics Popup Management ---
