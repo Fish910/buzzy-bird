@@ -168,14 +168,26 @@ function updateMainMenuBackground() {
   // Clear any backdrop backgrounds that were previously applied to prevent backdrop from covering whole page
   const mainMenu = document.getElementById("mainMenu");
   if (mainMenu) {
-    console.log('Clearing main menu backdrop to prevent full-page coverage');
-    mainMenu.style.backgroundImage = '';
-    mainMenu.style.backgroundSize = '';
-    mainMenu.style.backgroundPosition = '';
-    mainMenu.style.backgroundRepeat = '';
-    mainMenu.style.backgroundColor = '';
-    mainMenu.style.backgroundBlendMode = '';
+    console.log('Clearing main menu backdrop to prevent full-page coverage - v2');
+    // Force clear all possible background properties
+    mainMenu.style.backgroundImage = 'none';
+    mainMenu.style.backgroundSize = 'auto';
+    mainMenu.style.backgroundPosition = 'initial';
+    mainMenu.style.backgroundRepeat = 'repeat';
+    mainMenu.style.backgroundColor = '#e0f7fa'; // Set solid background to override any backdrop
+    mainMenu.style.backgroundBlendMode = 'normal';
+    mainMenu.style.background = '#e0f7fa'; // Force override any shorthand background
+    
+    // Also clear any potential cached styles
+    mainMenu.removeAttribute('style');
+    mainMenu.style.background = '#e0f7fa';
   }
+  
+  // Also clear body background in case backdrop was applied there
+  document.body.style.backgroundImage = 'none';
+  document.body.style.background = '#232323';
+  
+  console.log('Main menu and body backdrop clearing complete');
   // Backdrops should only be visible in the game canvas during gameplay, not as a CSS background on the menu
 }
 
