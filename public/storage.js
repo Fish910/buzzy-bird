@@ -108,14 +108,23 @@ function setHighScoreIfNeeded(newScore) {
     const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
     if (user && user.userId) {
       console.log('Syncing new high score to Firebase:', oldHighScore, '->', newScore);
+      
+      // Use a promise to ensure sync completes
       syncUserDataToDb().then(() => {
+        console.log('High score sync completed successfully');
         // Refresh the leaderboard after syncing
-        console.log('High score synced to Firebase, refreshing leaderboard');
+        if (typeof renderLeaderboard === 'function') {
+          setTimeout(() => {
+            console.log('Refreshing leaderboard after high score sync');
+            renderLeaderboard();
+          }, 500); // Small delay to ensure Firebase propagation
+        }
+      }).catch(err => {
+        console.error('Failed to sync high score to Firebase:', err);
+        // Even if sync fails, try to refresh leaderboard with local data
         if (typeof renderLeaderboard === 'function') {
           renderLeaderboard();
         }
-      }).catch(err => {
-        console.log('Failed to sync high score to Firebase:', err);
       });
     } else {
       console.log('User not logged in, high score saved locally only');
@@ -303,9 +312,13 @@ async function syncLoggedInUserFromDb() {
       const currentLocalData = save || getDefaultSave();
       console.log('Current local high score:', currentLocalData.highScore, 'DB high score:', dbUser.highScore);
       
+      // Only update high score if DB version is higher (prevent overwriting recent achievements)
+      const finalHighScore = Math.max(dbUser.highScore || 0, currentLocalData.highScore || 0);
+      console.log('Final merged high score:', finalHighScore);
+      
       save = {
         points: Math.max(dbUser.points || 0, currentLocalData.points || 0),
-        highScore: Math.max(dbUser.highScore || 0, currentLocalData.highScore || 0),
+        highScore: finalHighScore,
         ownedSkins: dbUser.ownedSkins || ["default"],
         equippedSkin: dbUser.equippedSkin || "default",
         ownedPipes: dbUser.ownedPipes || ["default"],
@@ -361,7 +374,7 @@ async function syncUserDataToDb() {
     if (!cleanOwnedBackdrops.includes("default")) cleanOwnedBackdrops.unshift("default");
     
     const userRef = db.ref('users/' + user.userId);
-    await userRef.update({
+    const updateData = {
       points: save.points || 0,
       highScore: save.highScore || 0,
       ownedSkins: cleanOwnedSkins,
@@ -370,7 +383,15 @@ async function syncUserDataToDb() {
       equippedPipe: save.equippedPipe || "default",
       ownedBackdrops: cleanOwnedBackdrops,
       equippedBackdrop: save.equippedBackdrop || "default"
-    });
+    };
+    
+    console.log('Updating Firebase with:', updateData);
+    await userRef.update(updateData);
+    
+    // Verify the update was successful by reading it back
+    const verifySnapshot = await userRef.once('value');
+    const verifiedData = verifySnapshot.val();
+    console.log('Firebase verification - saved high score:', verifiedData.highScore);
     
     console.log('Successfully synced to Firebase');
     
