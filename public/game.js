@@ -110,11 +110,26 @@ function midiToNoteName(midi) {
 // Convert note name to MIDI number
 function noteNameToMidi(note) {
   // Accepts e.g. "C3", "Db4", "A♭2"
+  console.log("noteNameToMidi called with:", note);
   let match = note.match(/^([A-G])([b♭]?)(\d)$/);
-  if (!match) return 60; // default C4
+  console.log("Regex match result:", match);
+  if (!match) {
+    console.log("No match found, returning default C4 (60)");
+    return 60; // default C4
+  }
   let [_, n, flat, oct] = match;
-  let idx = NOTE_NAMES.findIndex(x => x[0] === n && (flat ? x.includes(flat) || x.includes('♭') : x.length === 1));
-  return idx + (parseInt(oct) + 1) * 12;
+  console.log("Parsed note parts:", { n, flat, oct });
+  
+  let idx = NOTE_NAMES.findIndex(x => {
+    const matches = x[0] === n && (flat ? (x.includes(flat) || x.includes('♭')) : x.length === 1);
+    console.log(`Checking ${x} against ${n}${flat}: ${matches}`);
+    return matches;
+  });
+  
+  console.log("Found index:", idx, "for note:", NOTE_NAMES[idx]);
+  const result = idx + (parseInt(oct) + 1) * 12;
+  console.log("Final MIDI result:", result);
+  return result;
 }
 
 // --- Game Physics & Logic ---

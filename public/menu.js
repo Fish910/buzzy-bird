@@ -90,6 +90,7 @@ function onGameOverMenu() {
 
 // Open note slider for pitch range selection
 function openNoteSlider(target) {
+  console.log("openNoteSlider called with target:", target);
   sliderTarget = target;
   noteSliderPopup.classList.remove("hidden");
   // Set slider range: C1 (MIDI 24) to C6 (MIDI 84)
@@ -103,6 +104,7 @@ function openNoteSlider(target) {
     sliderLabel.textContent = "Select Top Note";
   }
   sliderNoteDisplay.textContent = midiToNoteName(Number(noteSlider.value));
+  console.log("Note slider opened successfully");
 }
 
 // --- Difficulty System ---

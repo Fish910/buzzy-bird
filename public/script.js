@@ -448,18 +448,28 @@ if (settingsPopup) {
 }
 
 // Note selector boxes
+console.log("Setting up note box event listeners...");
+console.log("bottomNoteBox element:", bottomNoteBox);
+console.log("topNoteBox element:", topNoteBox);
+
 if (bottomNoteBox) bottomNoteBox.addEventListener("click", (e) => {
+  console.log("Bottom note box clicked");
   if (shouldBlockIOSAction()) {
+    console.log("iOS action blocked");
     handleBlockedIOSAction();
     return;
   }
+  console.log("Calling openNoteSlider('bottom')");
   openNoteSlider("bottom");
 });
 if (topNoteBox) topNoteBox.addEventListener("click", (e) => {
+  console.log("Top note box clicked");
   if (shouldBlockIOSAction()) {
+    console.log("iOS action blocked");
     handleBlockedIOSAction();
     return;
   }
+  console.log("Calling openNoteSlider('top')");
   openNoteSlider("top");
 });
 
