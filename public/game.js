@@ -310,6 +310,11 @@ async function ensureAudioContext() {
 
 // Responsive canvas sizing
 function resizeCanvas() {
+  // Check iOS orientation first
+  if (!checkIOSOrientation()) {
+    return; // Exit early if iOS device is in landscape
+  }
+  
   if (window.innerWidth > window.innerHeight) {
     // Landscape: fixed width, full height, horizontally centered
     canvas.height = window.innerHeight;
@@ -413,6 +418,78 @@ function exitButtonClicked(x, y) {
   const btnX = canvas.width - btnSize - padding;
   const btnY = padding;
   return x >= btnX && x <= btnX + btnSize && y >= btnY && y <= btnY + btnSize;
+}
+
+// --- iOS Portrait Mode Enforcement --
+
+// Detect iOS devices
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+// Create and show iOS landscape warning overlay
+function showIOSLandscapeWarning() {
+  // Remove existing overlay if present
+  const existingOverlay = document.getElementById('iosLandscapeOverlay');
+  if (existingOverlay) {
+    existingOverlay.remove();
+  }
+  
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'iosLandscapeOverlay';
+  overlay.style.position = 'fixed';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.width = '100vw';
+  overlay.style.height = '100vh';
+  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+  overlay.style.zIndex = '9999';
+  overlay.style.display = 'flex';
+  overlay.style.flexDirection = 'column';
+  overlay.style.justifyContent = 'center';
+  overlay.style.alignItems = 'center';
+  overlay.style.color = 'white';
+  overlay.style.fontFamily = 'Comic Neue, sans-serif';
+  overlay.style.textAlign = 'center';
+  overlay.style.padding = '20px';
+  
+  // Add rotation icon and text
+  overlay.innerHTML = `
+    <div style="font-size: 4em; margin-bottom: 20px;">📱</div>
+    <h1 style="font-size: 2em; margin-bottom: 20px;">Rotate Your Device</h1>
+    <p style="font-size: 1.2em; line-height: 1.5;">
+      Please rotate your device to portrait mode<br>
+      to play Pitch Bird on iOS devices.
+    </p>
+  `;
+  
+  document.body.appendChild(overlay);
+}
+
+// Hide iOS landscape warning overlay
+function hideIOSLandscapeWarning() {
+  const overlay = document.getElementById('iosLandscapeOverlay');
+  if (overlay) {
+    overlay.remove();
+  }
+}
+
+// Check if iOS device is in landscape and show/hide warning
+function checkIOSOrientation() {
+  if (isIOSDevice()) {
+    if (window.innerWidth > window.innerHeight) {
+      // iOS device in landscape - show warning
+      showIOSLandscapeWarning();
+      return false; // Block normal functionality
+    } else {
+      // iOS device in portrait - hide warning
+      hideIOSLandscapeWarning();
+      return true; // Allow normal functionality
+    }
+  }
+  return true; // Non-iOS device - allow normal functionality
 }
 
 // --- Main Draw Function ---

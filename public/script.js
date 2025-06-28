@@ -226,22 +226,71 @@ if (topNoteBox) topNoteBox.textContent = midiToNoteName(topMidi);
 
 // --- Event Listeners ---
 
+// Store initial screen dimensions and orientation for change detection
+let initialScreenWidth = window.screen.width;
+let initialScreenHeight = window.screen.height;
+let initialOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+
+// Function to detect significant screen/orientation changes
+function detectScreenChange() {
+  const currentOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+  const orientationChanged = currentOrientation !== initialOrientation;
+  const resolutionChanged = window.screen.width !== initialScreenWidth || window.screen.height !== initialScreenHeight;
+  
+  if (orientationChanged || resolutionChanged) {
+    console.log('Screen change detected, refreshing page...');
+    // Small delay to ensure the change is complete
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+  }
+}
+
 // Window resize events
 window.addEventListener('resize', () => {
+  detectScreenChange();
   resizeCanvas();
   // Also update main menu backdrop sizing when window is resized
   if (typeof updateMainMenuBackground === 'function') {
     updateMainMenuBackground();
   }
 });
+
 window.addEventListener('orientationchange', () => {
-  resizeCanvas();
-  // Also update main menu backdrop sizing on orientation change
-  if (typeof updateMainMenuBackground === 'function') {
-    updateMainMenuBackground();
-  }
+  detectScreenChange();
+  // Small delay for orientation change to complete
+  setTimeout(() => {
+    resizeCanvas();
+    // Also update main menu backdrop sizing on orientation change
+    if (typeof updateMainMenuBackground === 'function') {
+      updateMainMenuBackground();
+    }
+  }, 100);
 });
+
+// Add additional screen change detection for more comprehensive coverage
+if (screen && screen.orientation) {
+  screen.orientation.addEventListener('change', () => {
+    detectScreenChange();
+  });
+}
+
+// Also listen for fullscreen changes which can affect screen dimensions
+document.addEventListener('fullscreenchange', () => {
+  setTimeout(detectScreenChange, 100);
+});
+
+// Monitor for window focus events that might indicate a screen change
+window.addEventListener('focus', () => {
+  setTimeout(detectScreenChange, 200);
+});
+
 resizeCanvas();
+
+// Check iOS orientation on initial load
+if (typeof checkIOSOrientation === 'function') {
+  checkIOSOrientation();
+}
 
 // Main menu click/touch to start game
 mainMenu.addEventListener("mousedown", startGameFromMenu);
@@ -311,6 +360,12 @@ canvas.addEventListener("mousedown", function(e) {
 // Skins popup
 if (skinsBtn) {
   skinsBtn.addEventListener("click", (e) => {
+    // Check if iOS device is in landscape mode
+    if (shouldBlockIOSAction()) {
+      handleBlockedIOSAction();
+      return;
+    }
+    
     showSkinsPopup();
     e.stopPropagation();
   });
@@ -351,6 +406,12 @@ if (backdropsTab) {
 // Settings popup
 if (settingsBtn) {
   settingsBtn.addEventListener("click", (e) => {
+    // Check if iOS device is in landscape mode
+    if (shouldBlockIOSAction()) {
+      handleBlockedIOSAction();
+      return;
+    }
+    
     // Initialize settings tabs
     activeSettingsTab = "pitchRange"; // Default to pitch range tab
     updateSettingsTabButtons();
@@ -387,8 +448,20 @@ if (settingsPopup) {
 }
 
 // Note selector boxes
-if (bottomNoteBox) bottomNoteBox.addEventListener("click", () => openNoteSlider("bottom"));
-if (topNoteBox) topNoteBox.addEventListener("click", () => openNoteSlider("top"));
+if (bottomNoteBox) bottomNoteBox.addEventListener("click", (e) => {
+  if (shouldBlockInteraction()) {
+    e.preventDefault();
+    return;
+  }
+  openNoteSlider("bottom");
+});
+if (topNoteBox) topNoteBox.addEventListener("click", (e) => {
+  if (shouldBlockInteraction()) {
+    e.preventDefault();
+    return;
+  }
+  openNoteSlider("top");
+});
 
 // Note slider
 if (noteSlider) {
@@ -431,6 +504,12 @@ if (noteSliderPopup) {
 // How to play popup
 if (howToBtn) {
   howToBtn.addEventListener("click", (e) => {
+    // Check if iOS device is in landscape mode
+    if (shouldBlockIOSAction()) {
+      handleBlockedIOSAction();
+      return;
+    }
+    
     howToPopup.classList.remove("hidden");
     e.stopPropagation();
   });
@@ -449,6 +528,12 @@ if (howToPopup) {
 // Credits popup
 if (creditsBtn) {
   creditsBtn.addEventListener("click", (e) => {
+    // Check if iOS device is in landscape mode
+    if (shouldBlockIOSAction()) {
+      handleBlockedIOSAction();
+      return;
+    }
+    
     creditsPopup.classList.remove("hidden");
     e.stopPropagation();
   });
@@ -466,7 +551,11 @@ if (creditsPopup) {
 
 // Difficulty button
 if (difficultyBtn) {
-  difficultyBtn.addEventListener("click", () => {
+  difficultyBtn.addEventListener("click", (e) => {
+    if (shouldBlockInteraction()) {
+      e.preventDefault();
+      return;
+    }
     let idx;
     if (isCustom) {
       idx = 0; // Snap to Easy if currently custom
@@ -479,7 +568,11 @@ if (difficultyBtn) {
 
 // Bug report button
 if (bugBtn) {
-  bugBtn.addEventListener("click", () => {
+  bugBtn.addEventListener("click", (e) => {
+    if (shouldBlockInteraction()) {
+      e.preventDefault();
+      return;
+    }
     window.open("https://docs.google.com/forms/d/e/1FAIpQLScwbnly5GXgHmD5vIp9LcuWeZexq_y9r00n8ozvSEInXcCyQA/viewform?usp=dialog", "_blank");
   });
 }
@@ -511,7 +604,11 @@ if (pipesPerBreakBox) {
   pipesPerBreakBox.style.background = getPipesPerBreakGradient(pipesPerBreak);
   pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
 
-  pipesPerBreakBox.addEventListener("click", () => {
+  pipesPerBreakBox.addEventListener("click", (e) => {
+    if (shouldBlockInteraction()) {
+      e.preventDefault();
+      return;
+    }
     pipesSlider.value = pipesPerBreak;
     pipesSliderDisplay.textContent = pipesPerBreak;
     pipesSliderPopup.classList.remove("hidden");
@@ -556,7 +653,11 @@ if (pipeSpeedBox) {
   pipeSpeedBox.style.background = getPipeSpeedGradient(pipeSpeedSliderValue);
   pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
 
-  pipeSpeedBox.addEventListener("click", () => {
+  pipeSpeedBox.addEventListener("click", (e) => {
+    if (shouldBlockInteraction()) {
+      e.preventDefault();
+      return;
+    }
     pipeSpeedSlider.value = pipeSpeedSliderValue;
     pipeSpeedSliderDisplay.textContent = pipeSpeedSlider.value;
     pipeSpeedSliderPopup.classList.remove("hidden");
@@ -819,4 +920,16 @@ if (advancedTab) {
     switchSettingsTab("advanced");
     e.stopPropagation();
   });
+}
+
+// Helper function to check if iOS actions should be blocked
+function shouldBlockIOSAction() {
+  return typeof isIOSDevice === 'function' && isIOSDevice() && window.innerWidth > window.innerHeight;
+}
+
+// Helper function to handle blocked iOS actions
+function handleBlockedIOSAction() {
+  if (typeof showIOSLandscapeWarning === 'function') {
+    showIOSLandscapeWarning();
+  }
 }

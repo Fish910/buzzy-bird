@@ -62,6 +62,16 @@ function updateMenuInfo() {
 // Start game from menu (on tap/click)
 async function startGameFromMenu(e) {
   if (e.target.closest("button")) return; // Ignore if clicking a button
+  
+  // Check if iOS device is in landscape mode
+  if (typeof isIOSDevice === 'function' && isIOSDevice() && window.innerWidth > window.innerHeight) {
+    // Show the iOS orientation warning instead of starting game
+    if (typeof showIOSLandscapeWarning === 'function') {
+      showIOSLandscapeWarning();
+    }
+    return;
+  }
+  
   hideMainMenu();
   resetGame();
   running = true;
