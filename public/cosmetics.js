@@ -159,20 +159,26 @@ function updateBackdropImage() {
   const backdrop = getCosmetic("backdrops", save.equippedBackdrop || "default");
   bgImg.src = backdrop.img;
   
-  // Backdrop will only be visible in the game canvas, not as a CSS background
+  // Also update the main menu background immediately
+  updateMainMenuBackground();
 }
 
 // Update the main menu background to match the equipped backdrop
 function updateMainMenuBackground() {
-  // Clear any backdrop backgrounds that were previously applied
+  if (!save) return; // Wait for save to be loaded
+  const backdrop = getCosmetic("backdrops", save.equippedBackdrop || "default");
   const mainMenu = document.getElementById("mainMenu");
-  if (mainMenu) {
-    mainMenu.style.backgroundImage = '';
-    mainMenu.style.backgroundSize = '';
-    mainMenu.style.backgroundPosition = '';
-    mainMenu.style.backgroundRepeat = '';
-    mainMenu.style.backgroundColor = '';
-    mainMenu.style.backgroundBlendMode = '';
+  
+  if (mainMenu && backdrop && backdrop.img) {
+    // Set the backdrop image as the background of the main menu
+    mainMenu.style.backgroundImage = `url(${backdrop.img})`;
+    mainMenu.style.backgroundSize = 'cover';
+    mainMenu.style.backgroundPosition = 'center';
+    mainMenu.style.backgroundRepeat = 'no-repeat';
+    
+    // Keep the overlay for readability
+    mainMenu.style.backgroundColor = 'rgba(240, 248, 255, 0.128)';
+    mainMenu.style.backgroundBlendMode = 'overlay';
   }
 }
 
