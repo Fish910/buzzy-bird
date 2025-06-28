@@ -109,11 +109,11 @@ function midiToNoteName(midi) {
 
 // Convert note name to MIDI number
 function noteNameToMidi(note) {
-  // Accepts e.g. "C3", "Db4", "A♭2"
+  // Accepts e.g. "C3", "Gb4", "A♭2"
   let match = note.match(/^([A-G])([b♭]?)(\d)$/);
   if (!match) return 60; // default C4
   let [_, n, flat, oct] = match;
-  let idx = NOTE_NAMES.findIndex(x => x[0] === n && (flat ? x.includes(flat) || x.includes('♭') : x.length === 1));
+  let idx = NOTE_NAMES.findIndex(x => x[0] === n && (flat ? x.includes(flat) : x.length === 1));
   return idx + (parseInt(oct) + 1) * 12;
 }
 

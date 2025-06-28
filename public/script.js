@@ -449,15 +449,15 @@ if (settingsPopup) {
 
 // Note selector boxes
 if (bottomNoteBox) bottomNoteBox.addEventListener("click", (e) => {
-  if (shouldBlockIOSAction()) {
-    handleBlockedIOSAction();
+  if (shouldBlockInteraction()) {
+    e.preventDefault();
     return;
   }
   openNoteSlider("bottom");
 });
 if (topNoteBox) topNoteBox.addEventListener("click", (e) => {
-  if (shouldBlockIOSAction()) {
-    handleBlockedIOSAction();
+  if (shouldBlockInteraction()) {
+    e.preventDefault();
     return;
   }
   openNoteSlider("top");
@@ -552,8 +552,8 @@ if (creditsPopup) {
 // Difficulty button
 if (difficultyBtn) {
   difficultyBtn.addEventListener("click", (e) => {
-    if (shouldBlockIOSAction()) {
-      handleBlockedIOSAction();
+    if (shouldBlockInteraction()) {
+      e.preventDefault();
       return;
     }
     let idx;
@@ -569,8 +569,8 @@ if (difficultyBtn) {
 // Bug report button
 if (bugBtn) {
   bugBtn.addEventListener("click", (e) => {
-    if (shouldBlockIOSAction()) {
-      handleBlockedIOSAction();
+    if (shouldBlockInteraction()) {
+      e.preventDefault();
       return;
     }
     window.open("https://docs.google.com/forms/d/e/1FAIpQLScwbnly5GXgHmD5vIp9LcuWeZexq_y9r00n8ozvSEInXcCyQA/viewform?usp=dialog", "_blank");
@@ -605,8 +605,8 @@ if (pipesPerBreakBox) {
   pipesPerBreakBox.style.border = `2px solid ${getBoxBorderColor(pipesPerBreak, 3, 10)}`;
 
   pipesPerBreakBox.addEventListener("click", (e) => {
-    if (shouldBlockIOSAction()) {
-      handleBlockedIOSAction();
+    if (shouldBlockInteraction()) {
+      e.preventDefault();
       return;
     }
     pipesSlider.value = pipesPerBreak;
@@ -654,8 +654,8 @@ if (pipeSpeedBox) {
   pipeSpeedBox.style.border = `2px solid ${getBoxBorderColor(pipeSpeedSliderValue, 1, 100)}`;
 
   pipeSpeedBox.addEventListener("click", (e) => {
-    if (shouldBlockIOSAction()) {
-      handleBlockedIOSAction();
+    if (shouldBlockInteraction()) {
+      e.preventDefault();
       return;
     }
     pipeSpeedSlider.value = pipeSpeedSliderValue;
