@@ -165,65 +165,57 @@ function updateBackdropImage() {
 
 // Update the main menu background to match the equipped backdrop
 function updateMainMenuBackground() {
-  console.log('updateMainMenuBackground called - applying backdrop with canvas constraints');
+  console.log('updateMainMenuBackground called - trying CSS container approach');
   
-  // Remove any existing backdrop canvas
+  // Remove any existing backdrop elements
   const existingBackdropCanvas = document.getElementById("backdropCanvas");
   if (existingBackdropCanvas) {
     existingBackdropCanvas.remove();
+  }
+  const existingBackdropContainer = document.getElementById("backdropContainer");
+  if (existingBackdropContainer) {
+    existingBackdropContainer.remove();
   }
   
   if (!save) return;
   const backdrop = getCosmetic("backdrops", save.equippedBackdrop || "default");
   if (!backdrop || !backdrop.img) return;
   
-  // Create a backdrop canvas that uses the EXACT same sizing logic as the game canvas
-  const backdropCanvas = document.createElement("canvas");
-  backdropCanvas.id = "backdropCanvas";
-  backdropCanvas.style.position = "absolute";
-  backdropCanvas.style.zIndex = "-1"; // Behind menu content
-  backdropCanvas.style.pointerEvents = "none";
+  // Create a backdrop container div that mimics the game canvas sizing exactly
+  const backdropContainer = document.createElement("div");
+  backdropContainer.id = "backdropContainer";
+  backdropContainer.style.position = "absolute";
+  backdropContainer.style.zIndex = "-1"; // Behind menu content
+  backdropContainer.style.pointerEvents = "none";
+  backdropContainer.style.backgroundImage = `url(${backdrop.img})`;
+  backdropContainer.style.backgroundRepeat = "no-repeat";
+  backdropContainer.style.backgroundPosition = "center";
   
   // Apply the EXACT same sizing logic as resizeCanvas() in game.js
   if (window.innerWidth > window.innerHeight) {
-    // Landscape: fixed width, full height, horizontally centered (SAME AS GAME CANVAS)
-    backdropCanvas.height = window.innerHeight;
-    backdropCanvas.width = 480;
-    backdropCanvas.style.left = `${(window.innerWidth - backdropCanvas.width) / 2}px`;
-    backdropCanvas.style.top = `0px`;
+    // Landscape: fixed width (480px), full height, horizontally centered
+    backdropContainer.style.width = "480px";
+    backdropContainer.style.height = "100vh";
+    backdropContainer.style.left = `${(window.innerWidth - 480) / 2}px`;
+    backdropContainer.style.top = "0px";
+    backdropContainer.style.backgroundSize = "480px 100vh"; // Stretch to fit container exactly
   } else {
-    // Portrait: BUT limit the width to prevent oversized backdrop
-    // Instead of filling entire screen width, maintain reasonable proportions
-    const maxWidth = Math.min(window.innerWidth, 480); // Don't exceed landscape canvas width
-    backdropCanvas.width = maxWidth;
-    backdropCanvas.height = window.innerHeight;
-    backdropCanvas.style.left = `${(window.innerWidth - backdropCanvas.width) / 2}px`;
-    backdropCanvas.style.top = `0px`;
+    // Portrait: limit width to prevent oversized backdrop
+    const maxWidth = Math.min(window.innerWidth, 480);
+    backdropContainer.style.width = `${maxWidth}px`;
+    backdropContainer.style.height = "100vh";
+    backdropContainer.style.left = `${(window.innerWidth - maxWidth) / 2}px`;
+    backdropContainer.style.top = "0px";
+    backdropContainer.style.backgroundSize = `${maxWidth}px 100vh`; // Stretch to fit container exactly
   }
   
-  console.log('Backdrop canvas dimensions:', backdropCanvas.width, 'x', backdropCanvas.height);
+  console.log('Backdrop container dimensions:', backdropContainer.style.width, 'x', backdropContainer.style.height);
+  console.log('Backdrop container position:', backdropContainer.style.left, backdropContainer.style.top);
   
-  // Draw the backdrop image on the canvas using EXACT same logic as game
-  const ctx = backdropCanvas.getContext("2d");
-  ctx.imageSmoothingEnabled = false; // Same as game canvas
+  // Add the backdrop container to the document body
+  document.body.appendChild(backdropContainer);
   
-  const img = new Image();
-  img.onload = () => {
-    console.log('Drawing backdrop image:', img.width, 'x', img.height, 'onto canvas:', backdropCanvas.width, 'x', backdropCanvas.height);
-    // Use EXACT same drawImage call as in draw() function: ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0, backdropCanvas.width, backdropCanvas.height);
-  };
-  img.src = backdrop.img;
-  
-  // Fallback if image is already cached
-  if (img.complete) {
-    img.onload();
-  }
-  
-  // Add the backdrop canvas to the document body (not main menu to avoid z-index issues)
-  document.body.appendChild(backdropCanvas);
-  
-  console.log('Main menu backdrop canvas created with constrained sizing logic');
+  console.log('Main menu backdrop container created with game canvas sizing constraints');
 }
 
 // --- Cosmetics Popup Management ---
