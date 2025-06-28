@@ -34,6 +34,10 @@ function showMainMenu() {
   // Update main menu background to match equipped backdrop
   if (typeof updateMainMenuBackground === 'function') {
     updateMainMenuBackground();
+    // Add a delayed call to ensure it works on Firebase hosting
+    setTimeout(() => {
+      updateMainMenuBackground();
+    }, 100);
   }
   
   tryDrawInitial();

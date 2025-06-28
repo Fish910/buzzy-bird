@@ -711,6 +711,13 @@ window.addEventListener("DOMContentLoaded", async () => {
   await syncLoggedInUserFromDb();
   updateAuthUI();
   renderLeaderboard();
+  
+  // Ensure backdrop is properly sized after everything is loaded (helps with Firebase hosting)
+  setTimeout(() => {
+    if (typeof updateMainMenuBackground === 'function') {
+      updateMainMenuBackground();
+    }
+  }, 500);
 });
 
 // Show menu on load

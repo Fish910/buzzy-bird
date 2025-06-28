@@ -170,24 +170,46 @@ function updateMainMenuBackground() {
   const mainMenu = document.getElementById("mainMenu");
   
   if (mainMenu && backdrop && backdrop.img) {
-    // Apply backdrop sizing logic similar to canvas
-    if (window.innerWidth > window.innerHeight) {
-      // Landscape: limit backdrop width like canvas (480px, centered)
-      mainMenu.style.backgroundImage = `url(${backdrop.img})`;
-      mainMenu.style.backgroundSize = '480px 100vh'; // Fixed width, full height
-      mainMenu.style.backgroundPosition = 'center';
-      mainMenu.style.backgroundRepeat = 'no-repeat';
-    } else {
-      // Portrait: backdrop can fill screen width like canvas
-      mainMenu.style.backgroundImage = `url(${backdrop.img})`;
-      mainMenu.style.backgroundSize = 'cover';
-      mainMenu.style.backgroundPosition = 'center';
-      mainMenu.style.backgroundRepeat = 'no-repeat';
-    }
+    console.log('Updating main menu background, window size:', window.innerWidth, 'x', window.innerHeight);
     
-    // Keep the overlay for readability
-    mainMenu.style.backgroundColor = 'rgba(240, 248, 255, 0.128)';
-    mainMenu.style.backgroundBlendMode = 'overlay';
+    // Clear any existing styles first
+    mainMenu.style.backgroundImage = '';
+    mainMenu.style.backgroundSize = '';
+    mainMenu.style.backgroundPosition = '';
+    mainMenu.style.backgroundRepeat = '';
+    mainMenu.style.backgroundColor = '';
+    mainMenu.style.backgroundBlendMode = '';
+    
+    // Create an image to ensure it's loaded before applying
+    const img = new Image();
+    img.onload = () => {
+      // Apply backdrop sizing logic similar to canvas
+      if (window.innerWidth > window.innerHeight) {
+        // Landscape: limit backdrop width like canvas (480px, centered)
+        console.log('Applying landscape backdrop sizing (480px width)');
+        mainMenu.style.backgroundImage = `url(${backdrop.img})`;
+        mainMenu.style.backgroundSize = '480px 100vh'; // Fixed width, full height
+        mainMenu.style.backgroundPosition = 'center';
+        mainMenu.style.backgroundRepeat = 'no-repeat';
+      } else {
+        // Portrait: backdrop can fill screen width like canvas but with aspect ratio preservation
+        console.log('Applying portrait backdrop sizing (contained)');
+        mainMenu.style.backgroundImage = `url(${backdrop.img})`;
+        mainMenu.style.backgroundSize = '100vw auto'; // Full width, preserve aspect ratio
+        mainMenu.style.backgroundPosition = 'center';
+        mainMenu.style.backgroundRepeat = 'no-repeat';
+      }
+      
+      // Keep the overlay for readability
+      mainMenu.style.backgroundColor = 'rgba(240, 248, 255, 0.128)';
+      mainMenu.style.backgroundBlendMode = 'overlay';
+    };
+    img.src = backdrop.img;
+    
+    // Fallback in case image is already cached
+    if (img.complete) {
+      img.onload();
+    }
   }
 }
 
