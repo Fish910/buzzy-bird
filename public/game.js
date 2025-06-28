@@ -317,19 +317,27 @@ function resizeCanvas() {
   
   if (window.innerWidth > window.innerHeight) {
     // Landscape: fixed width, full height, horizontally centered
-    canvas.height = window.innerHeight;
     canvas.width = 480;
-    canvas.style.left = `${(window.innerWidth - canvas.width) / 2}px`;
+    canvas.height = window.innerHeight;
+    canvas.style.width = '480px';
+    canvas.style.height = window.innerHeight + 'px';
+    canvas.style.left = `${(window.innerWidth - 480) / 2}px`;
     canvas.style.top = `0px`;
     canvas.style.position = 'absolute';
   } else {
-    // Portrait: fill the screen
+    // Portrait: set logical size to match display size
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
     canvas.style.left = `0px`;
     canvas.style.top = `0px`;
     canvas.style.position = 'absolute';
   }
+  
+  // Disable image smoothing after resize
+  ctx.imageSmoothingEnabled = false;
+  
   // Only redraw if not running (so splash/buttons show up)
   if (!running) draw();
 }
