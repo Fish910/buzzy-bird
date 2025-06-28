@@ -59,13 +59,13 @@ const NOTE_NAMES = [
 
 // --- Image Assets ---
 const bgImg = new Image();
-bgImg.src = "assets/background.png";
+bgImg.src = "assets/walls/default.png";
 const splashImg = new Image();
 splashImg.src = "assets/splash.png";
 const birdImg = new Image();
 birdImg.src = "assets/skins/default.png"; // Default skin
 const pipeImg = new Image();
-pipeImg.src = "assets/pipe.png";
+pipeImg.src = "assets/pipes/default.png";
 const gameoverImg = new Image();
 gameoverImg.src = "assets/gameover.png";
 const restImg = new Image();

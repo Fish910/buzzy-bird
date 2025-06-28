@@ -75,6 +75,17 @@ function setHighScoreIfNeeded(newScore) {
 
 // --- Firebase Database Operations ---
 
+// Generate a unique user ID
+function generateUserId() {
+  return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// Check if a display name is available
+async function isNameAvailable(name) {
+  const snapshot = await db.ref('users').orderByChild('name').equalTo(name.trim()).once('value');
+  return !snapshot.exists();
+}
+
 // Hash passcode for secure storage
 async function hashPasscode(passcode) {
   const encoder = new TextEncoder();
@@ -85,32 +96,48 @@ async function hashPasscode(passcode) {
 
 // Sign up new user to Firebase
 async function signUp(name, passcode, localData) {
-  const username = name.trim().toLowerCase();
-  const userRef = db.ref('users/' + username);
-  const snapshot = await userRef.get();
-  if (snapshot.exists()) {
+  const displayName = name.trim();
+  
+  // Check if name is available
+  if (!(await isNameAvailable(displayName))) {
     throw new Error("Name is already taken.");
   }
+  
+  const userId = generateUserId();
+  const userRef = db.ref('users/' + userId);
   const passcodeHash = await hashPasscode(passcode);
-  // Merge local data
+  
+  // Create user data with unique ID
   const userData = {
-    name: name.trim(),
+    userId: userId,
+    name: displayName,
     passcodeHash,
     highScore: localData.highScore || 0,
     points: localData.points || 0,
-    ownedSkins: localData.ownedSkins || ["default"]
+    ownedSkins: localData.ownedSkins || ["default"],
+    createdAt: Date.now()
   };
+  
   await userRef.set(userData);
   return userData;
 }
 
 // Log in existing user from Firebase
 async function logIn(name, passcode, localData) {
-  const username = name.trim().toLowerCase();
-  const userRef = db.ref('users/' + username);
-  const snapshot = await userRef.get();
+  const displayName = name.trim();
+  
+  // Find user by name
+  const snapshot = await db.ref('users').orderByChild('name').equalTo(displayName).once('value');
   if (!snapshot.exists()) throw new Error("Account not found.");
-  const userData = snapshot.val();
+  
+  // Get the user data (should be only one match)
+  let userData = null;
+  let userId = null;
+  snapshot.forEach(child => {
+    userData = child.val();
+    userId = child.key;
+  });
+  
   const passcodeHash = await hashPasscode(passcode);
   if (userData.passcodeHash !== passcodeHash) throw new Error("Incorrect passcode.");
 
@@ -121,11 +148,14 @@ async function logIn(name, passcode, localData) {
 
   const merged = {
     ...userData,
+    userId: userId, // Ensure userId is set
     highScore: Math.max(userData.highScore || 0, localData.highScore || 0),
     points: (userData.points || 0) + newLocalPoints,
     ownedSkins: Array.from(new Set([...(userData.ownedSkins || []), ...(localData.ownedSkins || [])]))
   };
-  await userRef.update(merged);
+  
+  // Update user data in Firebase
+  await db.ref('users/' + userId).update(merged);
 
   // Update last synced points
   localStorage.setItem('buzzyBirdLastSyncedPoints', merged.points);
@@ -135,31 +165,51 @@ async function logIn(name, passcode, localData) {
 
 // Change user's name in Firebase
 async function changeName(oldName, passcode, newName) {
-  const oldUsername = oldName.trim().toLowerCase();
-  const newUsername = newName.trim().toLowerCase();
-  if (oldUsername === newUsername) throw new Error("New name must be different.");
-  const oldRef = db.ref('users/' + oldUsername);
-  const newRef = db.ref('users/' + newUsername);
-
-  const [oldSnap, newSnap] = await Promise.all([oldRef.get(), newRef.get()]);
-  if (!oldSnap.exists()) throw new Error("Current account not found.");
-  if (newSnap.exists()) throw new Error("New name is already taken.");
-
-  const userData = oldSnap.val();
+  const oldDisplayName = oldName.trim();
+  const newDisplayName = newName.trim();
+  if (oldDisplayName === newDisplayName) throw new Error("New name must be different.");
+  
+  // Check if new name is available
+  if (!(await isNameAvailable(newDisplayName))) {
+    throw new Error("New name is already taken.");
+  }
+  
+  // Find user by current name
+  const snapshot = await db.ref('users').orderByChild('name').equalTo(oldDisplayName).once('value');
+  if (!snapshot.exists()) throw new Error("Current account not found.");
+  
+  // Get the user data
+  let userData = null;
+  let userId = null;
+  snapshot.forEach(child => {
+    userData = child.val();
+    userId = child.key;
+  });
+  
   const passcodeHash = await hashPasscode(passcode);
   if (userData.passcodeHash !== passcodeHash) throw new Error("Incorrect passcode.");
 
-  // Copy data to new name and delete old
-  await newRef.set({ ...userData, name: newName.trim() });
-  await oldRef.remove();
+  // Update the name (user ID stays the same)
+  await db.ref('users/' + userId + '/name').set(newDisplayName);
 }
 
 // Update user's high score in Firebase
 async function updateHighScore(name, newScore) {
-  const username = name.trim().toLowerCase();
-  const userRef = db.ref('users/' + username + '/highScore');
-  const snapshot = await userRef.get();
-  if (!snapshot.exists() || newScore > snapshot.val()) {
+  const displayName = name.trim();
+  
+  // Find user by name
+  const snapshot = await db.ref('users').orderByChild('name').equalTo(displayName).once('value');
+  if (!snapshot.exists()) return; // User not found
+  
+  // Get the user ID
+  let userId = null;
+  snapshot.forEach(child => {
+    userId = child.key;
+  });
+  
+  const userRef = db.ref('users/' + userId + '/highScore');
+  const scoreSnapshot = await userRef.get();
+  if (!scoreSnapshot.exists() || newScore > scoreSnapshot.val()) {
     await userRef.set(newScore);
   }
 }
@@ -179,10 +229,10 @@ async function fetchLeaderboard() {
 // --- Fetch and overwrite local user data from DB on main menu open ---
 async function syncLoggedInUserFromDb() {
   const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
-  if (!user || !user.name) return;
+  if (!user || !user.userId) return; // Need userId to sync
+  
   try {
-    const username = user.name.trim().toLowerCase();
-    const userRef = db.ref('users/' + username);
+    const userRef = db.ref('users/' + user.userId);
     const snapshot = await userRef.get();
     if (snapshot.exists()) {
       const dbUser = snapshot.val();

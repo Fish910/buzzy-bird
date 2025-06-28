@@ -263,7 +263,7 @@ function hideUsername() {
 // Update authentication UI based on login status
 function updateAuthUI() {
   const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
-  if (user && user.name) {
+  if (user && user.name && user.userId) { // Check for both name and userId
     // Hide sign up/log in, show change name, show username and logout
     signUpBtn.style.display = 'none';
     logInBtn.style.display = 'none';
@@ -297,7 +297,8 @@ async function renderLeaderboard() {
       if (idx === 0) entry.classList.add('gold');
       else if (idx === 1) entry.classList.add('silver');
       else if (idx === 2) entry.classList.add('bronze');
-      if (currentUser && user.name === currentUser.name) entry.classList.add('me');
+      // Compare by userId instead of name
+      if (currentUser && user.userId === currentUser.userId) entry.classList.add('me');
       entry.innerHTML = `<span style="min-width:2em;display:inline-block;">${idx+1}.</span> <span style="font-weight:bold;">${user.name}</span> <span style="flex:1 1 auto;"></span> <span style="font-family:monospace;">${user.highScore || 0}</span>`;
       leaderboardList.appendChild(entry);
     });
