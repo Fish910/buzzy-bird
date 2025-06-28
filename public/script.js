@@ -797,11 +797,38 @@ window.addEventListener("DOMContentLoaded", showMainMenu);
 
 // --- Initialize Game ---
 
-// Call preload functions
-preloadPitchModel();
+// Ensure proper initialization on all devices, especially iPad
+function ensureInitialization() {
+  // Add a small delay for iPad compatibility
+  const isIPad = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+  
+  if (isIPad) {
+    // iPad needs a small delay for proper initialization
+    setTimeout(() => {
+      resizeCanvas();
+      tryDrawInitial();
+    }, 100);
+  } else {
+    resizeCanvas();
+    tryDrawInitial();
+  }
+}
 
-// Try to draw initial screen
-tryDrawInitial();
+// Ensure DOM is fully loaded before initialization
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    // Call preload functions
+    preloadPitchModel();
+    // Initialize with device-specific handling
+    ensureInitialization();
+  });
+} else {
+  // DOM already loaded
+  // Call preload functions
+  preloadPitchModel();
+  // Initialize with device-specific handling
+  ensureInitialization();
+}
 
 // Settings tab buttons
 const pitchRangeTab = document.getElementById("pitchRangeTab");
