@@ -310,6 +310,9 @@ async function ensureAudioContext() {
 
 // Responsive canvas sizing with performance optimization
 function resizeCanvas() {
+  // Calculate optimal pixel ratio for performance (cap at 2x, reduce to 75% for pixelated games)
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2) * 0.75;
+  
   let displayWidth, displayHeight;
   
   if (window.innerWidth > window.innerHeight) {
@@ -332,47 +335,15 @@ function resizeCanvas() {
   canvas.style.width = displayWidth + 'px';
   canvas.style.height = displayHeight + 'px';
   
-  // Conservative performance optimization - detect potential issues
-  let useOptimization = true;
-  const userAgent = navigator.userAgent;
+  // Set actual canvas resolution (lower for better performance)
+  canvas.width = Math.floor(displayWidth * pixelRatio);
+  canvas.height = Math.floor(displayHeight * pixelRatio);
   
-  // Check if this is an iPad and apply gentler optimization
-  const isIPad = /iPad|Macintosh/.test(userAgent) && 'ontouchend' in document;
+  // Scale the drawing context to match the device pixel ratio
+  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   
-  try {
-    let pixelRatio = window.devicePixelRatio || 1;
-    
-    if (isIPad) {
-      // More conservative for iPad - just cap at 2x, no reduction
-      pixelRatio = Math.min(pixelRatio, 2);
-    } else {
-      // Apply optimization for other devices
-      pixelRatio = Math.min(pixelRatio, 2) * 0.85; // Slightly less aggressive than before
-    }
-    
-    // Set actual canvas resolution
-    const newWidth = Math.floor(displayWidth * pixelRatio);
-    const newHeight = Math.floor(displayHeight * pixelRatio);
-    
-    // Sanity check for reasonable canvas size
-    if (newWidth > 0 && newHeight > 0 && newWidth < 4096 && newHeight < 4096) {
-      canvas.width = newWidth;
-      canvas.height = newHeight;
-      
-      // Scale the drawing context
-      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-      ctx.imageSmoothingEnabled = false;
-    } else {
-      throw new Error("Canvas size out of bounds");
-    }
-  } catch (error) {
-    console.warn("Canvas optimization failed, falling back to 1:1 scaling:", error);
-    // Fallback: 1:1 pixel ratio
-    canvas.width = displayWidth;
-    canvas.height = displayHeight;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-  }
+  // Ensure pixelated rendering for better performance
+  ctx.imageSmoothingEnabled = false;
   
   // Only redraw if not running (so splash/buttons show up)
   if (!running) draw();
@@ -466,14 +437,7 @@ function exitButtonClicked(x, y) {
 
 // --- Main Draw Function ---
 function draw() {
-  // Early exit if canvas or context is not ready
-  if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) {
-    console.warn("Canvas not ready for drawing");
-    return;
-  }
-  
-  try {
-    const yPadding = 20;
+  const yPadding = 20;
 
   // Use PITCH_MIN and PITCH_MAX for pitch mapping
   const minPitch = PITCH_MIN;
@@ -734,81 +698,25 @@ function draw() {
 
   // Always draw buttons last so they appear on top
   drawGameButtons();
-  } catch (error) {
-    console.error("Error in draw function:", error);
-    // Try to recover by resetting canvas context
-    try {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.imageSmoothingEnabled = false;
-    } catch (recoveryError) {
-      console.error("Failed to recover canvas context:", recoveryError);
-    }
-  }
 }
 
 // Draw initial splash/background/buttons as soon as possible
 function tryDrawInitial() {
-  try {
-    showLoading("Loading...");
-    
-    // Check if canvas is ready
-    if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) {
-      console.warn("Canvas not ready, retrying in 50ms");
-      setTimeout(tryDrawInitial, 50);
-      return;
-    }
-    
-    if (bgImg.complete && splashImg.complete) {
-      hideLoading();
-      draw();
-    } else {
-      let loaded = 0;
-      let maxRetries = 20; // Maximum retries to prevent infinite loops
-      let retryCount = 0;
-      
-      function check() {
-        loaded++;
-        if (bgImg.complete && splashImg.complete) {
-          hideLoading();
-          draw();
-        } else if (retryCount < maxRetries) {
-          retryCount++;
-          setTimeout(() => {
-            if (!bgImg.complete || !splashImg.complete) {
-              console.log("Still loading images, retry", retryCount);
-              check();
-            }
-          }, 100);
-        } else {
-          console.warn("Image loading timeout, proceeding anyway");
-          hideLoading();
-          draw();
-        }
-      }
-      
-      bgImg.onload = check;
-      splashImg.onload = check;
-      bgImg.onerror = () => {
-        console.warn("Background image failed to load");
-        check();
-      };
-      splashImg.onerror = () => {
-        console.warn("Splash image failed to load");
-        check();
-      };
-      
-      // Start retry process
-      check();
-    }
-  } catch (error) {
-    console.error("Error in tryDrawInitial:", error);
+  showLoading("Loading...");
+  if (bgImg.complete && splashImg.complete) {
     hideLoading();
-    // Try a basic draw anyway
-    try {
-      draw();
-    } catch (drawError) {
-      console.error("Failed to draw:", drawError);
+    draw();
+  } else {
+    let loaded = 0;
+    function check() {
+      loaded++;
+      if (bgImg.complete && splashImg.complete) {
+        hideLoading();
+        draw();
+      }
     }
+    bgImg.onload = check;
+    splashImg.onload = check;
   }
 }
 
