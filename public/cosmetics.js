@@ -170,11 +170,20 @@ function updateMainMenuBackground() {
   const mainMenu = document.getElementById("mainMenu");
   
   if (mainMenu && backdrop && backdrop.img) {
-    // Set the backdrop image as the background of the main menu
-    mainMenu.style.backgroundImage = `url(${backdrop.img})`;
-    mainMenu.style.backgroundSize = 'cover';
-    mainMenu.style.backgroundPosition = 'center';
-    mainMenu.style.backgroundRepeat = 'no-repeat';
+    // Apply backdrop sizing logic similar to canvas
+    if (window.innerWidth > window.innerHeight) {
+      // Landscape: limit backdrop width like canvas (480px, centered)
+      mainMenu.style.backgroundImage = `url(${backdrop.img})`;
+      mainMenu.style.backgroundSize = '480px 100vh'; // Fixed width, full height
+      mainMenu.style.backgroundPosition = 'center';
+      mainMenu.style.backgroundRepeat = 'no-repeat';
+    } else {
+      // Portrait: backdrop can fill screen width like canvas
+      mainMenu.style.backgroundImage = `url(${backdrop.img})`;
+      mainMenu.style.backgroundSize = 'cover';
+      mainMenu.style.backgroundPosition = 'center';
+      mainMenu.style.backgroundRepeat = 'no-repeat';
+    }
     
     // Keep the overlay for readability
     mainMenu.style.backgroundColor = 'rgba(240, 248, 255, 0.128)';

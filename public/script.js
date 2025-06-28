@@ -163,8 +163,20 @@ if (topNoteBox) topNoteBox.textContent = midiToNoteName(topMidi);
 // --- Event Listeners ---
 
 // Window resize events
-window.addEventListener('resize', resizeCanvas);
-window.addEventListener('orientationchange', resizeCanvas);
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  // Also update main menu backdrop sizing when window is resized
+  if (typeof updateMainMenuBackground === 'function') {
+    updateMainMenuBackground();
+  }
+});
+window.addEventListener('orientationchange', () => {
+  resizeCanvas();
+  // Also update main menu backdrop sizing on orientation change
+  if (typeof updateMainMenuBackground === 'function') {
+    updateMainMenuBackground();
+  }
+});
 resizeCanvas();
 
 // Main menu click/touch to start game
