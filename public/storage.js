@@ -96,7 +96,7 @@ function addPoints(amount) {
   saveData();
 }
 
-function setHighScoreIfNeeded(newScore) {
+async function setHighScoreIfNeeded(newScore) {
   console.log('Checking high score:', newScore, 'vs current:', save.highScore);
   if (newScore > save.highScore) {
     console.log('New high score achieved:', newScore);
@@ -109,23 +109,33 @@ function setHighScoreIfNeeded(newScore) {
     if (user && user.userId) {
       console.log('Syncing new high score to Firebase:', oldHighScore, '->', newScore);
       
-      // Use a promise to ensure sync completes
-      syncUserDataToDb().then(() => {
+      // Set sync flag
+      if (typeof window !== 'undefined') {
+        window.highScoreSyncInProgress = true;
+      }
+      
+      try {
+        // Wait for sync to complete
+        await syncUserDataToDb();
         console.log('High score sync completed successfully');
-        // Refresh the leaderboard after syncing
+        
+        // Force a fresh leaderboard fetch after successful sync
         if (typeof renderLeaderboard === 'function') {
-          setTimeout(() => {
-            console.log('Refreshing leaderboard after high score sync');
-            renderLeaderboard();
-          }, 500); // Small delay to ensure Firebase propagation
+          console.log('Refreshing leaderboard after high score sync');
+          await renderLeaderboard();
         }
-      }).catch(err => {
+      } catch (err) {
         console.error('Failed to sync high score to Firebase:', err);
         // Even if sync fails, try to refresh leaderboard with local data
         if (typeof renderLeaderboard === 'function') {
           renderLeaderboard();
         }
-      });
+      } finally {
+        // Clear sync flag
+        if (typeof window !== 'undefined') {
+          window.highScoreSyncInProgress = false;
+        }
+      }
     } else {
       console.log('User not logged in, high score saved locally only');
     }
@@ -393,7 +403,12 @@ async function syncUserDataToDb() {
     const verifiedData = verifySnapshot.val();
     console.log('Firebase verification - saved high score:', verifiedData.highScore);
     
-    console.log('Successfully synced to Firebase');
+    if (verifiedData.highScore !== updateData.highScore) {
+      console.error('Firebase sync verification failed!', 'Expected:', updateData.highScore, 'Got:', verifiedData.highScore);
+      throw new Error('Firebase sync verification failed');
+    }
+    
+    console.log('Successfully synced and verified Firebase data');
     
     // Update local user data to match
     const updatedUser = {

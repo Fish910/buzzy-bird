@@ -10,6 +10,35 @@ ctx.imageSmoothingEnabled = false; // Disable image smoothing
 // --- Global Save Object ---
 let save;
 
+// --- High Score Sync Tracking ---
+let highScoreSyncInProgress = false;
+window.highScoreSyncInProgress = false;
+
+// Handle exit to menu with high score sync waiting
+async function handleExitToMenu() {
+  console.log('Exit to menu requested, checking for pending high score sync...');
+  
+  // Wait for any pending high score sync to complete
+  if (window.highScoreSyncInProgress) {
+    console.log('Waiting for high score sync to complete...');
+    // Poll for sync completion with timeout
+    let attempts = 0;
+    const maxAttempts = 50; // 5 seconds max wait
+    while (window.highScoreSyncInProgress && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      console.warn('High score sync timeout, proceeding to menu anyway');
+    } else {
+      console.log('High score sync completed, proceeding to menu');
+    }
+  }
+  
+  showMainMenu();
+}
+
 // --- DOM Element References ---
 const mainMenu = document.getElementById("mainMenu");
 const skinsPopup = document.getElementById("skinsPopup");
@@ -157,7 +186,7 @@ canvas.addEventListener("click", function (e) {
 
   // Always check for exit button, even if gameOver
   if (exitButtonClicked(mouseX, mouseY)) {
-    showMainMenu();
+    handleExitToMenu();
     return;
   }
 
@@ -196,7 +225,7 @@ canvas.addEventListener("mousedown", function(e) {
 
   // Always check for exit button
   if (exitButtonClicked(x, y)) {
-    showMainMenu();
+    handleExitToMenu();
     return;
   }
 });
