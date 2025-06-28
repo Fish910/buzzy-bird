@@ -198,15 +198,14 @@ function updateMainMenuBackground() {
     backdropContainer.style.height = "100vh";
     backdropContainer.style.left = `${(window.innerWidth - 480) / 2}px`;
     backdropContainer.style.top = "0px";
-    backdropContainer.style.backgroundSize = "480px 100vh"; // Stretch to fit container exactly
+    backdropContainer.style.backgroundSize = "cover";
   } else {
-    // Portrait: limit width to prevent oversized backdrop
-    const maxWidth = Math.min(window.innerWidth, 480);
-    backdropContainer.style.width = `${maxWidth}px`;
+    // Portrait: fill the screen (same as canvas logic)
+    backdropContainer.style.width = "100vw";
     backdropContainer.style.height = "100vh";
-    backdropContainer.style.left = `${(window.innerWidth - maxWidth) / 2}px`;
+    backdropContainer.style.left = "0px";
     backdropContainer.style.top = "0px";
-    backdropContainer.style.backgroundSize = `${maxWidth}px 100vh`; // Stretch to fit container exactly
+    backdropContainer.style.backgroundSize = "cover";
   }
   
   console.log('Backdrop container dimensions:', backdropContainer.style.width, 'x', backdropContainer.style.height);
