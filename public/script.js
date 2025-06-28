@@ -13,7 +13,7 @@ let save = loadSave();
 // --- DOM Element References ---
 const mainMenu = document.getElementById("mainMenu");
 const skinsPopup = document.getElementById("skinsPopup");
-const skinsGrid = document.getElementById("skinsGrid");
+const cosmeticsGrid = document.getElementById("cosmeticsGrid");
 const pointsDisplay = document.getElementById("pointsDisplay");
 const highScoreDisplay = document.getElementById("highScoreDisplay");
 const skinsBtn = document.getElementById("skinsBtn");
@@ -132,7 +132,7 @@ if (bottomNoteBox) bottomNoteBox.textContent = midiToNoteName(bottomMidi);
 if (topNoteBox) topNoteBox.textContent = midiToNoteName(topMidi);
 
 // Initialize cosmetics
-updateBirdImage();
+updateCosmeticImages();
 
 // --- Event Listeners ---
 
@@ -217,6 +217,32 @@ if (closeSkinsBtn) closeSkinsBtn.addEventListener("click", hideSkinsPopup);
 if (skinsPopup) {
   skinsPopup.addEventListener("mousedown", (e) => {
     if (e.target === skinsPopup) hideSkinsPopup();
+  });
+}
+
+// Cosmetics tab buttons
+const birdsTab = document.getElementById("birdsTab");
+const pipesTab = document.getElementById("pipesTab");
+const backdropsTab = document.getElementById("backdropsTab");
+
+if (birdsTab) {
+  birdsTab.addEventListener("click", (e) => {
+    switchTab("birds");
+    e.stopPropagation();
+  });
+}
+
+if (pipesTab) {
+  pipesTab.addEventListener("click", (e) => {
+    switchTab("pipes");
+    e.stopPropagation();
+  });
+}
+
+if (backdropsTab) {
+  backdropsTab.addEventListener("click", (e) => {
+    switchTab("backdrops");
+    e.stopPropagation();
   });
 }
 
@@ -547,7 +573,7 @@ if (logInSubmitBtn) {
       updateAuthUI();
       renderLeaderboard();
       updateMenuInfo();
-      renderSkinsGrid();
+      renderCosmeticsGrid();
     } catch (err) {
       logInError.textContent = err.message || 'Log in failed.';
     }

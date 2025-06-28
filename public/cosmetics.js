@@ -1,14 +1,14 @@
 // =============================================================================
-// COSMETICS.JS - Skin Management & Cosmetic Features
+// COSMETICS.JS - Cosmetic Management & Features (Birds, Pipes, Backdrops)
 // =============================================================================
 
-// --- Skin Definitions ---
-const DEFAULT_SKINS = [
+// --- Bird Skin Definitions ---
+const DEFAULT_BIRDS = [
   { id: "default", name: "Classic", price: 0, img: "assets/skins/default.png" },
 ];
 
-const SKINS = [
-  ...DEFAULT_SKINS,
+const BIRDS = [
+  ...DEFAULT_BIRDS,
   { id: "red", name: "Red Bird", price: 5, img: "assets/skins/red.png" },
   { id: "poop", name: "Poop Bird", price: 5, img: "assets/skins/poop.png" },
   { id: "rainbow", name: "Rainbow Bird", price: 10, img: "assets/skins/rainbow.png" },
@@ -18,93 +18,257 @@ const SKINS = [
   { id: "mango", name: "Mango", price: 30, img: "assets/skins/mango.png" }
 ];
 
-// --- Skin Utility Functions ---
+// --- Pipe Definitions ---
+const DEFAULT_PIPES = [
+  { id: "default", name: "Classic", price: 0, img: "assets/pipes/default.png" },
+];
 
-// Get skin object by id
-function getSkin(id) {
-  return SKINS.find(s => s.id === id) || SKINS[0];
+const PIPES = [
+  ...DEFAULT_PIPES,
+  { id: "red", name: "Red Pipes", price: 15, img: "assets/pipes/red.png" }
+];
+
+// --- Backdrop Definitions ---
+const DEFAULT_BACKDROPS = [
+  { id: "default", name: "Day", price: 0, img: "assets/walls/default.png" },
+];
+
+const BACKDROPS = [
+  ...DEFAULT_BACKDROPS,
+  { id: "night", name: "Night", price: 25, img: "assets/walls/night.png" }
+];
+
+// Current active cosmetics tab
+let activeTab = "birds";
+
+// --- Cosmetic Utility Functions ---
+
+// Get cosmetic arrays by type
+function getCosmeticArray(type) {
+  switch(type) {
+    case "birds": return BIRDS;
+    case "pipes": return PIPES;
+    case "backdrops": return BACKDROPS;
+    default: return BIRDS;
+  }
 }
 
-// Unlock a skin for the player
-function unlockSkin(skinId) {
-  if (!save.ownedSkins.includes(skinId)) {
-    save.ownedSkins.push(skinId);
+// Get cosmetic object by type and id
+function getCosmetic(type, id) {
+  const array = getCosmeticArray(type);
+  return array.find(c => c.id === id) || array[0];
+}
+
+// Get owned cosmetics for a type
+function getOwnedCosmetics(type) {
+  switch(type) {
+    case "birds": return save.ownedSkins || ["default"];
+    case "pipes": return save.ownedPipes || ["default"];
+    case "backdrops": return save.ownedBackdrops || ["default"];
+    default: return ["default"];
+  }
+}
+
+// Get equipped cosmetic for a type
+function getEquippedCosmetic(type) {
+  switch(type) {
+    case "birds": return save.equippedSkin || "default";
+    case "pipes": return save.equippedPipe || "default";
+    case "backdrops": return save.equippedBackdrop || "default";
+    default: return "default";
+  }
+}
+
+// Unlock a cosmetic for the player
+function unlockCosmetic(type, cosmeticId) {
+  const owned = getOwnedCosmetics(type);
+  if (!owned.includes(cosmeticId)) {
+    switch(type) {
+      case "birds":
+        if (!save.ownedSkins) save.ownedSkins = ["default"];
+        save.ownedSkins.push(cosmeticId);
+        break;
+      case "pipes":
+        if (!save.ownedPipes) save.ownedPipes = ["default"];
+        save.ownedPipes.push(cosmeticId);
+        break;
+      case "backdrops":
+        if (!save.ownedBackdrops) save.ownedBackdrops = ["default"];
+        save.ownedBackdrops.push(cosmeticId);
+        break;
+    }
     saveData();
   }
 }
 
-// Equip a skin if the player owns it
-function equipSkin(skinId) {
-  if (save.ownedSkins.includes(skinId)) {
-    save.equippedSkin = skinId;
+// Equip a cosmetic if the player owns it
+function equipCosmetic(type, cosmeticId) {
+  const owned = getOwnedCosmetics(type);
+  if (owned.includes(cosmeticId)) {
+    switch(type) {
+      case "birds":
+        save.equippedSkin = cosmeticId;
+        break;
+      case "pipes":
+        save.equippedPipe = cosmeticId;
+        break;
+      case "backdrops":
+        save.equippedBackdrop = cosmeticId;
+        break;
+    }
     saveData();
   }
+}
+
+// Update images based on equipped cosmetics
+function updateCosmeticImages() {
+  updateBirdImage();
+  updatePipeImage();
+  updateBackdropImage();
 }
 
 // Update the bird image based on equipped skin
 function updateBirdImage() {
-  const skin = getSkin(save.equippedSkin);
-  birdImg.src = skin.img;
+  if (typeof birdImg === 'undefined') return; // Wait for game.js to load
+  const bird = getCosmetic("birds", save.equippedSkin || "default");
+  birdImg.src = bird.img;
 }
 
-// --- Skins Popup Management ---
+// Update the pipe image based on equipped pipe
+function updatePipeImage() {
+  if (typeof pipeImg === 'undefined') return; // Wait for game.js to load
+  const pipe = getCosmetic("pipes", save.equippedPipe || "default");
+  pipeImg.src = pipe.img;
+}
 
-// Show the skins selection popup
+// Update the backdrop image based on equipped backdrop
+function updateBackdropImage() {
+  if (typeof bgImg === 'undefined') return; // Wait for game.js to load
+  const backdrop = getCosmetic("backdrops", save.equippedBackdrop || "default");
+  bgImg.src = backdrop.img;
+}
+
+// --- Cosmetics Popup Management ---
+
+// Show the cosmetics selection popup
 function showSkinsPopup() {
-  renderSkinsGrid();
+  activeTab = "birds"; // Always start with birds tab
+  updateTabButtons();
+  renderCosmeticsGrid();
   skinsPopup.classList.remove("hidden");
 }
 
-// Hide the skins selection popup
+// Hide the cosmetics selection popup
 function hideSkinsPopup() {
   skinsPopup.classList.add("hidden");
   updateMenuInfo();
 }
 
-// Render the grid of available skins
-function renderSkinsGrid() {
-  skinsGrid.innerHTML = "";
-  for (const skin of SKINS) {
-    const owned = save.ownedSkins.includes(skin.id);
-    const equipped = save.equippedSkin === skin.id;
+// Switch to a specific cosmetics tab
+function switchTab(tabName) {
+  activeTab = tabName;
+  updateTabButtons();
+  renderCosmeticsGrid();
+}
+
+// Update tab button appearances
+function updateTabButtons() {
+  const birdsTab = document.getElementById("birdsTab");
+  const pipesTab = document.getElementById("pipesTab");
+  const backdropsTab = document.getElementById("backdropsTab");
+  
+  // Remove active class from all tabs
+  [birdsTab, pipesTab, backdropsTab].forEach(tab => {
+    if (tab) tab.classList.remove("active");
+  });
+  
+  // Add active class to current tab
+  switch(activeTab) {
+    case "birds":
+      if (birdsTab) birdsTab.classList.add("active");
+      break;
+    case "pipes":
+      if (pipesTab) pipesTab.classList.add("active");
+      break;
+    case "backdrops":
+      if (backdropsTab) backdropsTab.classList.add("active");
+      break;
+  }
+}
+
+// Render the grid of available cosmetics for the active tab
+function renderCosmeticsGrid() {
+  const cosmeticsGrid = document.getElementById("cosmeticsGrid");
+  if (!cosmeticsGrid) return;
+  
+  cosmeticsGrid.innerHTML = "";
+  
+  // Apply appropriate CSS class based on active tab
+  cosmeticsGrid.className = "cosmetics-grid";
+  if (activeTab === "pipes") {
+    cosmeticsGrid.classList.add("pipes-grid");
+  } else if (activeTab === "backdrops") {
+    cosmeticsGrid.classList.add("backdrops-grid");
+  }
+  
+  const cosmetics = getCosmeticArray(activeTab);
+  const owned = getOwnedCosmetics(activeTab);
+  const equipped = getEquippedCosmetic(activeTab);
+  
+  for (const cosmetic of cosmetics) {
+    const isOwned = owned.includes(cosmetic.id);
+    const isEquipped = equipped === cosmetic.id;
     
-    // Create skin box element
+    // Create cosmetic box element
     const box = document.createElement("div");
-    box.className = "skin-box" + (equipped ? " equipped" : "") + (owned ? "" : " locked");
-    box.title = skin.name;
+    box.className = "skin-box" + (isEquipped ? " equipped" : "") + (isOwned ? "" : " locked");
+    box.title = cosmetic.name;
     
-    // Add skin sprite image
+    // Add cosmetic sprite image
     const img = document.createElement("img");
-    img.src = skin.img;
+    img.src = cosmetic.img;
     img.className = "skin-sprite";
     box.appendChild(img);
     
-    // Add overlay for locked skins showing price
-    if (!owned) {
+    // Add overlay for locked cosmetics showing price
+    if (!isOwned) {
       const overlay = document.createElement("div");
       overlay.className = "skin-overlay";
-      overlay.innerHTML = `<div class="skin-cost">${skin.price} pt</div>`;
+      overlay.innerHTML = `<div class="skin-cost">${cosmetic.price} pt</div>`;
       box.appendChild(overlay);
     }
     
-    // Handle skin selection/purchase
+    // Handle cosmetic selection/purchase
     box.addEventListener("click", () => {
-      if (owned) {
-        // Equip the skin if already owned
-        equipSkin(skin.id);
-        updateBirdImage();
-        renderSkinsGrid();
-      } else if (save.points >= skin.price) {
-        // Purchase and equip the skin if player has enough points
-        save.points -= skin.price;
-        unlockSkin(skin.id);
-        equipSkin(skin.id);
-        updateBirdImage();
-        renderSkinsGrid();
+      if (isOwned) {
+        // Equip the cosmetic if already owned
+        equipCosmetic(activeTab, cosmetic.id);
+        updateCosmeticImages();
+        renderCosmeticsGrid();
+        // Sync equipment change to database
+        if (typeof syncPurchaseToDb === 'function') {
+          syncPurchaseToDb();
+        }
+      } else if (save.points >= cosmetic.price) {
+        // Purchase and equip the cosmetic if player has enough points
+        save.points -= cosmetic.price;
+        unlockCosmetic(activeTab, cosmetic.id);
+        equipCosmetic(activeTab, cosmetic.id);
+        updateCosmeticImages();
+        renderCosmeticsGrid();
         updateMenuInfo();
+        // Sync purchase to database
+        if (typeof syncPurchaseToDb === 'function') {
+          syncPurchaseToDb();
+        }
       }
     });
     
-    skinsGrid.appendChild(box);
+    cosmeticsGrid.appendChild(box);
   }
+}
+
+// Legacy function name for compatibility
+function renderSkinsGrid() {
+  renderCosmeticsGrid();
 }

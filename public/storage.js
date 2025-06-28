@@ -3,18 +3,8 @@
 // =============================================================================
 
 // --- Firebase Configuration & Initialization ---
-const firebaseConfig = {
-  apiKey: "AIzaSyDh-UejLP_DLWWuWDwUM0PeOSG6IYqBO0U",
-  authDomain: "pitch-bird.firebaseapp.com",
-  projectId: "pitch-bird",
-  storageBucket: "pitch-bird.firebasestorage.app",
-  messagingSenderId: "356300745950",
-  appId: "1:356300745950:web:bef4de640276fac4c8264f",
-  measurementId: "G-8SS9R2QGRW"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+// Config is loaded from firebase-config.js
+firebase.initializeApp(window.firebaseConfig);
 const db = firebase.database();
 
 // --- Local Storage Management ---
@@ -31,6 +21,21 @@ function loadSave() {
       if (!save.highScore) save.highScore = 0;
       if (!save.ownedSkins) save.ownedSkins = ["default"];
       if (!save.equippedSkin) save.equippedSkin = "default";
+      if (!save.ownedPipes) save.ownedPipes = ["default"];
+      if (!save.equippedPipe) save.equippedPipe = "default";
+      if (!save.ownedBackdrops) save.ownedBackdrops = ["default"];
+      if (!save.equippedBackdrop) save.equippedBackdrop = "default";
+      
+      // Clean arrays to remove undefined values
+      save.ownedSkins = save.ownedSkins.filter(item => item !== undefined && item !== null);
+      save.ownedPipes = save.ownedPipes.filter(item => item !== undefined && item !== null);
+      save.ownedBackdrops = save.ownedBackdrops.filter(item => item !== undefined && item !== null);
+      
+      // Ensure defaults are present
+      if (!save.ownedSkins.includes("default")) save.ownedSkins.unshift("default");
+      if (!save.ownedPipes.includes("default")) save.ownedPipes.unshift("default");
+      if (!save.ownedBackdrops.includes("default")) save.ownedBackdrops.unshift("default");
+      
       return save;
     } catch {
       // Corrupt data, reset
@@ -47,7 +52,28 @@ function createDefaultSave() {
     highScore: 0,
     ownedSkins: ["default"],
     equippedSkin: "default",
+    ownedPipes: ["default"],
+    equippedPipe: "default",
+    ownedBackdrops: ["default"],
+    equippedBackdrop: "default",
   };
+}
+
+// Clean save data to remove undefined values
+function cleanSaveData() {
+  if (save.ownedSkins) {
+    save.ownedSkins = save.ownedSkins.filter(item => item !== undefined && item !== null);
+    if (!save.ownedSkins.includes("default")) save.ownedSkins.unshift("default");
+  }
+  if (save.ownedPipes) {
+    save.ownedPipes = save.ownedPipes.filter(item => item !== undefined && item !== null);
+    if (!save.ownedPipes.includes("default")) save.ownedPipes.unshift("default");
+  }
+  if (save.ownedBackdrops) {
+    save.ownedBackdrops = save.ownedBackdrops.filter(item => item !== undefined && item !== null);
+    if (!save.ownedBackdrops.includes("default")) save.ownedBackdrops.unshift("default");
+  }
+  saveData();
 }
 
 // Save data to localStorage
@@ -114,7 +140,12 @@ async function signUp(name, passcode, localData) {
     passcodeHash,
     highScore: localData.highScore || 0,
     points: localData.points || 0,
-    ownedSkins: localData.ownedSkins || ["default"],
+    ownedSkins: (localData.ownedSkins || ["default"]).filter(item => item !== undefined && item !== null),
+    ownedPipes: (localData.ownedPipes || ["default"]).filter(item => item !== undefined && item !== null),
+    ownedBackdrops: (localData.ownedBackdrops || ["default"]).filter(item => item !== undefined && item !== null),
+    equippedSkin: localData.equippedSkin || "default",
+    equippedPipe: localData.equippedPipe || "default",
+    equippedBackdrop: localData.equippedBackdrop || "default",
     createdAt: Date.now()
   };
   
@@ -151,7 +182,12 @@ async function logIn(name, passcode, localData) {
     userId: userId, // Ensure userId is set
     highScore: Math.max(userData.highScore || 0, localData.highScore || 0),
     points: (userData.points || 0) + newLocalPoints,
-    ownedSkins: Array.from(new Set([...(userData.ownedSkins || []), ...(localData.ownedSkins || [])]))
+    ownedSkins: Array.from(new Set([...(userData.ownedSkins || []), ...(localData.ownedSkins || [])])).filter(item => item !== undefined && item !== null),
+    ownedPipes: Array.from(new Set([...(userData.ownedPipes || ["default"]), ...(localData.ownedPipes || ["default"])])).filter(item => item !== undefined && item !== null),
+    ownedBackdrops: Array.from(new Set([...(userData.ownedBackdrops || ["default"]), ...(localData.ownedBackdrops || ["default"])])).filter(item => item !== undefined && item !== null),
+    equippedSkin: localData.equippedSkin || userData.equippedSkin || "default",
+    equippedPipe: localData.equippedPipe || userData.equippedPipe || "default",
+    equippedBackdrop: localData.equippedBackdrop || userData.equippedBackdrop || "default"
   };
   
   // Update user data in Firebase
@@ -241,15 +277,64 @@ async function syncLoggedInUserFromDb() {
         points: dbUser.points || 0,
         highScore: dbUser.highScore || 0,
         ownedSkins: dbUser.ownedSkins || ["default"],
-        equippedSkin: dbUser.equippedSkin || "default"
+        equippedSkin: dbUser.equippedSkin || "default",
+        ownedPipes: dbUser.ownedPipes || ["default"],
+        equippedPipe: dbUser.equippedPipe || "default",
+        ownedBackdrops: dbUser.ownedBackdrops || ["default"],
+        equippedBackdrop: dbUser.equippedBackdrop || "default"
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
       localStorage.setItem('buzzyBirdUser', JSON.stringify(dbUser));
       updateMenuInfo && updateMenuInfo();
-      renderSkinsGrid && renderSkinsGrid();
+      renderCosmeticsGrid && renderCosmeticsGrid();
       updateAuthUI && updateAuthUI();
     }
   } catch (e) {
     // If fetch fails, do nothing (keep local data)
+  }
+}
+
+// --- Sync local purchases to Firebase ---
+async function syncPurchaseToDb() {
+  const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
+  if (!user || !user.userId) return; // Only sync if user is logged in
+  
+  try {
+    // Clean arrays to remove any undefined values
+    const cleanOwnedSkins = (save.ownedSkins || ["default"]).filter(item => item !== undefined && item !== null);
+    const cleanOwnedPipes = (save.ownedPipes || ["default"]).filter(item => item !== undefined && item !== null);
+    const cleanOwnedBackdrops = (save.ownedBackdrops || ["default"]).filter(item => item !== undefined && item !== null);
+    
+    // Ensure default items are always included
+    if (!cleanOwnedSkins.includes("default")) cleanOwnedSkins.unshift("default");
+    if (!cleanOwnedPipes.includes("default")) cleanOwnedPipes.unshift("default");
+    if (!cleanOwnedBackdrops.includes("default")) cleanOwnedBackdrops.unshift("default");
+    
+    const userRef = db.ref('users/' + user.userId);
+    await userRef.update({
+      points: save.points || 0,
+      ownedSkins: cleanOwnedSkins,
+      equippedSkin: save.equippedSkin || "default",
+      ownedPipes: cleanOwnedPipes,
+      equippedPipe: save.equippedPipe || "default",
+      ownedBackdrops: cleanOwnedBackdrops,
+      equippedBackdrop: save.equippedBackdrop || "default"
+    });
+    
+    // Update local user data to match
+    const updatedUser = {
+      ...user,
+      points: save.points || 0,
+      ownedSkins: cleanOwnedSkins,
+      equippedSkin: save.equippedSkin || "default",
+      ownedPipes: cleanOwnedPipes,
+      equippedPipe: save.equippedPipe || "default",
+      ownedBackdrops: cleanOwnedBackdrops,
+      equippedBackdrop: save.equippedBackdrop || "default"
+    };
+    localStorage.setItem('buzzyBirdUser', JSON.stringify(updatedUser));
+  } catch (e) {
+    // If sync fails, keep local data
+    console.warn('Failed to sync purchase to database:', e);
   }
 }

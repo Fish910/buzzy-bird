@@ -166,6 +166,118 @@ button {
   grid-gap: 16px;
   margin: 18px 0 18px 0;
 }
+
+/* Cosmetics tabs styling */
+.cosmetics-popup {
+  min-width: 380px;
+  align-items: stretch; /* Override default centering for cosmetics popup */
+  position: relative; /* Allow positioning of tabs */
+  margin-top: 40px; /* Add more space at top for protruding tabs */
+}
+
+.cosmetics-tabs {
+  display: flex;
+  border-bottom: 2px solid #ddd;
+  margin-bottom: 18px;
+  gap: 0;
+  justify-content: flex-start; /* Align tabs to the left */
+  align-self: flex-start; /* Ensure the tabs container aligns to the left */
+  position: absolute; /* Position tabs absolutely */
+  top: -40px; /* Move tabs higher up to poke out more */
+  left: 0; /* Align to left edge */
+}
+
+.cosmetics-tab {
+  flex: 0 1 auto; /* Don't stretch tabs to fill width */
+  padding: 12px 16px;
+  background: #f5f5f5;
+  border: 2px solid #ddd;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: bold;
+  color: #666;
+  transition: all 0.2s;
+  margin: 0;
+  min-width: 80px; /* Ensure tabs have minimum width */
+  position: relative; /* For z-index stacking */
+  z-index: 10; /* Ensure tabs appear above popup background */
+}
+
+.cosmetics-tab:first-child {
+  border-right: none;
+}
+
+.cosmetics-tab:last-child {
+  border-left: none;
+}
+
+.cosmetics-tab:not(:first-child):not(:last-child) {
+  border-left: none;
+  border-right: none;
+}
+
+.cosmetics-tab.active {
+  background: #fff;
+  color: #1976d2;
+  border-color: #1976d2;
+  border-bottom: 2px solid #fff;
+  margin-bottom: -2px;
+  z-index: 11; /* Active tab appears above other tabs */
+}
+
+.cosmetics-tab:hover:not(.active) {
+  background: #e8e8e8;
+  color: #333;
+}
+
+.cosmetics-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 48px);
+  grid-gap: 16px;
+  margin: 0 0 18px 0;
+  min-height: 120px;
+  max-height: 300px; /* Limit height to prevent popup from becoming too tall */
+  overflow-y: auto; /* Enable vertical scrolling when needed */
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+  padding: 8px; /* Add some padding for better scroll appearance */
+  border-radius: 8px; /* Rounded corners for the scroll area */
+}
+
+/* Pipe-specific styling - show only top quarter */
+.cosmetics-grid.pipes-grid {
+  grid-template-columns: repeat(5, 48px);
+}
+
+.cosmetics-grid.pipes-grid .skin-box {
+  overflow: hidden;
+}
+
+.cosmetics-grid.pipes-grid .skin-sprite {
+  width: 36px;
+  height: 36px; /* Keep normal height */
+  object-fit: cover;
+  object-position: top; /* Show top portion */
+  /* Remove the transform that was hiding the image */
+}
+
+/* Backdrop-specific styling - larger boxes */
+.cosmetics-grid.backdrops-grid {
+  grid-template-columns: repeat(4, 64px); /* Fewer columns, larger boxes */
+  grid-gap: 20px;
+  max-height: 280px; /* Slightly smaller max height due to larger items */
+}
+
+.cosmetics-grid.backdrops-grid .skin-box {
+  width: 64px;
+  height: 64px;
+}
+
+.cosmetics-grid.backdrops-grid .skin-sprite {
+  width: 56px;
+  height: 56px;
+}
 .skin-box {
   width: 48px;
   height: 48px;
@@ -436,6 +548,32 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     padding: 12px 4vw 16px 4vw;
     min-height: 320px;
   }
+}
+
+/* Custom scrollbar styling for cosmetics grid */
+.cosmetics-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.cosmetics-grid::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.cosmetics-grid::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.cosmetics-grid::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Firefox scrollbar styling */
+.cosmetics-grid {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
 }
 
 .hidden {
