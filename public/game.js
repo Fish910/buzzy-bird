@@ -332,14 +332,34 @@ function resizeCanvas() {
 // Draw score using digit images
 function drawScore(x, y, score) {
   const scoreStr = score.toString();
-  const digitWidth = 32;
-  const digitHeight = 48;
-  const totalWidth = scoreStr.length * digitWidth;
+  
+  // Use the natural dimensions of the first digit image as reference
+  // All digit images should have the same dimensions
+  const firstDigitImg = digitImgs[0];
+  if (!firstDigitImg || !firstDigitImg.complete) {
+    // If images aren't loaded yet, skip drawing
+    return;
+  }
+  
+  // Use natural image dimensions and scale appropriately for screen size
+  const baseDigitWidth = firstDigitImg.naturalWidth;
+  const baseDigitHeight = firstDigitImg.naturalHeight;
+  
+  // Scale digits based on canvas size, but maintain aspect ratio
+  const scale = Math.min(canvas.width / 800, canvas.height / 600); // Base scale on 800x600 reference
+  const scaledWidth = baseDigitWidth * scale;
+  const scaledHeight = baseDigitHeight * scale;
+  
+  const totalWidth = scoreStr.length * scaledWidth;
   let drawX = x - totalWidth / 2;
+  
   for (let char of scoreStr) {
     const digit = parseInt(char);
-    ctx.drawImage(digitImgs[digit], drawX, y, digitWidth, digitHeight);
-    drawX += digitWidth;
+    if (digitImgs[digit] && digitImgs[digit].complete) {
+      // Draw scaled but maintaining aspect ratio
+      ctx.drawImage(digitImgs[digit], drawX, y, scaledWidth, scaledHeight);
+    }
+    drawX += scaledWidth;
   }
 }
 
@@ -558,7 +578,9 @@ function draw() {
 
   // Draw score
   if (!gameOver) {
-    drawScore(canvas.width / 2, 20, score);
+    // Position score at top with proper spacing based on scaled digit height
+    const scoreY = 20; // Top margin
+    drawScore(canvas.width / 2, scoreY, score);
   }
 
   // Collision detection
@@ -625,7 +647,10 @@ function draw() {
       goDrawWidth,
       goDrawHeight
     );
-    drawScore(canvas.width / 2, canvas.height / 2 + goDrawHeight / 2 + 20, score);
+    
+    // Position score below game over image with proper spacing
+    const scoreY = canvas.height / 2 + goDrawHeight / 2 + 30; // Add more spacing
+    drawScore(canvas.width / 2, scoreY, score);
     running = false;
     pitchLoopActive = false;
     drawGameButtons();

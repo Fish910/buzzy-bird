@@ -8,7 +8,7 @@ const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false; // Disable image smoothing
 
 // --- Global Save Object ---
-let save = loadSave();
+let save;
 
 // --- DOM Element References ---
 const mainMenu = document.getElementById("mainMenu");
@@ -130,9 +130,6 @@ if (storedPipeSpeed !== null) {
 // Initialize display elements
 if (bottomNoteBox) bottomNoteBox.textContent = midiToNoteName(bottomMidi);
 if (topNoteBox) topNoteBox.textContent = midiToNoteName(topMidi);
-
-// Initialize cosmetics
-updateCosmeticImages();
 
 // --- Event Listeners ---
 
@@ -648,6 +645,12 @@ updateDifficultyBtn();
 
 // Microphone access on load
 window.addEventListener("DOMContentLoaded", async () => {
+  // Initialize save data first
+  save = loadSave();
+  
+  // Initialize cosmetics after save is loaded
+  updateCosmeticImages();
+  
   try {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     console.log("Microphone access granted.");

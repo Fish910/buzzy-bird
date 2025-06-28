@@ -62,6 +62,7 @@ function getCosmetic(type, id) {
 
 // Get owned cosmetics for a type
 function getOwnedCosmetics(type) {
+  if (!save) return ["default"];
   switch(type) {
     case "birds": return save.ownedSkins || ["default"];
     case "pipes": return save.ownedPipes || ["default"];
@@ -72,6 +73,7 @@ function getOwnedCosmetics(type) {
 
 // Get equipped cosmetic for a type
 function getEquippedCosmetic(type) {
+  if (!save) return "default";
   switch(type) {
     case "birds": return save.equippedSkin || "default";
     case "pipes": return save.equippedPipe || "default";
@@ -82,6 +84,7 @@ function getEquippedCosmetic(type) {
 
 // Unlock a cosmetic for the player
 function unlockCosmetic(type, cosmeticId) {
+  if (!save) return; // Guard against undefined save
   const owned = getOwnedCosmetics(type);
   if (!owned.includes(cosmeticId)) {
     switch(type) {
@@ -104,6 +107,7 @@ function unlockCosmetic(type, cosmeticId) {
 
 // Equip a cosmetic if the player owns it
 function equipCosmetic(type, cosmeticId) {
+  if (!save) return; // Guard against undefined save
   const owned = getOwnedCosmetics(type);
   if (owned.includes(cosmeticId)) {
     switch(type) {
@@ -131,6 +135,7 @@ function updateCosmeticImages() {
 // Update the bird image based on equipped skin
 function updateBirdImage() {
   if (typeof birdImg === 'undefined') return; // Wait for game.js to load
+  if (!save) return; // Wait for save to be loaded
   const bird = getCosmetic("birds", save.equippedSkin || "default");
   birdImg.src = bird.img;
 }
@@ -138,6 +143,7 @@ function updateBirdImage() {
 // Update the pipe image based on equipped pipe
 function updatePipeImage() {
   if (typeof pipeImg === 'undefined') return; // Wait for game.js to load
+  if (!save) return; // Wait for save to be loaded
   const pipe = getCosmetic("pipes", save.equippedPipe || "default");
   pipeImg.src = pipe.img;
 }
@@ -145,6 +151,7 @@ function updatePipeImage() {
 // Update the backdrop image based on equipped backdrop
 function updateBackdropImage() {
   if (typeof bgImg === 'undefined') return; // Wait for game.js to load
+  if (!save) return; // Wait for save to be loaded
   const backdrop = getCosmetic("backdrops", save.equippedBackdrop || "default");
   bgImg.src = backdrop.img;
 }
