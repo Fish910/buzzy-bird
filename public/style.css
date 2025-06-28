@@ -22,10 +22,6 @@ canvas {
   padding: 0;
   background: #e0f7fa;
   touch-action: none;
-  /* Performance optimizations for pixelated games */
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
   /* REMOVE any width/height here! */
   /* Do NOT set width: 100vw or height: 100vh */
 }
