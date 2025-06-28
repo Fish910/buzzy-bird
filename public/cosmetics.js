@@ -113,12 +113,15 @@ function equipCosmetic(type, cosmeticId) {
     switch(type) {
       case "birds":
         save.equippedSkin = cosmeticId;
+        updateBirdImage(); // Update bird image immediately
         break;
       case "pipes":
         save.equippedPipe = cosmeticId;
+        updatePipeImage(); // Update pipe image immediately
         break;
       case "backdrops":
         save.equippedBackdrop = cosmeticId;
+        updateBackdropImage(); // This will also update main menu background
         break;
     }
     saveData();
@@ -130,6 +133,7 @@ function updateCosmeticImages() {
   updateBirdImage();
   updatePipeImage();
   updateBackdropImage();
+  updateMainMenuBackground(); // Update main menu background immediately
 }
 
 // Update the bird image based on equipped skin
@@ -154,6 +158,28 @@ function updateBackdropImage() {
   if (!save) return; // Wait for save to be loaded
   const backdrop = getCosmetic("backdrops", save.equippedBackdrop || "default");
   bgImg.src = backdrop.img;
+  
+  // Also update the main menu background immediately
+  updateMainMenuBackground();
+}
+
+// Update the main menu background to match the equipped backdrop
+function updateMainMenuBackground() {
+  if (!save) return; // Wait for save to be loaded
+  const backdrop = getCosmetic("backdrops", save.equippedBackdrop || "default");
+  const mainMenu = document.getElementById("mainMenu");
+  
+  if (mainMenu && backdrop && backdrop.img) {
+    // Set the backdrop image as the background of the main menu
+    mainMenu.style.backgroundImage = `url(${backdrop.img})`;
+    mainMenu.style.backgroundSize = 'cover';
+    mainMenu.style.backgroundPosition = 'center';
+    mainMenu.style.backgroundRepeat = 'no-repeat';
+    
+    // Keep the overlay for readability
+    mainMenu.style.backgroundColor = 'rgba(240, 248, 255, 0.128)';
+    mainMenu.style.backgroundBlendMode = 'overlay';
+  }
 }
 
 // --- Cosmetics Popup Management ---

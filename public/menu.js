@@ -29,6 +29,12 @@ function showMainMenu() {
   running = false;
   paused = false;
   gameOver = false;
+  
+  // Update main menu background to match equipped backdrop
+  if (typeof updateMainMenuBackground === 'function') {
+    updateMainMenuBackground();
+  }
+  
   tryDrawInitial();
 }
 

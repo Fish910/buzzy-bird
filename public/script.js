@@ -519,6 +519,10 @@ if (signUpSubmitBtn) {
       signUpModal.classList.add('hidden');
       updateAuthUI();
       renderLeaderboard();
+      // Update main menu background to reflect cosmetics
+      if (typeof updateMainMenuBackground === 'function') {
+        updateMainMenuBackground();
+      }
     } catch (err) {
       signUpError.textContent = err.message || 'Sign up failed.';
     }
@@ -571,6 +575,10 @@ if (logInSubmitBtn) {
       renderLeaderboard();
       updateMenuInfo();
       renderCosmeticsGrid();
+      // Update main menu background to reflect newly loaded cosmetics
+      if (typeof updateMainMenuBackground === 'function') {
+        updateMainMenuBackground();
+      }
     } catch (err) {
       logInError.textContent = err.message || 'Log in failed.';
     }
