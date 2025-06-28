@@ -280,8 +280,8 @@ function renderCosmeticsGrid() {
         updateCosmeticImages();
         renderCosmeticsGrid();
         // Sync equipment change to database
-        if (typeof syncPurchaseToDb === 'function') {
-          syncPurchaseToDb();
+        if (typeof syncUserDataToDb === 'function') {
+          syncUserDataToDb();
         }
       } else if (save.points >= cosmetic.price) {
         // Purchase and equip the cosmetic if player has enough points
@@ -291,9 +291,9 @@ function renderCosmeticsGrid() {
         updateCosmeticImages();
         renderCosmeticsGrid();
         updateMenuInfo();
-        // Sync purchase to database
-        if (typeof syncPurchaseToDb === 'function') {
-          syncPurchaseToDb();
+        // Sync user data (purchase and points) to database
+        if (typeof syncUserDataToDb === 'function') {
+          syncUserDataToDb();
         }
       }
     });

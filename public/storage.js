@@ -100,15 +100,25 @@ function setHighScoreIfNeeded(newScore) {
   console.log('Checking high score:', newScore, 'vs current:', save.highScore);
   if (newScore > save.highScore) {
     console.log('New high score achieved:', newScore);
+    const oldHighScore = save.highScore;
     save.highScore = newScore;
     saveData();
     
     // Immediately sync to Firebase if user is logged in
     const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
     if (user && user.userId) {
-      syncPurchaseToDb().catch(err => {
+      console.log('Syncing new high score to Firebase:', oldHighScore, '->', newScore);
+      syncUserDataToDb().then(() => {
+        // Refresh the leaderboard after syncing
+        console.log('High score synced to Firebase, refreshing leaderboard');
+        if (typeof renderLeaderboard === 'function') {
+          renderLeaderboard();
+        }
+      }).catch(err => {
         console.log('Failed to sync high score to Firebase:', err);
       });
+    } else {
+      console.log('User not logged in, high score saved locally only');
     }
   }
 }
@@ -309,7 +319,7 @@ async function syncLoggedInUserFromDb() {
       // If we merged higher local values, sync them back to the database
       if (save.points > (dbUser.points || 0) || save.highScore > (dbUser.highScore || 0)) {
         console.log('Syncing higher local values back to DB');
-        await syncPurchaseToDb();
+        await syncUserDataToDb();
       }
       
       localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
@@ -328,10 +338,16 @@ async function syncLoggedInUserFromDb() {
   }
 }
 
-// --- Sync local purchases to Firebase ---
-async function syncPurchaseToDb() {
+// --- Sync all local user data to Firebase ---
+async function syncUserDataToDb() {
   const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
   if (!user || !user.userId) return; // Only sync if user is logged in
+  
+  console.log('Syncing data to Firebase:', {
+    points: save.points || 0,
+    highScore: save.highScore || 0,
+    userId: user.userId
+  });
   
   try {
     // Clean arrays to remove any undefined values
@@ -347,6 +363,7 @@ async function syncPurchaseToDb() {
     const userRef = db.ref('users/' + user.userId);
     await userRef.update({
       points: save.points || 0,
+      highScore: save.highScore || 0,
       ownedSkins: cleanOwnedSkins,
       equippedSkin: save.equippedSkin || "default",
       ownedPipes: cleanOwnedPipes,
@@ -355,10 +372,13 @@ async function syncPurchaseToDb() {
       equippedBackdrop: save.equippedBackdrop || "default"
     });
     
+    console.log('Successfully synced to Firebase');
+    
     // Update local user data to match
     const updatedUser = {
       ...user,
       points: save.points || 0,
+      highScore: save.highScore || 0,
       ownedSkins: cleanOwnedSkins,
       equippedSkin: save.equippedSkin || "default",
       ownedPipes: cleanOwnedPipes,
