@@ -27,6 +27,13 @@ function showMainMenu() {
   console.log('Showing main menu, current high score:', save.highScore);
   updateMenuInfo();
   mainMenu.style.display = "flex";
+  
+  // Hide the canvas when menu is shown to prevent backdrop from showing through
+  const canvas = document.getElementById("gameCanvas");
+  if (canvas) {
+    canvas.style.display = "none";
+  }
+  
   running = false;
   paused = false;
   gameOver = false;
@@ -35,13 +42,17 @@ function showMainMenu() {
   if (typeof updateMainMenuBackground === 'function') {
     updateMainMenuBackground();
   }
-  
-  tryDrawInitial();
 }
 
 // Hide the main menu
 function hideMainMenu() {
   mainMenu.style.display = "none";
+  
+  // Show the canvas when menu is hidden
+  const canvas = document.getElementById("gameCanvas");
+  if (canvas) {
+    canvas.style.display = "block";
+  }
 }
 
 // Update points and high score display in menu
