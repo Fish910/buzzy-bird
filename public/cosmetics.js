@@ -191,15 +191,17 @@ function updateMainMenuBackground() {
     backdropCanvas.width = 480;
     backdropCanvas.style.left = `${(window.innerWidth - backdropCanvas.width) / 2}px`;
     backdropCanvas.style.top = `0px`;
-    backdropCanvas.style.position = 'absolute';
   } else {
-    // Portrait: fill the screen (SAME AS GAME CANVAS)
-    backdropCanvas.width = window.innerWidth;
+    // Portrait: BUT limit the width to prevent oversized backdrop
+    // Instead of filling entire screen width, maintain reasonable proportions
+    const maxWidth = Math.min(window.innerWidth, 480); // Don't exceed landscape canvas width
+    backdropCanvas.width = maxWidth;
     backdropCanvas.height = window.innerHeight;
-    backdropCanvas.style.left = `0px`;
+    backdropCanvas.style.left = `${(window.innerWidth - backdropCanvas.width) / 2}px`;
     backdropCanvas.style.top = `0px`;
-    backdropCanvas.style.position = 'absolute';
   }
+  
+  console.log('Backdrop canvas dimensions:', backdropCanvas.width, 'x', backdropCanvas.height);
   
   // Draw the backdrop image on the canvas using EXACT same logic as game
   const ctx = backdropCanvas.getContext("2d");
@@ -207,6 +209,7 @@ function updateMainMenuBackground() {
   
   const img = new Image();
   img.onload = () => {
+    console.log('Drawing backdrop image:', img.width, 'x', img.height, 'onto canvas:', backdropCanvas.width, 'x', backdropCanvas.height);
     // Use EXACT same drawImage call as in draw() function: ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, backdropCanvas.width, backdropCanvas.height);
   };
@@ -220,7 +223,7 @@ function updateMainMenuBackground() {
   // Add the backdrop canvas to the document body (not main menu to avoid z-index issues)
   document.body.appendChild(backdropCanvas);
   
-  console.log('Main menu backdrop canvas created with EXACT game canvas sizing logic');
+  console.log('Main menu backdrop canvas created with constrained sizing logic');
 }
 
 // --- Cosmetics Popup Management ---
