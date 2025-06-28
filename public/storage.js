@@ -4,6 +4,10 @@
 
 // --- Firebase Configuration & Initialization ---
 // Config is loaded from firebase-config.js
+console.log("Initializing Firebase with config:", window.firebaseConfig);
+if (!window.firebaseConfig) {
+  console.error("Firebase configuration not found! Make sure firebase-config.js loaded properly.");
+}
 firebase.initializeApp(window.firebaseConfig);
 const db = firebase.database();
 

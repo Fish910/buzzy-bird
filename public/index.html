@@ -11,8 +11,20 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <!-- Firebase Realtime Database -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <!-- Load Firebase config -->
-  <script src="firebase-config.js"></script>
+  <!-- Inline Firebase config to avoid serving issues -->
+  <script>
+    console.log("Loading Firebase configuration inline...");
+    window.firebaseConfig = {
+      apiKey: "AIzaSyDh-UejLP_DLWWuWDwUM0PeOSG6IYqBO0U",
+      authDomain: "pitch-bird.firebaseapp.com",
+      projectId: "pitch-bird",
+      storageBucket: "pitch-bird.firebasestorage.app",
+      messagingSenderId: "356300745950",
+      appId: "1:356300745950:web:bef4de640276fac4c8264f",
+      measurementId: "G-8SS9R2QGRW"
+    };
+    console.log("Firebase configuration loaded:", window.firebaseConfig);
+  </script>
 </head>
 <body>
   <div id="mainMenu" class="menu">
