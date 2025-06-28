@@ -25,7 +25,8 @@ const DEFAULT_PIPES = [
 
 const PIPES = [
   ...DEFAULT_PIPES,
-  { id: "red", name: "Red Pipes", price: 15, img: "assets/pipes/red.png" }
+  { id: "red", name: "Red Pipes", price: 15, img: "assets/pipes/red.png" },
+  { id: "rainbow", name: "Rainbow Pipes", price: 15, img: "assets/pipes/rainbow.png" }
 ];
 
 // --- Backdrop Definitions ---
