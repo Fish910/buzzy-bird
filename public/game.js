@@ -733,9 +733,12 @@ function draw(currentTime = 0) {
           }
         }
       }
-      // Move pipes (frame-rate independent)
+      // Move pipes (frame-rate independent with scaling compensation)
+      const gameScale = window.gameScale || 1;
+      const scaledPipeSpeed = pipeSpeed * gameScale; // Scale pipe speed with sprite size
+      
       for (let pipe of pipes) {
-        pipe.x -= pipeSpeed * deltaMultiplier;
+        pipe.x -= scaledPipeSpeed * deltaMultiplier;
       }
       
       pipes = pipes.filter((pipe) => {
@@ -757,7 +760,9 @@ function draw(currentTime = 0) {
   
   // Update background scrolling continuously when game is running and not paused
   if (!paused && !gameOver) {
-    backgroundOffsetX += pipeSpeed * 0.5 * deltaMultiplier;
+    const gameScale = window.gameScale || 1;
+    const scaledPipeSpeed = pipeSpeed * gameScale; // Use same scaled speed as pipes
+    backgroundOffsetX += scaledPipeSpeed * 0.5 * deltaMultiplier;
   }
 
   // Draw pipes with proper scaling
