@@ -512,12 +512,30 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   margin-left: 8px;
 }
 
-/* Responsive for mobile */
+/* Desktop/PC specific styling - make leaderboard taller */
+@media (min-width: 1025px) {
+  #leaderboardContainer {
+    height: 40vh !important; /* Taller on desktop */
+    min-height: 320px !important;
+  }
+}
+
+/* Responsive for mobile/iPhone - shorter leaderboard popup but keep name container size */
 @media (max-width: 600px) {
   #leaderboardContainer {
     max-width: 98vw;
     padding: 12px 4vw 16px 4vw;
-    min-height: 320px;
+    min-height: 280px; /* Reduced from 320px to make popup shorter */
+    height: 28vh; /* Shorter on iPhone */
+  }
+  
+  /* Keep the name list container the same size by adjusting other elements */
+  .leaderboard-header {
+    margin-bottom: 8px; /* Reduced spacing */
+  }
+  
+  .leaderboard-footer {
+    margin-top: 12px; /* Reduced spacing */
   }
 }
 
