@@ -547,9 +547,41 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   #loadingOverlay {
     font-size: 1.6em !important;
   }
+  
+  /* Main menu specific iPad layout - make everything wider and more spread out */
+  .menu {
+    padding: 0 10vw; /* Add horizontal padding to use more screen width */
+  }
+  
+  .splash-img {
+    width: 480px !important; /* Larger splash image */
+    max-width: 70vw !important; /* Use more of the screen width */
+    margin-bottom: 32px !important; /* More spacing */
+  }
+  
+  .menu-info {
+    font-size: 1.5em !important; /* Larger version text */
+    gap: 40px !important; /* More spacing between info elements */
+    margin-bottom: 20px !important;
+  }
+  
+  .main-menu-btns {
+    grid-template-columns: repeat(2, 200px) !important; /* Wider buttons */
+    gap: 20px !important; /* More spacing between buttons */
+    margin-bottom: 24px !important;
+  }
+  
+  .main-menu-btns button {
+    width: 200px !important; /* Wider buttons */
+    font-size: 1.4em !important;
+    padding: 18px 32px !important;
+  }
+  
+  .menu-tap {
+    font-size: 1.3em !important; /* Larger tap instruction text */
+    margin-top: 28px !important; /* More spacing */
+  }
 }
-
-
 
 /* Custom scrollbar styling for cosmetics grid */
 .cosmetics-grid::-webkit-scrollbar {
