@@ -193,16 +193,26 @@ function resetGame() {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
-  // Clean up iPad timeout
+  
+  // Clean up iPad timeout more thoroughly
   if (window.ipadFrameTimeout) {
     clearTimeout(window.ipadFrameTimeout);
     window.ipadFrameTimeout = null;
   }
+  
+  // Clean up any other iPad-related timeouts that might exist
+  // Clear all timeouts to prevent accumulation
+  let timeoutId = setTimeout(() => {}, 0);
+  while (timeoutId > 0) {
+    clearTimeout(timeoutId);
+    timeoutId--;
+  }
+  
   pitchLoopActive = true;
 }
 
 // Stop the game and clean up
-function stopGame() {
+async function stopGame() {
   running = false;
   paused = false;
   pitch = null;
@@ -218,20 +228,8 @@ function stopGame() {
     clearTimeout(window.ipadFrameTimeout);
     window.ipadFrameTimeout = null;
   }
-  stopAudio();
+  await cleanupAudioResources();
   draw();
-}
-
-// Stop audio and clean up audio context
-function stopAudio() {
-  pitchLoopActive = false;
-  pitch = null;
-  if (audioContext) {
-    audioContext.close();
-    audioContext = null;
-  }
-  mic = null;
-  pitchDetector = null;
 }
 
 // --- Audio Setup & Pitch Detection ---
@@ -292,6 +290,9 @@ function getPitch() {
 async function ensureMicAndStart() {
   showLoading("Setting up microphone...");
   try {
+    // Clean up any existing resources first
+    await cleanupAudioResources();
+    
     // Always stop and request a new mic stream for each game
     if (micStream) {
       micStream.getTracks().forEach(track => track.stop());
@@ -326,6 +327,46 @@ async function ensureMicAndStart() {
     hideLoading();
     alert("Microphone access is required to play!");
     showMainMenu();
+  }
+}
+
+// Clean up audio resources thoroughly
+async function cleanupAudioResources() {
+  // Stop pitch detection
+  pitchLoopActive = false;
+  
+  // Clean up pitch detector
+  if (pitchDetector) {
+    try {
+      if (pitchDetector.dispose) pitchDetector.dispose();
+    } catch {}
+    pitchDetector = null;
+  }
+  
+  // Clean up microphone stream
+  if (micStream) {
+    try {
+      micStream.getTracks().forEach(track => track.stop());
+    } catch {}
+    micStream = null;
+  }
+  
+  // Clean up audio context
+  if (audioContext) {
+    try {
+      if (audioContext.state !== 'closed') {
+        await audioContext.close();
+      }
+    } catch {}
+    audioContext = null;
+  }
+  
+  // Clean up mic reference
+  mic = null;
+  
+  // Force garbage collection if available (mainly for testing)
+  if (window.gc) {
+    window.gc();
   }
 }
 
@@ -981,14 +1022,15 @@ function draw(currentTime = 0) {
     if (isIPadDevice()) {
       // Try for higher frame rate on iPad by using shorter timeout as fallback
       animationFrameId = requestAnimationFrame(draw);
-      // Also set a timeout to ensure minimum frame rate if RAF is throttled
+      // Only set a timeout if one doesn't already exist to prevent accumulation
       if (!window.ipadFrameTimeout) {
         window.ipadFrameTimeout = setTimeout(() => {
           window.ipadFrameTimeout = null;
-          if (!paused && animationFrameId) {
+          // Only continue if the game is still active and not paused
+          if (!paused && running) {
             draw(performance.now());
           }
-        }, 8); // ~120 FPS fallback
+        }, 11); // Slightly less aggressive: ~90 FPS fallback instead of 120
       }
     } else {
       animationFrameId = requestAnimationFrame(draw);
@@ -1023,7 +1065,7 @@ function tryDrawInitial() {
 }
 
 // Full system refresh/cleanup function
-function fullRefresh() {
+async function fullRefresh() {
   // Cancel animation frame
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
@@ -1039,23 +1081,10 @@ function fullRefresh() {
   // Stop pitch detection loop
   pitchLoopActive = false;
 
-  // Stop and close audio context and mic stream
-  if (audioContext) {
-    try { audioContext.close(); } catch {}
-    audioContext = null;
-  }
-  if (micStream) {
-    try {
-      if (micStream.getTracks) {
-        micStream.getTracks().forEach(track => track.stop());
-      }
-    } catch {}
-    micStream = null;
-  }
-  mic = null;
-  pitchDetector = null;
+  // Use the comprehensive cleanup function
+  await cleanupAudioResources();
 
-  // Remove any other intervals/timeouts
+  // Clear all timeouts and intervals more aggressively
   let id = window.setTimeout(() => {}, 0);
   while (id--) {
     window.clearTimeout(id);
