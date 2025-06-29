@@ -656,12 +656,14 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   position: relative;
 }
 
-/* Mobile/tablet responsive styling for cosmetics tabs */
-@media (max-width: 768px), (max-height: 768px) {
+/* Tablet responsive styling for cosmetics tabs - target iPad and similar devices */
+@media (max-width: 1200px) and (hover: none) and (pointer: coarse), 
+       (max-width: 1024px), 
+       (max-height: 1024px) {
   .cosmetics-tab {
     padding: 8px 12px;  /* Smaller padding */
-    font-size: 0.9em;   /* Smaller font size */
-    min-width: 70px;    /* Smaller minimum width */
+    font-size: 0.85em;  /* Smaller font size */
+    min-width: 65px;    /* Smaller minimum width */
   }
   
   .cosmetics-tabs {
@@ -669,8 +671,8 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
 }
 
-/* Extra small devices (phones in portrait) */
-@media (max-width: 480px) {
+/* Mobile devices (phones in portrait) */
+@media (max-width: 768px) {
   .cosmetics-tab {
     padding: 6px 10px;  /* Even smaller padding */
     font-size: 0.8em;   /* Even smaller font size */
@@ -679,5 +681,18 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   
   .cosmetics-tabs {
     top: -38px;         /* Move tabs even closer to popup */
+  }
+}
+
+/* Extra small devices (small phones) */
+@media (max-width: 480px) {
+  .cosmetics-tab {
+    padding: 5px 8px;   /* Very small padding */
+    font-size: 0.75em;  /* Very small font size */
+    min-width: 55px;    /* Very small minimum width */
+  }
+  
+  .cosmetics-tabs {
+    top: -35px;         /* Move tabs very close to popup */
   }
 }
