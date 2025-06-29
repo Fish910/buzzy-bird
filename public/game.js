@@ -708,7 +708,8 @@ function draw(currentTime = 0) {
   // Draw sidescrolling tiled background
   drawScrollingBackground();
 
-  if (!running) return;
+  // Only return early if not running AND not in game over state
+  if (!running && !gameOver) return;
 
   // Prevent bird from falling below the bottom of the screen
   const gameScale = window.gameScale || 1;
@@ -949,8 +950,8 @@ function draw(currentTime = 0) {
     drawScore(displayWidth / 2, scoreY, score);
     running = false;
     pitchLoopActive = false;
-    drawGameButtons();
-    return;
+    // Don't return early - let the animation loop continue for game over screen
+    // Buttons will be drawn at the end of the draw function
   }
 
   // Pause overlay
@@ -969,7 +970,8 @@ function draw(currentTime = 0) {
     ctx.fillRect(x + barWidth + gap, y, barWidth, iconHeight);
   }
 
-  if (!paused && !gameOver) {
+  // Continue animation loop even during game over (but not when paused)
+  if (!paused) {
     // Use more aggressive animation timing for iPad to achieve smoother motion
     if (isIPadDevice()) {
       // Try for higher frame rate on iPad by using shorter timeout as fallback
@@ -978,7 +980,7 @@ function draw(currentTime = 0) {
       if (!window.ipadFrameTimeout) {
         window.ipadFrameTimeout = setTimeout(() => {
           window.ipadFrameTimeout = null;
-          if (!paused && !gameOver && animationFrameId) {
+          if (!paused && animationFrameId) {
             draw(performance.now());
           }
         }, 8); // ~120 FPS fallback
