@@ -270,6 +270,11 @@ async function setupAudio() {
 
 // Called when pitch detection model is loaded
 function modelLoaded() {
+  console.log("Pitch detection model loaded successfully");
+  console.log("pitchLoopActive:", pitchLoopActive);
+  console.log("running:", running);
+  console.log("pitchDetector:", pitchDetector);
+  
   getPitch();
   
   // Immediately start the animation loop when the model is ready
@@ -280,19 +285,32 @@ function modelLoaded() {
 
 // Continuous pitch detection loop
 function getPitch() {
-  if (!running || !pitchLoopActive || paused) return;
-  if (!pitchDetector) return;
+  // Allow pitch detection during initial setup (when !running but pitchLoopActive)
+  if (!pitchLoopActive || paused) return;
+  if (!pitchDetector) {
+    console.log("getPitch: No pitch detector available");
+    return;
+  }
+  
   pitchDetector.getPitch((err, frequency) => {
     if (err) {
       console.error("Pitch detection error:", err);
     }
     if (frequency) {
       pitch = frequency;
+      // Debug: Log detected frequencies occasionally
+      if (Math.random() < 0.1) { // 10% of the time
+        console.log("Detected pitch:", frequency.toFixed(2), "Hz");
+      }
     } else {
       pitch = null;
     }
     // Only continue if pitchLoopActive is still true
-    if (pitchLoopActive) getPitch();
+    if (pitchLoopActive) {
+      getPitch();
+    } else {
+      console.log("Pitch detection loop stopped");
+    }
   });
 }
 
@@ -300,6 +318,8 @@ function getPitch() {
 async function ensureMicAndStart() {
   showLoading("Setting up microphone...");
   try {
+    console.log("Starting microphone and pitch detection setup...");
+    
     // Clean up any existing resources first
     await cleanupAudioResources();
     
@@ -308,7 +328,10 @@ async function ensureMicAndStart() {
       micStream.getTracks().forEach(track => track.stop());
       micStream = null;
     }
+    
+    console.log("Requesting microphone access...");
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    console.log("Microphone access granted");
 
     showLoading("Loading pitch model...");
     // Always close and create a new AudioContext for each game
@@ -316,24 +339,34 @@ async function ensureMicAndStart() {
       try { await audioContext.close(); } catch {}
     }
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    console.log("Audio context created, state:", audioContext.state);
 
     // Always create a new MediaStreamSource from the new micStream
     mic = audioContext.createMediaStreamSource(micStream);
+    console.log("Media stream source created");
 
     // Use the preloaded model, but set up with the new context and stream
+    console.log("Creating pitch detector...");
     pitchDetector = await ml5.pitchDetection(
       "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
       audioContext,
       micStream,
       () => {
+        console.log("Pitch detection model callback triggered");
         hideLoading();
         modelLoaded();
       }
     );
+    console.log("Pitch detector created:", pitchDetector);
+    
     // If modelLoaded is not called, hideLoading() after a timeout as fallback
-    setTimeout(hideLoading, 4000);
+    setTimeout(() => {
+      console.log("Timeout fallback triggered");
+      hideLoading();
+    }, 4000);
     // Don't call draw() here - let modelLoaded() handle starting the animation loop
   } catch (err) {
+    console.error("Error in ensureMicAndStart:", err);
     hideLoading();
     alert("Microphone access is required to play!");
     showMainMenu();
