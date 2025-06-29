@@ -131,8 +131,9 @@ function getPipeGap() {
 
 // Calculate dynamic pipe interval based on speed
 function getPipeIntervalFrames() {
-  // Desired distance between pipes in pixels
-  const desiredDistance = 320;
+  // Desired distance between pipes in pixels - increase for iPad
+  const isIPad = /ipad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const desiredDistance = isIPad ? 400 : 320; // 25% more spacing on iPad
   return Math.round(desiredDistance / pipeSpeed);
 }
 
