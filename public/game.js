@@ -320,8 +320,14 @@ function resizeCanvas() {
     return; // Exit early if iOS device is in landscape
   }
   
+  // Detect mobile devices
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 1024;
+  
   // Get device pixel ratio for high-DPI displays (iPad, Retina, etc.)
   const dpr = window.devicePixelRatio || 1;
+  
+  // Force minimum scaling on mobile devices
+  const effectiveDpr = isMobile ? Math.max(dpr, 2.0) : dpr;
   
   // Get the display size in CSS pixels
   let displayWidth, displayHeight;
@@ -350,22 +356,27 @@ function resizeCanvas() {
   canvas.style.position = 'absolute';
   
   // Set the canvas internal resolution (accounting for device pixel ratio)
-  canvas.width = Math.floor(displayWidth * dpr);
-  canvas.height = Math.floor(displayHeight * dpr);
+  canvas.width = Math.floor(displayWidth * effectiveDpr);
+  canvas.height = Math.floor(displayHeight * effectiveDpr);
   
   // Reset the context and scale it to match the device pixel ratio
   ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any previous transforms
-  ctx.scale(dpr, dpr);
+  ctx.scale(effectiveDpr, effectiveDpr);
   
   // Disable image smoothing after resize for pixel-perfect rendering
   ctx.imageSmoothingEnabled = false;
   
   // Store the scale factor globally for use in drawing functions
-  window.canvasScale = dpr;
+  window.canvasScale = effectiveDpr;
   window.displayWidth = displayWidth;
   window.displayHeight = displayHeight;
+  window.isMobile = isMobile;
   
-  console.log(`Canvas resized: ${displayWidth}x${displayHeight} CSS, ${canvas.width}x${canvas.height} internal, DPR: ${dpr}`);
+  // Calculate base game scale factor for sprites and UI
+  window.gameScale = isMobile ? Math.max(2.0, displayWidth / 400) : Math.max(1.0, displayWidth / 800);
+  
+  console.log(`Canvas resized: ${displayWidth}x${displayHeight} CSS, ${canvas.width}x${canvas.height} internal, DPR: ${dpr}, effectiveDpr: ${effectiveDpr}`);
+  console.log(`Mobile: ${isMobile}, gameScale: ${window.gameScale}`);
   console.log(`Canvas style dimensions: ${canvas.style.width} x ${canvas.style.height}`);
   console.log(`Window dimensions: ${window.innerWidth}x${window.innerHeight}`);
   
@@ -421,8 +432,9 @@ function drawScore(x, y, score) {
 // Draw in-canvas buttons (quit button in top right)
 function drawGameButtons() {
   const displayWidth = window.displayWidth || canvas.width;
-  const btnSize = 64; // Made larger for testing
-  const padding = 20;
+  const gameScale = window.gameScale || 1;
+  const btnSize = Math.max(64, 48 * gameScale); // Scale button size
+  const padding = 20 * Math.max(1, gameScale * 0.7); // Scale padding slightly
   const quitX = displayWidth - btnSize - padding;
   const btnY = padding;
 
@@ -432,7 +444,7 @@ function drawGameButtons() {
   ctx.fillStyle = "#d32f2f";
   ctx.fillRect(quitX, btnY, btnSize, btnSize);
   ctx.fillStyle = "#fff";
-  ctx.font = "bold 36px sans-serif"; // Larger font for testing
+  ctx.font = `bold ${Math.max(36, 24 * gameScale)}px sans-serif`; // Scale font
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("✖", quitX + btnSize / 2, btnY + btnSize / 2 + 1);
@@ -469,8 +481,9 @@ function drawRestAnimation() {
 // Check if exit button was clicked
 function exitButtonClicked(x, y) {
   const displayWidth = window.displayWidth || canvas.width;
-  const btnSize = 64; // Match the new button size
-  const padding = 20;
+  const gameScale = window.gameScale || 1;
+  const btnSize = Math.max(64, 48 * gameScale); // Match the new button size
+  const padding = 20 * Math.max(1, gameScale * 0.7); // Match the new padding
   const btnX = displayWidth - btnSize - padding;
   const btnY = padding;
   return x >= btnX && x <= btnX + btnSize && y >= btnY && y <= btnY + btnSize;
@@ -582,6 +595,15 @@ function drawScrollingBackground() {
     const x = startX + (i * scaledBgWidth);
     ctx.drawImage(bgImg, x, 0, scaledBgWidth, scaledBgHeight);
   }
+  
+  // OBVIOUS TEST INDICATOR - Draw a bright orange corner
+  ctx.save();
+  ctx.fillStyle = "orange";
+  ctx.fillRect(0, 0, 50, 50);
+  ctx.fillStyle = "black";
+  ctx.font = "12px Arial";
+  ctx.fillText("NEW", 10, 25);
+  ctx.restore();
 }
 
 // Draw DPI indicator in top-left corner for debugging
@@ -589,23 +611,41 @@ function drawDPIIndicator() {
   const dpr = window.devicePixelRatio || 1;
   const displayWidth = window.displayWidth || canvas.width;
   const displayHeight = window.displayHeight || canvas.height;
+  const gameScale = window.gameScale || 1;
+  const isMobile = window.isMobile || false;
+  const effectiveDpr = window.canvasScale || dpr;
   
   ctx.save();
-  ctx.fillStyle = "rgba(255, 0, 0, 0.8)";
-  ctx.font = "16px Arial";
+  
+  // Draw a large colored indicator box for mobile
+  if (isMobile) {
+    ctx.fillStyle = "rgba(255, 165, 0, 0.9)"; // Bright orange background
+    ctx.fillRect(0, 0, Math.min(250, displayWidth * 0.6), Math.min(200, displayHeight * 0.4));
+  }
+  
+  ctx.fillStyle = isMobile ? "rgba(0, 0, 0, 1)" : "rgba(255, 0, 0, 0.8)";
+  ctx.font = isMobile ? "20px Arial" : "16px Arial";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   
   const info = [
-    `DPR: ${dpr}`,
+    `MOBILE: ${isMobile}`,
+    `DPR: ${dpr} → ${effectiveDpr}`,
+    `GAME SCALE: ${gameScale.toFixed(2)}`,
     `Display: ${displayWidth}x${displayHeight}`,
     `Canvas: ${canvas.width}x${canvas.height}`,
-    `Style: ${canvas.style.width} x ${canvas.style.height}`
   ];
   
   info.forEach((text, i) => {
-    ctx.fillText(text, 10, 10 + i * 20);
+    ctx.fillText(text, 10, 10 + i * (isMobile ? 25 : 20));
   });
+  
+  // Add a prominent "SCALED" indicator for mobile
+  if (isMobile && gameScale > 1.5) {
+    ctx.font = "bold 24px Arial";
+    ctx.fillStyle = "rgba(255, 0, 0, 1)";
+    ctx.fillText("SCALED UP!", 10, 10 + info.length * 25 + 10);
+  }
   
   ctx.restore();
 }
@@ -651,8 +691,10 @@ function draw() {
   if (!running) return;
 
   // Prevent bird from falling below the bottom of the screen
-  if (birdY > displayHeight - BIRD_HEIGHT) {
-    birdY = displayHeight - BIRD_HEIGHT;
+  const gameScale = window.gameScale || 1;
+  const scaledBirdHeight = BIRD_HEIGHT * gameScale;
+  if (birdY > displayHeight - scaledBirdHeight) {
+    birdY = displayHeight - scaledBirdHeight;
     birdVelocity = 0;
   }
 
@@ -694,7 +736,11 @@ function draw() {
         pipe.x -= pipeSpeed;
       }
       
-      pipes = pipes.filter((pipe) => pipe.x + PIPE_WIDTH > -100); // Remove pipes 100px after they leave the screen
+      pipes = pipes.filter((pipe) => {
+        const gameScale = window.gameScale || 1;
+        const scaledPipeWidth = PIPE_WIDTH * gameScale;
+        return pipe.x + scaledPipeWidth > -100;
+      }); // Remove pipes 100px after they leave the screen
 
       // If a rest is pending, wait for the last pipe to move off by canvas.width before starting break
       if (pendingRest && lastPipeBeforeBreak) {
@@ -712,23 +758,27 @@ function draw() {
     backgroundOffsetX += pipeSpeed * 0.5;
   }
 
-  // Draw pipes
+  // Draw pipes with proper scaling
   for (let pipe of pipes) {
+    const gameScale = window.gameScale || 1;
+    const scaledPipeWidth = PIPE_WIDTH * gameScale;
+    const scaledPipeCapHeight = PIPE_CAP_HEIGHT * gameScale;
+    
     // Top pipe (rotated 180°)
     ctx.save();
-    ctx.translate(pipe.x + PIPE_WIDTH / 2, pipe.gapY);
+    ctx.translate(pipe.x + scaledPipeWidth / 2, pipe.gapY);
     ctx.rotate(Math.PI);
     ctx.drawImage(
       pipeImg,
       2, 0, 56, PIPE_CAP_HEIGHT,
-      -PIPE_WIDTH / 2, 0, PIPE_WIDTH, PIPE_CAP_HEIGHT
+      -scaledPipeWidth / 2, 0, scaledPipeWidth, scaledPipeCapHeight
     );
     // Draw body (aligned with cap)
-    if (pipe.gapY - PIPE_CAP_HEIGHT > 0) {
+    if (pipe.gapY - scaledPipeCapHeight > 0) {
       ctx.drawImage(
         pipeImg,
         0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT,
-        -PIPE_WIDTH / 2, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipe.gapY - PIPE_CAP_HEIGHT
+        -scaledPipeWidth / 2, scaledPipeCapHeight, scaledPipeWidth, pipe.gapY - scaledPipeCapHeight
       );
     }
     ctx.restore();
@@ -741,33 +791,40 @@ function draw() {
       ctx.drawImage(
         pipeImg,
         2, 0, 56, PIPE_CAP_HEIGHT,
-        pipe.x, bottomPipeY, PIPE_WIDTH, PIPE_CAP_HEIGHT
+        pipe.x, bottomPipeY, scaledPipeWidth, scaledPipeCapHeight
       );
       // Draw body (aligned with cap)
-      if (bottomPipeHeight - PIPE_CAP_HEIGHT > 0) {
+      if (bottomPipeHeight - scaledPipeCapHeight > 0) {
         ctx.drawImage(
           pipeImg,
           0, PIPE_CAP_HEIGHT, PIPE_WIDTH, pipeImg.height - PIPE_CAP_HEIGHT,
-          pipe.x, bottomPipeY + PIPE_CAP_HEIGHT, PIPE_WIDTH, bottomPipeHeight - PIPE_CAP_HEIGHT
+          pipe.x, bottomPipeY + scaledPipeCapHeight, scaledPipeWidth, bottomPipeHeight - scaledPipeCapHeight
         );
       }
     }
   }
 
-  // Draw bird with proper aspect ratio
+  // Draw bird with proper scaling and aspect ratio
   {
-    const drawHeight = BIRD_HEIGHT;
+    const gameScale = window.gameScale || 1;
+    const drawHeight = BIRD_HEIGHT * gameScale;
     const aspect = birdImg.naturalWidth && birdImg.naturalHeight
       ? birdImg.naturalWidth / birdImg.naturalHeight
       : BIRD_WIDTH / BIRD_HEIGHT; // fallback if not loaded
     const drawWidth = drawHeight * aspect;
-    ctx.drawImage(birdImg, 100, birdY, drawWidth, drawHeight);
+    const birdX = 100 * gameScale;
+    ctx.drawImage(birdImg, birdX, birdY, drawWidth, drawHeight);
   }
 
   // Score logic - only count pipes when not in rest break
   if (!gameOver && !inRestBreak) {
     for (let pipe of pipes) {
-      if (!pipe.passed && pipe.x + PIPE_WIDTH / 2 < 100 + BIRD_WIDTH / 2) {
+      const gameScale = window.gameScale || 1;
+      const scaledPipeWidth = PIPE_WIDTH * gameScale;
+      const scaledBirdWidth = BIRD_WIDTH * gameScale;
+      const scaledBirdX = 100 * gameScale;
+      
+      if (!pipe.passed && pipe.x + scaledPipeWidth / 2 < scaledBirdX + scaledBirdWidth / 2) {
         pipe.passed = true;
         score++;
         pipesPassedSinceBreak++;
@@ -793,35 +850,42 @@ function draw() {
   // Collision detection
   if (!gameOver) {
     for (let pipe of pipes) {
-      const birdRect = { x: 100, y: birdY, w: BIRD_WIDTH, h: BIRD_HEIGHT };
+      const gameScale = window.gameScale || 1;
+      const scaledPipeWidth = PIPE_WIDTH * gameScale;
+      const scaledPipeCapHeight = PIPE_CAP_HEIGHT * gameScale;
+      const scaledBirdWidth = BIRD_WIDTH * gameScale;
+      const scaledBirdHeight = BIRD_HEIGHT * gameScale;
+      const scaledBirdX = 100 * gameScale;
+      
+      const birdRect = { x: scaledBirdX, y: birdY, w: scaledBirdWidth, h: scaledBirdHeight };
       // Top pipe body (exclude cap)
       const topRect = { 
         x: pipe.x, 
         y: 0, 
-        w: PIPE_WIDTH, 
-        h: Math.max(0, pipe.gapY - PIPE_CAP_HEIGHT) 
+        w: scaledPipeWidth, 
+        h: Math.max(0, pipe.gapY - scaledPipeCapHeight) 
       };
       // Top pipe cap
       const topCapRect = { 
         x: pipe.x, 
-        y: Math.max(0, pipe.gapY - PIPE_CAP_HEIGHT), 
-        w: PIPE_WIDTH, 
-        h: PIPE_CAP_HEIGHT 
+        y: Math.max(0, pipe.gapY - scaledPipeCapHeight), 
+        w: scaledPipeWidth, 
+        h: scaledPipeCapHeight 
       };
       // Bottom pipe cap
       const bottomPipeY = pipe.gapY + getPipeGap();
       const bottomCapRect = { 
         x: pipe.x, 
         y: bottomPipeY, 
-        w: PIPE_WIDTH, 
-        h: PIPE_CAP_HEIGHT 
+        w: scaledPipeWidth, 
+        h: scaledPipeCapHeight 
       };
       // Bottom pipe body (exclude cap)
       const bottomRect = { 
         x: pipe.x, 
-        y: bottomPipeY + PIPE_CAP_HEIGHT, 
-        w: PIPE_WIDTH, 
-        h: Math.max(0, displayHeight - (bottomPipeY + PIPE_CAP_HEIGHT)) 
+        y: bottomPipeY + scaledPipeCapHeight, 
+        w: scaledPipeWidth, 
+        h: Math.max(0, displayHeight - (bottomPipeY + scaledPipeCapHeight)) 
       };
       if (
         rectsOverlap(birdRect, topRect) ||
@@ -868,10 +932,11 @@ function draw() {
   if (paused) {
     ctx.fillStyle = "rgba(80, 80, 80, 0.5)";
     ctx.fillRect(0, 0, displayWidth, displayHeight);
-    const iconWidth = 40;
-    const iconHeight = 60;
-    const barWidth = 12;
-    const gap = 12;
+    const gameScale = window.gameScale || 1;
+    const iconWidth = 40 * Math.max(1, gameScale * 0.8);
+    const iconHeight = 60 * Math.max(1, gameScale * 0.8);
+    const barWidth = 12 * Math.max(1, gameScale * 0.8);
+    const gap = 12 * Math.max(1, gameScale * 0.8);
     const x = displayWidth / 2 - iconWidth / 2;
     const y = displayHeight / 2 - iconHeight / 2;
     ctx.fillStyle = "#fff";

@@ -521,6 +521,69 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
 }
 
+/* Mobile and tablet scaling for better UI size */
+@media (max-width: 1024px) {
+  /* Scale up all buttons and UI elements for mobile/tablet */
+  button {
+    font-size: 1.4em !important;
+    padding: 16px 28px !important;
+    margin: 8px !important;
+  }
+  
+  /* Scale up menu text */
+  .score-display {
+    font-size: 1.6em !important;
+  }
+  
+  .high-score-display {
+    font-size: 1.5em !important;
+  }
+  
+  /* Scale up popup content */
+  .popup-content {
+    font-size: 1.2em !important;
+    padding: 24px !important;
+  }
+  
+  .popup-content h3 {
+    font-size: 1.8em !important;
+  }
+  
+  /* Scale up cosmetics grid items */
+  .cosmetic-item {
+    min-width: 80px !important;
+    min-height: 80px !important;
+  }
+  
+  /* Scale up settings controls */
+  .note-box, #pipesPerBreakBox, #pipeSpeedBox {
+    font-size: 1.4em !important;
+    padding: 12px 16px !important;
+  }
+  
+  /* Scale up leaderboard text */
+  #leaderboardContainer {
+    font-size: 1.2em !important;
+  }
+  
+  /* Scale up loading overlay */
+  #loadingOverlay {
+    font-size: 1.6em !important;
+  }
+}
+
+/* Extra scaling for very small mobile screens */
+@media (max-width: 480px) {
+  button {
+    font-size: 1.6em !important;
+    padding: 20px 32px !important;
+  }
+  
+  .popup-content {
+    font-size: 1.4em !important;
+  }
+}
+
 /* Custom scrollbar styling for cosmetics grid */
 .cosmetics-grid::-webkit-scrollbar {
   width: 8px;
