@@ -521,8 +521,9 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
 }
 
-/* iPad and large tablet scaling (iPhone uses default desktop scaling) */
-@media (max-width: 1024px) and (min-width: 768px) {
+/* iPad and large tablet scaling (iPhone uses default desktop scaling) - covers all iPad models */
+@media (max-width: 1366px) and (min-width: 768px) and (orientation: portrait),
+       (max-width: 1024px) and (min-width: 768px) and (orientation: landscape) {
   /* iPad/Large tablet scaling */
   button {
     font-size: 1.4em !important;
@@ -550,13 +551,16 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   
   /* Main menu specific iPad layout - make everything wider and more spread out */
   .menu {
-    padding: 0 10vw; /* Add horizontal padding to use more screen width */
+    padding: 0 8vw; /* Add horizontal padding to use more screen width */
+    gap: 24px; /* More spacing between main menu elements */
   }
   
-  .splash-img {
-    width: 480px !important; /* Larger splash image */
-    max-width: 70vw !important; /* Use more of the screen width */
-    margin-bottom: 32px !important; /* More spacing */
+  /* Make leaderboard container larger on iPad */
+  #leaderboardContainer {
+    width: 500px !important; /* Larger leaderboard */
+    max-width: 75vw !important; /* Use more of the screen width */
+    font-size: 1.1em !important; /* Slightly larger text */
+    margin-bottom: 24px !important; /* More spacing */
   }
   
   .menu-info {
@@ -577,11 +581,36 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     padding: 18px 32px !important;
   }
   
-  .menu-tap {
-    font-size: 1.3em !important; /* Larger tap instruction text */
-    margin-top: 28px !important; /* More spacing */
+  /* Style the bottom buttons row (Report a Bug, Difficulty) */
+  .menu-buttons > div:last-child {
+    gap: 20px !important; /* More spacing between bottom buttons */
+  }
+  
+  .menu-buttons > div:last-child button {
+    padding: 16px 24px !important; /* Larger bottom buttons */
+    font-size: 1.2em !important;
+    min-width: 140px !important;
+  }
+  
+  /* Version text at bottom */
+  .menu > div:last-child {
+    font-size: 1.1em !important; /* Larger version text */
+    left: 20px !important; /* More margin from edge */
+    bottom: 16px !important;
   }
 }
+
+/* Debug helper - will add a visible border on iPad devices to confirm media query is working */
+@media (max-width: 1366px) and (min-width: 768px) and (orientation: portrait),
+       (max-width: 1024px) and (min-width: 768px) and (orientation: landscape) {
+  
+  /* Temporary debug style - add subtle border to confirm iPad detection */
+  .menu {
+    border: 2px solid rgba(50, 205, 50, 0.3) !important;
+  }
+}
+
+/* END DEBUG STYLES - Remove these after testing */
 
 /* Custom scrollbar styling for cosmetics grid */
 .cosmetics-grid::-webkit-scrollbar {
@@ -655,8 +684,9 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   position: relative;
 }
 
-/* iPad/Large tablet cosmetics tabs */
-@media (max-width: 1024px) and (min-width: 768px) {
+/* iPad/Large tablet cosmetics tabs - covers all iPad models */
+@media (max-width: 1366px) and (min-width: 768px) and (orientation: portrait),
+       (max-width: 1024px) and (min-width: 768px) and (orientation: landscape) {
   .cosmetics-tab {
     padding: 8px 16px !important;
     font-size: 0.8em !important;

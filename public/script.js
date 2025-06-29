@@ -2,6 +2,28 @@
 // SCRIPT.JS - Main Initialization, Global State & Event Handlers
 // =============================================================================
 
+// --- Debug device detection for responsive layout ---
+function debugDeviceDetection() {
+  console.log('=== Device Detection Debug ===');
+  console.log('Window dimensions:', window.innerWidth, 'x', window.innerHeight);
+  console.log('Screen dimensions:', screen.width, 'x', screen.height);
+  console.log('Device pixel ratio:', window.devicePixelRatio);
+  console.log('User agent:', navigator.userAgent);
+  console.log('Touch support:', 'ontouchstart' in window);
+  
+  // Check if our iPad media query conditions are met
+  const isPortraitTablet = window.matchMedia('(max-width: 1366px) and (min-width: 768px) and (orientation: portrait)').matches;
+  const isLandscapeTablet = window.matchMedia('(max-width: 1024px) and (min-width: 768px) and (orientation: landscape)').matches;
+  console.log('iPad portrait detection:', isPortraitTablet);
+  console.log('iPad landscape detection:', isLandscapeTablet);
+  console.log('Is tablet (either orientation):', isPortraitTablet || isLandscapeTablet);
+  console.log('===============================');
+}
+
+// Run debug on load
+window.addEventListener('load', debugDeviceDetection);
+window.addEventListener('resize', debugDeviceDetection);
+
 // --- Global Canvas & Context ---
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
