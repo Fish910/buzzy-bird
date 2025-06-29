@@ -382,8 +382,16 @@ function resizeCanvas() {
   window.displayHeight = displayHeight;
   window.isMobile = isMobile;
   
-  // Calculate base game scale factor for sprites and UI - more reasonable scaling
-  window.gameScale = isMobile ? Math.max(1.5, displayWidth / 600) : Math.max(1.0, displayWidth / 800);
+  // Calculate base game scale factor for sprites and UI - differentiate between iPad and other devices
+  const isIPad = /ipad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  
+  if (isIPad) {
+    // iPad: Keep current larger scaling for touch-friendly gameplay
+    window.gameScale = Math.max(1.5, displayWidth / 600);
+  } else {
+    // iPhone, PC, and other devices: Use smaller scaling for assets
+    window.gameScale = isMobile ? Math.max(0.8, displayWidth / 800) : Math.max(0.7, displayWidth / 1000);
+  }
   
   console.log(`Canvas resized: ${displayWidth}x${displayHeight} CSS, Mobile: ${isMobile}, gameScale: ${window.gameScale.toFixed(2)}`);
   
