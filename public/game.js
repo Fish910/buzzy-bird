@@ -411,9 +411,9 @@ function drawScore(x, y, score) {
   const displayWidth = window.displayWidth || canvas.width;
   const displayHeight = window.displayHeight || canvas.height;
   
-  // Scale digits based on display size with reasonable scaling
+  // Scale digits based on display size with moderate scaling
   const minScale = Math.min(displayWidth / 480, displayHeight / 800); // Base scale
-  const scale = Math.max(1.0, Math.min(2.0, minScale * 1.2)); // More reasonable scaling
+  const scale = Math.max(0.8, Math.min(1.4, minScale * 0.9)); // Much smaller scaling to match sprites
   
   const scaledWidth = baseDigitWidth * scale;
   const scaledHeight = baseDigitHeight * scale;
@@ -435,8 +435,8 @@ function drawScore(x, y, score) {
 function drawGameButtons() {
   const displayWidth = window.displayWidth || canvas.width;
   const gameScale = window.gameScale || 1;
-  const btnSize = Math.max(64, 48 * gameScale); // Scale button size
-  const padding = 20 * Math.max(1, gameScale * 0.7); // Scale padding slightly
+  const btnSize = Math.max(48, 36 * Math.min(gameScale, 1.3)); // Smaller button size, cap the scaling
+  const padding = 20 * Math.max(1, gameScale * 0.5); // Less padding scaling
   const quitX = displayWidth - btnSize - padding;
   const btnY = padding;
 
@@ -446,7 +446,7 @@ function drawGameButtons() {
   ctx.fillStyle = "#d32f2f";
   ctx.fillRect(quitX, btnY, btnSize, btnSize);
   ctx.fillStyle = "#fff";
-  ctx.font = `bold ${Math.max(36, 24 * gameScale)}px sans-serif`; // Scale font
+  ctx.font = `bold ${Math.max(24, 18 * Math.min(gameScale, 1.3))}px sans-serif`; // Smaller font, cap the scaling
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("✖", quitX + btnSize / 2, btnY + btnSize / 2 + 1);
@@ -484,8 +484,8 @@ function drawRestAnimation() {
 function exitButtonClicked(x, y) {
   const displayWidth = window.displayWidth || canvas.width;
   const gameScale = window.gameScale || 1;
-  const btnSize = Math.max(64, 48 * gameScale); // Match the new button size
-  const padding = 20 * Math.max(1, gameScale * 0.7); // Match the new padding
+  const btnSize = Math.max(48, 36 * Math.min(gameScale, 1.3)); // Match the new button size
+  const padding = 20 * Math.max(1, gameScale * 0.5); // Match the new padding
   const btnX = displayWidth - btnSize - padding;
   const btnY = padding;
   return x >= btnX && x <= btnX + btnSize && y >= btnY && y <= btnY + btnSize;
