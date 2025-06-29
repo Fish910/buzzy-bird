@@ -29,6 +29,10 @@ let deltaTime = 0;
 const TARGET_FPS = 60; // Target frame rate for consistent movement
 const FIXED_DELTA = 1000 / TARGET_FPS; // Fixed delta time in milliseconds
 
+// iPad-specific performance optimization
+const IPAD_TARGET_FPS = 90; // Higher target FPS for smoother motion on iPad
+const IPAD_FIXED_DELTA = 1000 / IPAD_TARGET_FPS;
+
 // --- Game Constants ---
 const BIRD_WIDTH = 40;
 const BIRD_HEIGHT = 32;
@@ -146,8 +150,9 @@ function getPipeGap() {
 function getPipeIntervalMs() {
   // Desired distance between pipes in pixels - increase for iPad
   const desiredDistance = isIPadDevice() ? 400 : 320; // 25% more spacing on iPad
-  // Convert to time: distance / speed * (1000ms/60fps) for consistent timing
-  return (desiredDistance / pipeSpeed) * (1000 / TARGET_FPS);
+  // Convert to time: distance / speed * (1000ms/targetFPS) for consistent timing
+  const targetFps = isIPadDevice() ? IPAD_TARGET_FPS : TARGET_FPS;
+  return (desiredDistance / pipeSpeed) * (1000 / targetFps);
 }
 
 // Map slider value to actual pipe speed
@@ -188,6 +193,11 @@ function resetGame() {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
+  // Clean up iPad timeout
+  if (window.ipadFrameTimeout) {
+    clearTimeout(window.ipadFrameTimeout);
+    window.ipadFrameTimeout = null;
+  }
   pitchLoopActive = true;
   getPitch();
 }
@@ -203,6 +213,11 @@ function stopGame() {
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
+  }
+  // Clean up iPad timeout
+  if (window.ipadFrameTimeout) {
+    clearTimeout(window.ipadFrameTimeout);
+    window.ipadFrameTimeout = null;
   }
   stopAudio();
   draw();
@@ -648,11 +663,14 @@ function draw(currentTime = 0) {
   deltaTime = currentTime - lastFrameTime;
   lastFrameTime = currentTime;
   
+  // Use device-specific delta timing for better performance
+  const targetDelta = isIPadDevice() ? IPAD_FIXED_DELTA : FIXED_DELTA;
+  
   // Cap delta time to prevent large jumps (e.g., when tab becomes inactive)
-  deltaTime = Math.min(deltaTime, FIXED_DELTA * 2);
+  deltaTime = Math.min(deltaTime, targetDelta * 2);
   
   // Use a normalized delta multiplier for consistent movement across frame rates
-  const deltaMultiplier = deltaTime / FIXED_DELTA;
+  const deltaMultiplier = deltaTime / targetDelta;
   
   const yPadding = 20;
   
@@ -952,7 +970,22 @@ function draw(currentTime = 0) {
   }
 
   if (!paused && !gameOver) {
-    animationFrameId = requestAnimationFrame(draw);
+    // Use more aggressive animation timing for iPad to achieve smoother motion
+    if (isIPadDevice()) {
+      // Try for higher frame rate on iPad by using shorter timeout as fallback
+      animationFrameId = requestAnimationFrame(draw);
+      // Also set a timeout to ensure minimum frame rate if RAF is throttled
+      if (!window.ipadFrameTimeout) {
+        window.ipadFrameTimeout = setTimeout(() => {
+          window.ipadFrameTimeout = null;
+          if (!paused && !gameOver && animationFrameId) {
+            draw(performance.now());
+          }
+        }, 8); // ~120 FPS fallback
+      }
+    } else {
+      animationFrameId = requestAnimationFrame(draw);
+    }
   }
 
   // Always draw buttons last so they appear on top
@@ -988,6 +1021,12 @@ function fullRefresh() {
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
+  }
+  
+  // Clean up iPad timeout
+  if (window.ipadFrameTimeout) {
+    clearTimeout(window.ipadFrameTimeout);
+    window.ipadFrameTimeout = null;
   }
 
   // Stop pitch detection loop
