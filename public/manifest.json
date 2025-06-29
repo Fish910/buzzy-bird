@@ -1,0 +1,24 @@
+{
+  "name": "Pitch Bird",
+  "short_name": "Pitch Bird",
+  "description": "A fun pitch-controlled bird game where you use your voice to navigate through pipes",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#70c5ce",
+  "theme_color": "#70c5ce",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "assets/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
