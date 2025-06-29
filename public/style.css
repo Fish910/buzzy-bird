@@ -661,22 +661,22 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
        (max-width: 1024px), 
        (max-height: 1024px) {
   .cosmetics-tab {
-    padding: 8px 12px;  /* Smaller padding */
-    font-size: 0.85em;  /* Smaller font size */
-    min-width: 65px;    /* Smaller minimum width */
+    padding: 6px 10px !important;  /* Smaller padding with !important */
+    font-size: 0.7em !important;   /* Much smaller font size with !important */
+    min-width: 55px !important;    /* Smaller minimum width with !important */
   }
   
   .cosmetics-tabs {
-    top: -45px;         /* Move tabs closer to popup */
+    top: -42px;         /* Move tabs closer to popup */
   }
 }
 
 /* Mobile devices (phones in portrait) */
 @media (max-width: 768px) {
   .cosmetics-tab {
-    padding: 6px 10px;  /* Even smaller padding */
-    font-size: 0.8em;   /* Even smaller font size */
-    min-width: 60px;    /* Even smaller minimum width */
+    padding: 5px 8px !important;   /* Even smaller padding with !important */
+    font-size: 0.65em !important;  /* Even smaller font size with !important */
+    min-width: 50px !important;    /* Even smaller minimum width with !important */
   }
   
   .cosmetics-tabs {
@@ -687,9 +687,9 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 /* Extra small devices (small phones) */
 @media (max-width: 480px) {
   .cosmetics-tab {
-    padding: 5px 8px;   /* Very small padding */
-    font-size: 0.75em;  /* Very small font size */
-    min-width: 55px;    /* Very small minimum width */
+    padding: 4px 6px !important;   /* Very small padding with !important */
+    font-size: 0.6em !important;   /* Very small font size with !important */
+    min-width: 45px !important;    /* Very small minimum width with !important */
   }
   
   .cosmetics-tabs {
