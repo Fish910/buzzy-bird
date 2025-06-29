@@ -333,21 +333,11 @@ function resizeCanvas() {
   // Force mobile detection for iPad and touch devices
   const isMobile = forceMobile || isMobileUA || isAppleDevice || isTabletSize || hasTouch;
   
-  // Debug logging for iPad Safari
-  console.log(`Mobile Detection Debug:
-    userAgent: ${navigator.userAgent}
-    hasTouch: ${hasTouch}
-    isTabletSize: ${isTabletSize} (${window.innerWidth}x${window.innerHeight})
-    isMobileUA: ${isMobileUA}
-    isAppleDevice: ${isAppleDevice}
-    forceMobile: ${forceMobile}
-    FINAL isMobile: ${isMobile}`);
-  
   // Get device pixel ratio for high-DPI displays (iPad, Retina, etc.)
   const dpr = window.devicePixelRatio || 1;
   
-  // Force aggressive scaling on mobile devices, especially iPad
-  const effectiveDpr = isMobile ? Math.max(dpr, 2.5) : dpr;
+  // Force moderate scaling on mobile devices for better balance
+  const effectiveDpr = isMobile ? Math.max(dpr, 1.8) : dpr;
   
   // Get the display size in CSS pixels
   let displayWidth, displayHeight;
@@ -392,13 +382,10 @@ function resizeCanvas() {
   window.displayHeight = displayHeight;
   window.isMobile = isMobile;
   
-  // Calculate base game scale factor for sprites and UI
-  window.gameScale = isMobile ? Math.max(2.0, displayWidth / 400) : Math.max(1.0, displayWidth / 800);
+  // Calculate base game scale factor for sprites and UI - more reasonable scaling
+  window.gameScale = isMobile ? Math.max(1.5, displayWidth / 600) : Math.max(1.0, displayWidth / 800);
   
-  console.log(`Canvas resized: ${displayWidth}x${displayHeight} CSS, ${canvas.width}x${canvas.height} internal, DPR: ${dpr}, effectiveDpr: ${effectiveDpr}`);
-  console.log(`Mobile: ${isMobile}, gameScale: ${window.gameScale}`);
-  console.log(`Canvas style dimensions: ${canvas.style.width} x ${canvas.style.height}`);
-  console.log(`Window dimensions: ${window.innerWidth}x${window.innerHeight}`);
+  console.log(`Canvas resized: ${displayWidth}x${displayHeight} CSS, Mobile: ${isMobile}, gameScale: ${window.gameScale.toFixed(2)}`);
   
   // Only redraw if not running (so splash/buttons show up)
   if (!running) draw();
@@ -424,14 +411,9 @@ function drawScore(x, y, score) {
   const displayWidth = window.displayWidth || canvas.width;
   const displayHeight = window.displayHeight || canvas.height;
   
-  // Scale digits based on display size, with better scaling for larger screens
+  // Scale digits based on display size with reasonable scaling
   const minScale = Math.min(displayWidth / 480, displayHeight / 800); // Base scale
-  const scale = Math.max(1.5, Math.min(4.0, minScale * 2)); // Much more aggressive scaling for testing
-  
-  // Debug output on first call
-  if (score === 0) {
-    console.log(`Score scaling: displayWidth=${displayWidth}, displayHeight=${displayHeight}, minScale=${minScale}, finalScale=${scale}`);
-  }
+  const scale = Math.max(1.0, Math.min(2.0, minScale * 1.2)); // More reasonable scaling
   
   const scaledWidth = baseDigitWidth * scale;
   const scaledHeight = baseDigitHeight * scale;
@@ -615,73 +597,11 @@ function drawScrollingBackground() {
     const x = startX + (i * scaledBgWidth);
     ctx.drawImage(bgImg, x, 0, scaledBgWidth, scaledBgHeight);
   }
-  
-  // OBVIOUS TEST INDICATOR - Draw a bright orange corner
-  ctx.save();
-  ctx.fillStyle = "orange";
-  ctx.fillRect(0, 0, 50, 50);
-  ctx.fillStyle = "black";
-  ctx.font = "12px Arial";
-  ctx.fillText("NEW", 10, 25);
-  ctx.restore();
 }
 
 // Draw DPI indicator in top-left corner for debugging
 function drawDPIIndicator() {
-  const dpr = window.devicePixelRatio || 1;
-  const displayWidth = window.displayWidth || canvas.width;
-  const displayHeight = window.displayHeight || canvas.height;
-  const gameScale = window.gameScale || 1;
-  const isMobile = window.isMobile || false;
-  const effectiveDpr = window.canvasScale || dpr;
-  
-  ctx.save();
-  
-  // SUPER OBVIOUS TEST - Draw a huge overlay if mobile is detected
-  if (isMobile) {
-    // Draw a massive orange background covering 70% of screen
-    const bgWidth = displayWidth * 0.7;
-    const bgHeight = displayHeight * 0.5;
-    ctx.fillStyle = "rgba(255, 165, 0, 0.9)"; // Bright orange background
-    ctx.fillRect(0, 0, bgWidth, bgHeight);
-    
-    // Add a bright red border
-    ctx.strokeStyle = "rgba(255, 0, 0, 1)";
-    ctx.lineWidth = 5;
-    ctx.strokeRect(5, 5, bgWidth - 10, bgHeight - 10);
-    
-    // Large text
-    ctx.fillStyle = "rgba(0, 0, 0, 1)";
-    ctx.font = "bold 24px Arial";
-    ctx.fillText("MOBILE DETECTED!", 20, 40);
-  }
-  
-  ctx.fillStyle = isMobile ? "rgba(0, 0, 0, 1)" : "rgba(255, 0, 0, 0.8)";
-  ctx.font = isMobile ? "18px Arial" : "16px Arial";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "top";
-  
-  const info = [
-    `MOBILE: ${isMobile}`,
-    `DPR: ${dpr} → ${effectiveDpr}`,
-    `GAME SCALE: ${gameScale.toFixed(2)}`,
-    `Display: ${displayWidth}x${displayHeight}`,
-    `Canvas: ${canvas.width}x${canvas.height}`,
-  ];
-  
-  const startY = isMobile ? 80 : 10;
-  info.forEach((text, i) => {
-    ctx.fillText(text, 20, startY + i * (isMobile ? 25 : 20));
-  });
-  
-  // Add a prominent "SCALED" indicator for mobile
-  if (isMobile && gameScale > 1.5) {
-    ctx.font = "bold 28px Arial";
-    ctx.fillStyle = "rgba(255, 0, 0, 1)";
-    ctx.fillText("SCALED UP!", 20, startY + info.length * 25 + 20);
-  }
-  
-  ctx.restore();
+  // Debug display removed - game is working properly now
 }
 
 // --- Main Draw Function ---
