@@ -11,6 +11,26 @@
         "source": "!**/*.{js,css,png,jpg,gif,ico,svg}",
         "destination": "/index.html"
       }
+    ],
+    "headers": [
+      {
+        "source": "**/*.{js,css}",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=300"
+          }
+        ]
+      },
+      {
+        "source": "**/*.{png,jpg,gif,ico,svg}",
+        "headers": [
+          {
+            "key": "Cache-Control", 
+            "value": "max-age=86400"
+          }
+        ]
+      }
     ]
   }
 }

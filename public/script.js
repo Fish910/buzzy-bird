@@ -285,6 +285,11 @@ window.addEventListener('focus', () => {
   setTimeout(detectScreenChange, 200);
 });
 
+// Initialize global canvas scale variables
+window.canvasScale = window.devicePixelRatio || 1;
+window.displayWidth = window.innerWidth;
+window.displayHeight = window.innerHeight;
+
 resizeCanvas();
 
 // Check iOS orientation on initial load

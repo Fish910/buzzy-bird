@@ -122,10 +122,11 @@ function noteNameToMidi(note) {
 
 // --- Game Physics & Logic ---
 
-// Calculate pipe gap based on canvas height
+// Calculate pipe gap based on display height
 function getPipeGap() {
-  // 18% of the canvas height, but clamp between 120 and 260 pixels
-  return clamp(Math.floor(canvas.height * 0.18), 120, 260);
+  const displayHeight = window.displayHeight || canvas.height;
+  // 18% of the display height, but clamp between 120 and 260 pixels
+  return clamp(Math.floor(displayHeight * 0.18), 120, 260);
 }
 
 // Calculate dynamic pipe interval based on speed
@@ -312,41 +313,64 @@ async function ensureAudioContext() {
 
 // --- Canvas Rendering ---
 
-// Responsive canvas sizing
+// Responsive canvas sizing with proper high-DPI support
 function resizeCanvas() {
   // Check iOS orientation first
   if (!checkIOSOrientation()) {
     return; // Exit early if iOS device is in landscape
   }
   
+  // Get device pixel ratio for high-DPI displays (iPad, Retina, etc.)
+  const dpr = window.devicePixelRatio || 1;
+  
+  // Get the display size in CSS pixels
+  let displayWidth, displayHeight;
+  let canvasLeft = 0;
+  let canvasTop = 0;
+  
   if (window.innerWidth > window.innerHeight) {
     // Landscape: fixed width, full height, horizontally centered
-    canvas.width = 480;
-    canvas.height = window.innerHeight;
-    canvas.style.width = '480px';
-    canvas.style.height = window.innerHeight + 'px';
-    canvas.style.left = `${(window.innerWidth - 480) / 2}px`;
-    canvas.style.top = `0px`;
-    canvas.style.position = 'absolute';
+    displayWidth = 480;
+    displayHeight = window.innerHeight;
+    canvasLeft = (window.innerWidth - 480) / 2;
+    canvasTop = 0;
   } else {
-    // Portrait: set logical size to match display size
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-    canvas.style.left = `0px`;
-    canvas.style.top = `0px`;
-    canvas.style.position = 'absolute';
+    // Portrait: full screen
+    displayWidth = window.innerWidth;
+    displayHeight = window.innerHeight;
+    canvasLeft = 0;
+    canvasTop = 0;
   }
+  
+  // Set the canvas CSS size (what the user sees)
+  canvas.style.width = displayWidth + 'px';
+  canvas.style.height = displayHeight + 'px';
+  canvas.style.left = canvasLeft + 'px';
+  canvas.style.top = canvasTop + 'px';
+  canvas.style.position = 'absolute';
+  
+  // Set the canvas internal resolution (accounting for device pixel ratio)
+  canvas.width = displayWidth * dpr;
+  canvas.height = displayHeight * dpr;
+  
+  // Scale the drawing context to match the device pixel ratio
+  ctx.scale(dpr, dpr);
   
   // Disable image smoothing after resize
   ctx.imageSmoothingEnabled = false;
+  
+  // Store the scale factor globally for use in drawing functions
+  window.canvasScale = dpr;
+  window.displayWidth = displayWidth;
+  window.displayHeight = displayHeight;
+  
+  console.log(`Canvas resized: ${displayWidth}x${displayHeight} CSS, ${canvas.width}x${canvas.height} internal, DPR: ${dpr}`);
   
   // Only redraw if not running (so splash/buttons show up)
   if (!running) draw();
 }
 
-// Draw score using digit images
+// Draw score using digit images with proper DPI scaling
 function drawScore(x, y, score) {
   const scoreStr = score.toString();
   
@@ -362,8 +386,14 @@ function drawScore(x, y, score) {
   const baseDigitWidth = firstDigitImg.naturalWidth;
   const baseDigitHeight = firstDigitImg.naturalHeight;
   
-  // Scale digits based on canvas size, but maintain aspect ratio
-  const scale = Math.min(canvas.width / 800, canvas.height / 600); // Base scale on 800x600 reference
+  // Use display dimensions for consistent scaling across devices
+  const displayWidth = window.displayWidth || canvas.width;
+  const displayHeight = window.displayHeight || canvas.height;
+  
+  // Scale digits based on display size, with better scaling for larger screens
+  const minScale = Math.min(displayWidth / 480, displayHeight / 800); // Base scale
+  const scale = Math.max(0.8, Math.min(2.0, minScale)); // Clamp between 0.8x and 2x
+  
   const scaledWidth = baseDigitWidth * scale;
   const scaledHeight = baseDigitHeight * scale;
   
@@ -382,9 +412,10 @@ function drawScore(x, y, score) {
 
 // Draw in-canvas buttons (quit button in top right)
 function drawGameButtons() {
+  const displayWidth = window.displayWidth || canvas.width;
   const btnSize = 48;
   const padding = 20;
-  const quitX = canvas.width - btnSize - padding;
+  const quitX = displayWidth - btnSize - padding;
   const btnY = padding;
 
   // Quit button only
@@ -402,32 +433,37 @@ function drawGameButtons() {
 
 // Draw animated "rest" text during break
 function drawRestAnimation() {
-  // Draw animated "rest" in the center of the screen, 2x larger for crispness
+  const displayWidth = window.displayWidth || canvas.width;
+  const displayHeight = window.displayHeight || canvas.height;
+  
+  // Draw animated "rest" in the center of the screen, scaled appropriately
   const letterCount = 4;
-  const scale = 2; // 2x instead of 4x
-  const letterWidth = 20 * scale; // 40
-  const letterHeight = 32 * scale; // 64
-  const imgY = canvas.height / 2 - letterHeight / 2;
-  const baseX = canvas.width / 2 - (letterCount * letterWidth) / 2;
+  const baseScale = Math.min(displayWidth / 480, displayHeight / 800); // Scale based on display size
+  const scale = Math.max(1, Math.min(3, baseScale * 2)); // Clamp scale between 1x and 3x
+  const letterWidth = 20 * scale;
+  const letterHeight = 32 * scale;
+  const imgY = displayHeight / 2 - letterHeight / 2;
+  const baseX = displayWidth / 2 - (letterCount * letterWidth) / 2;
   const t = restBreakTimer;
   for (let i = 0; i < letterCount; i++) {
-    // Sine wave: amplitude 32px, period 1s, staggered by 0.7 per letter
+    // Sine wave: amplitude scaled with size, period 1s, staggered by 0.7 per letter
     const phase = t * 2 * Math.PI + i * 0.7;
-    const yOffset = Math.sin(phase) * 32;
+    const yOffset = Math.sin(phase) * (32 * scale / 2); // Scale the wave amplitude too
     // Crop 1px from left and right of each letter
     ctx.drawImage(
       restImg,
       i * 20 + 1, 0, 18, 32, // src: crop 1px from each side
-      baseX + i * letterWidth, imgY + yOffset, letterWidth, letterHeight // dest (2x)
+      baseX + i * letterWidth, imgY + yOffset, letterWidth, letterHeight // dest (scaled)
     );
   }
 }
 
 // Check if exit button was clicked
 function exitButtonClicked(x, y) {
+  const displayWidth = window.displayWidth || canvas.width;
   const btnSize = 48;
   const padding = 20;
-  const btnX = canvas.width - btnSize - padding;
+  const btnX = displayWidth - btnSize - padding;
   const btnY = padding;
   return x >= btnX && x <= btnX + btnSize && y >= btnY && y <= btnY + btnSize;
 }
@@ -508,10 +544,13 @@ function checkIOSOrientation() {
 
 // Draw sidescrolling tiled background
 function drawScrollingBackground() {
+  const displayWidth = window.displayWidth || canvas.width;
+  const displayHeight = window.displayHeight || canvas.height;
+  
   if (!bgImg.complete) {
     // If background image isn't loaded yet, fill with a solid color
     ctx.fillStyle = "#70c5ce";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, displayWidth, displayHeight);
     return;
   }
   
@@ -519,17 +558,17 @@ function drawScrollingBackground() {
   const bgWidth = bgImg.naturalWidth || bgImg.width;
   const bgHeight = bgImg.naturalHeight || bgImg.height;
   
-  // Scale the background to fit canvas height while maintaining aspect ratio
-  const scale = canvas.height / bgHeight;
+  // Scale the background to fit display height while maintaining aspect ratio
+  const scale = displayHeight / bgHeight;
   const scaledBgWidth = bgWidth * scale;
-  const scaledBgHeight = canvas.height;
+  const scaledBgHeight = displayHeight;
   
   // Calculate the starting x position based on the offset
   // Use modulo to create seamless tiling
   const startX = -(backgroundOffsetX % scaledBgWidth);
   
   // Draw tiles from left to right to cover the entire canvas
-  const tilesNeeded = Math.ceil(canvas.width / scaledBgWidth) + 1; // +1 for smooth scrolling
+  const tilesNeeded = Math.ceil(displayWidth / scaledBgWidth) + 1; // +1 for smooth scrolling
   
   for (let i = 0; i < tilesNeeded; i++) {
     const x = startX + (i * scaledBgWidth);
@@ -540,6 +579,10 @@ function drawScrollingBackground() {
 // --- Main Draw Function ---
 function draw() {
   const yPadding = 20;
+  
+  // Use display dimensions for consistent behavior across devices
+  const displayWidth = window.displayWidth || canvas.width;
+  const displayHeight = window.displayHeight || canvas.height;
 
   // Use PITCH_MIN and PITCH_MAX for pitch mapping
   const minPitch = PITCH_MIN;
@@ -551,9 +594,9 @@ function draw() {
     let clampedPitch = clamp(pitch, minPitch, maxPitch);
 
     // Map pitch to vertical position
-    let availableHeight = canvas.height - yPadding * 2;
+    let availableHeight = displayHeight - yPadding * 2;
     let targetY =
-      canvas.height -
+      displayHeight -
       yPadding -
       ((clampedPitch - minPitch) / (maxPitch - minPitch)) * availableHeight;
 
@@ -566,7 +609,7 @@ function draw() {
   }
 
   if (animationFrameId) animationFrameId = null;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, displayWidth, displayHeight);
   
   // Draw sidescrolling tiled background
   drawScrollingBackground();
@@ -574,8 +617,8 @@ function draw() {
   if (!running) return;
 
   // Prevent bird from falling below the bottom of the screen
-  if (birdY > canvas.height - BIRD_HEIGHT) {
-    birdY = canvas.height - BIRD_HEIGHT;
+  if (birdY > displayHeight - BIRD_HEIGHT) {
+    birdY = displayHeight - BIRD_HEIGHT;
     birdVelocity = 0;
   }
 
@@ -602,10 +645,10 @@ function draw() {
             skipNextPipe = false;
           } else {
             const gapY = Math.floor(
-              yPadding + Math.random() * (canvas.height - 2 * yPadding - getPipeGap())
+              yPadding + Math.random() * (displayHeight - 2 * yPadding - getPipeGap())
             );
             pipes.push({
-              x: canvas.width,
+              x: displayWidth,
               gapY: gapY,
               passed: false,
             });
@@ -657,7 +700,7 @@ function draw() {
     ctx.restore();
 
     // Bottom pipe
-    const bottomPipeHeight = canvas.height - (pipe.gapY + getPipeGap());
+    const bottomPipeHeight = displayHeight - (pipe.gapY + getPipeGap());
     const bottomPipeY = pipe.gapY + getPipeGap();
     if (bottomPipeHeight > 0) {
       // Draw cap (stretch 56px to 60px, centered)
@@ -710,7 +753,7 @@ function draw() {
   if (!gameOver) {
     // Position score at top with proper spacing based on scaled digit height
     const scoreY = 20; // Top margin
-    drawScore(canvas.width / 2, scoreY, score);
+    drawScore(displayWidth / 2, scoreY, score);
   }
 
   // Collision detection
@@ -744,7 +787,7 @@ function draw() {
         x: pipe.x, 
         y: bottomPipeY + PIPE_CAP_HEIGHT, 
         w: PIPE_WIDTH, 
-        h: Math.max(0, canvas.height - (bottomPipeY + PIPE_CAP_HEIGHT)) 
+        h: Math.max(0, displayHeight - (bottomPipeY + PIPE_CAP_HEIGHT)) 
       };
       if (
         rectsOverlap(birdRect, topRect) ||
@@ -765,22 +808,22 @@ function draw() {
     setHighScoreIfNeeded(score);
 
     ctx.fillStyle = "rgba(80,80,80,0.5)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, displayWidth, displayHeight);
     const goNaturalWidth = gameoverImg.naturalWidth || 300;
     const goNaturalHeight = gameoverImg.naturalHeight || 80;
-    const goDrawWidth = 300;
+    const goDrawWidth = Math.min(300, displayWidth * 0.8); // Scale for smaller screens
     const goDrawHeight = goDrawWidth * (goNaturalHeight / goNaturalWidth);
     ctx.drawImage(
       gameoverImg,
-      canvas.width / 2 - goDrawWidth / 2,
-      canvas.height / 2 - goDrawHeight / 2,
+      displayWidth / 2 - goDrawWidth / 2,
+      displayHeight / 2 - goDrawHeight / 2,
       goDrawWidth,
       goDrawHeight
     );
     
     // Position score below game over image with proper spacing
-    const scoreY = canvas.height / 2 + goDrawHeight / 2 + 30; // Add more spacing
-    drawScore(canvas.width / 2, scoreY, score);
+    const scoreY = displayHeight / 2 + goDrawHeight / 2 + 30; // Add more spacing
+    drawScore(displayWidth / 2, scoreY, score);
     running = false;
     pitchLoopActive = false;
     drawGameButtons();
@@ -790,13 +833,13 @@ function draw() {
   // Pause overlay
   if (paused) {
     ctx.fillStyle = "rgba(80, 80, 80, 0.5)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, displayWidth, displayHeight);
     const iconWidth = 40;
     const iconHeight = 60;
     const barWidth = 12;
     const gap = 12;
-    const x = canvas.width / 2 - iconWidth / 2;
-    const y = canvas.height / 2 - iconHeight / 2;
+    const x = displayWidth / 2 - iconWidth / 2;
+    const y = displayHeight / 2 - iconHeight / 2;
     ctx.fillStyle = "#fff";
     ctx.fillRect(x, y, barWidth, iconHeight);
     ctx.fillRect(x + barWidth + gap, y, barWidth, iconHeight);

@@ -4,6 +4,10 @@ html, body {
   padding: 0;
   background: #232323; /* Dark grey background for empty space */
   overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -11,6 +15,9 @@ body {
   height: 100vh;
   touch-action: none;
   font-family: 'Comic Neue', 'Comic Sans MS', 'Comic Sans', cursive !important;
+  /* Disable iOS rubber band scrolling */
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 canvas {
@@ -24,6 +31,9 @@ canvas {
   touch-action: none;
   /* REMOVE any width/height here! */
   /* Do NOT set width: 100vw or height: 100vh */
+  /* Improve canvas rendering on high-DPI displays */
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: crisp-edges;
 }
 
 button {
