@@ -688,19 +688,21 @@ function drawScrollingBackground() {
   
   // Scale the background to fit display height while maintaining aspect ratio
   const scale = displayHeight / bgHeight;
-  const scaledBgWidth = bgWidth * scale;
+  const scaledBgWidth = Math.floor(bgWidth * scale); // Floor to ensure integer width
   const scaledBgHeight = displayHeight;
   
   // Calculate the starting x position based on the offset
-  // Use modulo to create seamless tiling
-  const startX = -(backgroundOffsetX % scaledBgWidth);
+  // Use modulo to create seamless tiling and floor to ensure pixel alignment
+  const startX = Math.floor(-(backgroundOffsetX % scaledBgWidth));
   
   // Draw tiles from left to right to cover the entire canvas
-  const tilesNeeded = Math.ceil(displayWidth / scaledBgWidth) + 1; // +1 for smooth scrolling
+  const tilesNeeded = Math.ceil(displayWidth / scaledBgWidth) + 2; // +2 for extra coverage
   
   for (let i = 0; i < tilesNeeded; i++) {
-    const x = startX + (i * scaledBgWidth);
-    ctx.drawImage(bgImg, x, 0, scaledBgWidth, scaledBgHeight);
+    const x = Math.floor(startX + (i * scaledBgWidth));
+    // Add slight overlap to prevent gaps on some platforms
+    const drawWidth = scaledBgWidth + 1;
+    ctx.drawImage(bgImg, x, 0, drawWidth, scaledBgHeight);
   }
 }
 
