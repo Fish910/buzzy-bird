@@ -281,6 +281,7 @@ function modelLoaded() {
 // Continuous pitch detection loop
 function getPitch() {
   if (!running || !pitchLoopActive || paused) return;
+  if (!pitchDetector) return;
   pitchDetector.getPitch((err, frequency) => {
     if (err) {
       console.error("Pitch detection error:", err);

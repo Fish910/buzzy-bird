@@ -260,13 +260,13 @@ function detectScreenChange() {
   const resolutionChanged = window.screen.width !== initialScreenWidth || window.screen.height !== initialScreenHeight;
   
   if (orientationChanged || resolutionChanged) {
-    console.log('Screen change detected - updates disabled for testing');
-    // Temporarily disabled for testing high-DPI fixes
-    // setTimeout(() => {
-    //   window.location.reload();
-    // }, 100);
+    console.log('Screen change detected - reloading page');
+    // Reload page on significant screen/orientation changes
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
     
-    // Update the stored values instead
+    // Update the stored values for next time
     initialScreenWidth = window.screen.width;
     initialScreenHeight = window.screen.height;
     initialOrientation = currentOrientation;
@@ -372,6 +372,10 @@ canvas.addEventListener("click", function (e) {
     // Reset timing to prevent delta time spike after pause
     lastFrameTime = 0;
     deltaTime = 0;
+    // Restart pitch detection loop
+    if (pitchLoopActive && pitchDetector) {
+      getPitch();
+    }
     if (!animationFrameId) {
       animationFrameId = requestAnimationFrame(draw);
     }
@@ -925,12 +929,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   // Initialize settings sliders after DOM is loaded
   initializeSettingsSliders();
   
-  try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    console.log("Microphone access granted.");
-  } catch (err) {
-    alert("Microphone access is required to play the game.");
-  }
+  // Don't request microphone access on page load - wait for user to start game
+  console.log("Page loaded - microphone will be requested when starting game.");
   
   // Sync user and show UI
   await syncLoggedInUserFromDb();
