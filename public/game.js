@@ -199,7 +199,6 @@ function resetGame() {
     window.ipadFrameTimeout = null;
   }
   pitchLoopActive = true;
-  getPitch();
 }
 
 // Stop the game and clean up
@@ -265,6 +264,11 @@ async function setupAudio() {
 // Called when pitch detection model is loaded
 function modelLoaded() {
   getPitch();
+  
+  // Ensure the animation loop starts
+  if (!animationFrameId && !paused) {
+    animationFrameId = requestAnimationFrame(draw);
+  }
 }
 
 // Continuous pitch detection loop
@@ -708,7 +712,7 @@ function draw(currentTime = 0) {
   // Draw sidescrolling tiled background
   drawScrollingBackground();
 
-  // Only return early if not running AND not in game over state
+  // If not running and not in game over state, return (show main menu)
   if (!running && !gameOver) return;
 
   // Prevent bird from falling below the bottom of the screen
