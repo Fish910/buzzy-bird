@@ -23,6 +23,12 @@ let score = 0;
 // Animation frame management
 let animationFrameId = null;
 
+// Delta time for frame-rate independent movement
+let lastFrameTime = 0;
+let deltaTime = 0;
+const TARGET_FPS = 60; // Target frame rate for consistent movement
+const FIXED_DELTA = 1000 / TARGET_FPS; // Fixed delta time in milliseconds
+
 // --- Game Constants ---
 const BIRD_WIDTH = 40;
 const BIRD_HEIGHT = 32;
@@ -33,11 +39,11 @@ const PIPE_INTERVAL = 120; // frames (deprecated, now using dynamic calculation)
 // --- Pipe & Break System Variables ---
 const REST_BREAK_DURATION = 3; // seconds
 let pipes = [];
-let pipeTimer = 0;
+let pipeTimer = 0; // Time in milliseconds since last pipe
 let pipesPerBreak = 5; // Default value
 let pipesPassedSinceBreak = 0;
 let inRestBreak = false;
-let restBreakTimer = 0;
+let restBreakTimer = 0; // Time in milliseconds for rest break
 let pendingRest = false;
 let skipNextPipe = false;
 let lastPipeBeforeBreak = null;
@@ -45,6 +51,8 @@ let lastPipeBeforeBreak = null;
 // Pipe speed system
 let pipeSpeed = 2; // Default value (will be set by slider)
 let pipeSpeedSliderValue = 50; // Default slider value
+
+// Timer system - now time-based instead of frame-based
 
 // Background scrolling system
 let backgroundOffsetX = 0; // Track horizontal scrolling position
@@ -129,12 +137,13 @@ function getPipeGap() {
   return clamp(Math.floor(displayHeight * 0.18), 120, 260);
 }
 
-// Calculate dynamic pipe interval based on speed
-function getPipeIntervalFrames() {
+// Calculate dynamic pipe interval based on speed (now returns milliseconds)
+function getPipeIntervalMs() {
   // Desired distance between pipes in pixels - increase for iPad
   const isIPad = /ipad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const desiredDistance = isIPad ? 400 : 320; // 25% more spacing on iPad
-  return Math.round(desiredDistance / pipeSpeed);
+  // Convert to time: distance / speed * (1000ms/60fps) for consistent timing
+  return (desiredDistance / pipeSpeed) * (1000 / TARGET_FPS);
 }
 
 // Map slider value to actual pipe speed
@@ -168,6 +177,7 @@ function resetGame() {
   skipNextPipe = false;
   lastPipeBeforeBreak = null;
   backgroundOffsetX = 0; // Reset background scroll position
+  lastFrameTime = 0; // Reset delta time tracking
 
   // Cancel animation frame and restart pitch loop
   if (animationFrameId) {
@@ -477,7 +487,7 @@ function drawRestAnimation() {
   const letterHeight = 32 * scale;
   const imgY = displayHeight / 2 - letterHeight / 2;
   const baseX = displayWidth / 2 - (letterCount * letterWidth) / 2;
-  const t = restBreakTimer;
+  const t = restBreakTimer / 1000; // Convert milliseconds to seconds for animation
   for (let i = 0; i < letterCount; i++) {
     // Sine wave: amplitude scaled with size, period 1s, staggered by 0.7 per letter
     const phase = t * 2 * Math.PI + i * 0.7;
@@ -616,7 +626,20 @@ function drawDPIIndicator() {
 }
 
 // --- Main Draw Function ---
-function draw() {
+function draw(currentTime = 0) {
+  // Calculate delta time for frame-rate independent movement
+  if (lastFrameTime === 0) {
+    lastFrameTime = currentTime;
+  }
+  deltaTime = currentTime - lastFrameTime;
+  lastFrameTime = currentTime;
+  
+  // Cap delta time to prevent large jumps (e.g., when tab becomes inactive)
+  deltaTime = Math.min(deltaTime, FIXED_DELTA * 2);
+  
+  // Use a normalized delta multiplier for consistent movement across frame rates
+  const deltaMultiplier = deltaTime / FIXED_DELTA;
+  
   const yPadding = 20;
   
   // Use display dimensions for consistent behavior across devices
@@ -642,9 +665,9 @@ function draw() {
     birdY = smoothing * birdY + (1 - smoothing) * targetY;
     birdVelocity = 0; // Reset velocity when pitch is detected
   } else {
-    // No pitch detected: apply gravity for smooth fall
-    birdVelocity += GRAVITY;
-    birdY += birdVelocity;
+    // No pitch detected: apply gravity for smooth fall (frame-rate independent)
+    birdVelocity += GRAVITY * deltaMultiplier;
+    birdY += birdVelocity * deltaMultiplier;
   }
 
   if (animationFrameId) animationFrameId = null;
@@ -665,9 +688,9 @@ function draw() {
 
   // --- Rest Break Logic ---
   if (inRestBreak) {
-    if (!paused) restBreakTimer += 1 / 60; // assuming 60fps
+    if (!paused) restBreakTimer += deltaTime; // Time-based rest break timer
     drawRestAnimation();
-    if (restBreakTimer >= REST_BREAK_DURATION) {
+    if (restBreakTimer >= REST_BREAK_DURATION * 1000) { // Convert to milliseconds
       inRestBreak = false;
       restBreakTimer = 0;
       pipesPassedSinceBreak = 0;
@@ -676,10 +699,10 @@ function draw() {
     }
   } else {
     if (!paused && !gameOver) {
-      pipeTimer++;
+      pipeTimer += deltaTime;
       // Only add a pipe if we are not about to enter a break
       if (!pendingRest && pipesPassedSinceBreak < pipesPerBreak) {
-        if (pipeTimer >= getPipeIntervalFrames()) {
+        if (pipeTimer >= getPipeIntervalMs()) {
           pipeTimer = 0;
           if (skipNextPipe) {
             // Skip this spawn to create the gap, then reset the flag
@@ -696,9 +719,9 @@ function draw() {
           }
         }
       }
-      // Move pipes
+      // Move pipes (frame-rate independent)
       for (let pipe of pipes) {
-        pipe.x -= pipeSpeed;
+        pipe.x -= pipeSpeed * deltaMultiplier;
       }
       
       pipes = pipes.filter((pipe) => {
@@ -720,7 +743,7 @@ function draw() {
   
   // Update background scrolling continuously when game is running and not paused
   if (!paused && !gameOver) {
-    backgroundOffsetX += pipeSpeed * 0.5;
+    backgroundOffsetX += pipeSpeed * 0.5 * deltaMultiplier;
   }
 
   // Draw pipes with proper scaling
