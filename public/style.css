@@ -521,7 +521,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
 }
 
-/* Mobile and tablet scaling - differentiate between iPad and iPhone */
+/* iPad and large tablet scaling (iPhone uses default desktop scaling) */
 @media (max-width: 1024px) and (min-width: 768px) {
   /* iPad/Large tablet scaling */
   button {
@@ -549,37 +549,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
 }
 
-/* iPhone and small mobile devices */
-@media (max-width: 767px) {
-  /* Much smaller scaling for iPhone and small phones */
-  button {
-    font-size: 1.1em !important;
-    padding: 12px 20px !important;
-    margin: 6px !important;
-  }
-  
-  .popup-content {
-    font-size: 1.0em !important;
-    padding: 18px !important;
-  }
-  
-  .popup-content h3 {
-    font-size: 1.3em !important;
-  }
-  
-  .note-box, #pipesPerBreakBox, #pipeSpeedBox {
-    font-size: 1.1em !important;
-    padding: 8px 12px !important;
-  }
-  
-  #leaderboardContainer {
-    font-size: 1.0em !important;
-  }
-  
-  #loadingOverlay {
-    font-size: 1.3em !important;
-  }
-}
+
 
 /* Custom scrollbar styling for cosmetics grid */
 .cosmetics-grid::-webkit-scrollbar {
@@ -672,21 +642,4 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
 }
 
-/* iPhone and small mobile cosmetics tabs */
-@media (max-width: 767px) {
-  .cosmetics-tab {
-    padding: 5px 10px !important;
-    font-size: 0.65em !important;
-    min-width: 60px !important;
-    flex: 1 !important;
-    margin-left: -1px !important;
-  }
-  
-  .cosmetics-tab:first-child {
-    margin-left: 0 !important;
-  }
-  
-  .cosmetics-tabs {
-    top: -35px;
-  }
-}
+
