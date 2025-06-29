@@ -46,6 +46,9 @@ let lastPipeBeforeBreak = null;
 let pipeSpeed = 2; // Default value (will be set by slider)
 let pipeSpeedSliderValue = 50; // Default slider value
 
+// Background scrolling system
+let backgroundOffsetX = 0; // Track horizontal scrolling position
+
 // --- Pitch Range Variables ---
 let bottomMidi = 48; // C3
 let topMidi = 60;   // C5
@@ -162,6 +165,7 @@ function resetGame() {
   pendingRest = false;
   skipNextPipe = false;
   lastPipeBeforeBreak = null;
+  backgroundOffsetX = 0; // Reset background scroll position
 
   // Cancel animation frame and restart pitch loop
   if (animationFrameId) {
@@ -500,6 +504,39 @@ function checkIOSOrientation() {
   return true; // Non-iOS device - allow normal functionality
 }
 
+// --- Canvas Rendering ---
+
+// Draw sidescrolling tiled background
+function drawScrollingBackground() {
+  if (!bgImg.complete) {
+    // If background image isn't loaded yet, fill with a solid color
+    ctx.fillStyle = "#70c5ce";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
+  
+  // Calculate how many tiles we need to cover the canvas width
+  const bgWidth = bgImg.naturalWidth || bgImg.width;
+  const bgHeight = bgImg.naturalHeight || bgImg.height;
+  
+  // Scale the background to fit canvas height while maintaining aspect ratio
+  const scale = canvas.height / bgHeight;
+  const scaledBgWidth = bgWidth * scale;
+  const scaledBgHeight = canvas.height;
+  
+  // Calculate the starting x position based on the offset
+  // Use modulo to create seamless tiling
+  const startX = -(backgroundOffsetX % scaledBgWidth);
+  
+  // Draw tiles from left to right to cover the entire canvas
+  const tilesNeeded = Math.ceil(canvas.width / scaledBgWidth) + 1; // +1 for smooth scrolling
+  
+  for (let i = 0; i < tilesNeeded; i++) {
+    const x = startX + (i * scaledBgWidth);
+    ctx.drawImage(bgImg, x, 0, scaledBgWidth, scaledBgHeight);
+  }
+}
+
 // --- Main Draw Function ---
 function draw() {
   const yPadding = 20;
@@ -530,7 +567,9 @@ function draw() {
 
   if (animationFrameId) animationFrameId = null;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+  
+  // Draw sidescrolling tiled background
+  drawScrollingBackground();
 
   if (!running) return;
 
@@ -577,6 +616,7 @@ function draw() {
       for (let pipe of pipes) {
         pipe.x -= pipeSpeed;
       }
+      
       pipes = pipes.filter((pipe) => pipe.x + PIPE_WIDTH > -100); // Remove pipes 100px after they leave the screen
 
       // If a rest is pending, wait for the last pipe to move off by canvas.width before starting break
@@ -588,6 +628,11 @@ function draw() {
         }
       }
     }
+  }
+  
+  // Update background scrolling continuously when game is running and not paused
+  if (!paused && !gameOver) {
+    backgroundOffsetX += pipeSpeed * 0.5;
   }
 
   // Draw pipes
@@ -835,6 +880,7 @@ function fullRefresh() {
   birdY = 300;
   birdVelocity = 0;
   pitch = null;
+  backgroundOffsetX = 0; // Reset background scroll position
 
   // Clear the canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
