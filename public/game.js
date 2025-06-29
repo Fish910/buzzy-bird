@@ -347,9 +347,11 @@ function resizeCanvas() {
   
   if (window.innerWidth > window.innerHeight) {
     // Landscape: fixed width, full height, horizontally centered
-    displayWidth = 480;
+    // Make canvas wider on PC/desktop, keep mobile the same
+    const canvasWidth = isMobile ? 480 : 600;
+    displayWidth = canvasWidth;
     displayHeight = window.innerHeight;
-    canvasLeft = (window.innerWidth - 480) / 2;
+    canvasLeft = (window.innerWidth - canvasWidth) / 2;
     canvasTop = 0;
   } else {
     // Portrait: full screen
