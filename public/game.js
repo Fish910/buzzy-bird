@@ -187,6 +187,7 @@ function resetGame() {
   lastPipeBeforeBreak = null;
   backgroundOffsetX = 0; // Reset background scroll position
   lastFrameTime = 0; // Reset delta time tracking
+  deltaTime = 0; // Also reset delta time itself
 
   // Cancel animation frame and restart pitch loop
   if (animationFrameId) {
@@ -194,10 +195,14 @@ function resetGame() {
     animationFrameId = null;
   }
   
-  // Clean up iPad timeout more thoroughly
+  // Clean up iPad timeouts more thoroughly
   if (window.ipadFrameTimeout) {
     clearTimeout(window.ipadFrameTimeout);
     window.ipadFrameTimeout = null;
+  }
+  if (window.ipadEmergencyTimeout) {
+    clearTimeout(window.ipadEmergencyTimeout);
+    window.ipadEmergencyTimeout = null;
   }
   
   // Clean up any other iPad-related timeouts that might exist
@@ -223,10 +228,14 @@ async function stopGame() {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
-  // Clean up iPad timeout
+  // Clean up iPad timeouts
   if (window.ipadFrameTimeout) {
     clearTimeout(window.ipadFrameTimeout);
     window.ipadFrameTimeout = null;
+  }
+  if (window.ipadEmergencyTimeout) {
+    clearTimeout(window.ipadEmergencyTimeout);
+    window.ipadEmergencyTimeout = null;
   }
   await cleanupAudioResources();
   draw();
@@ -705,14 +714,26 @@ function draw(currentTime = 0) {
   if (lastFrameTime === 0) {
     lastFrameTime = currentTime;
   }
-  deltaTime = currentTime - lastFrameTime;
+  
+  // Calculate raw delta time
+  let rawDeltaTime = currentTime - lastFrameTime;
   lastFrameTime = currentTime;
   
   // Use device-specific delta timing for better performance
   const targetDelta = isIPadDevice() ? IPAD_FIXED_DELTA : FIXED_DELTA;
   
-  // Cap delta time to prevent large jumps (e.g., when tab becomes inactive)
-  deltaTime = Math.min(deltaTime, targetDelta * 2);
+  // Cap delta time more aggressively to prevent timing spikes
+  // This is especially important for iPad's dual animation system
+  const maxDelta = targetDelta * 1.5; // Reduced from 2x to 1.5x
+  rawDeltaTime = Math.min(rawDeltaTime, maxDelta);
+  
+  // Smooth out delta time to prevent jitter (especially important for iPad)
+  if (isIPadDevice()) {
+    // Use exponential smoothing for iPad to reduce timing jitter
+    deltaTime = deltaTime * 0.8 + rawDeltaTime * 0.2;
+  } else {
+    deltaTime = rawDeltaTime;
+  }
   
   // Use a normalized delta multiplier for consistent movement across frame rates
   const deltaMultiplier = deltaTime / targetDelta;
@@ -1018,19 +1039,21 @@ function draw(currentTime = 0) {
 
   // Continue animation loop even during game over (but not when paused)
   if (!paused) {
-    // Use more aggressive animation timing for iPad to achieve smoother motion
     if (isIPadDevice()) {
-      // Try for higher frame rate on iPad by using shorter timeout as fallback
+      // iPad: Use only requestAnimationFrame to avoid timing conflicts
+      // The dual system was causing delta time corruption
       animationFrameId = requestAnimationFrame(draw);
-      // Only set a timeout if one doesn't already exist to prevent accumulation
-      if (!window.ipadFrameTimeout) {
-        window.ipadFrameTimeout = setTimeout(() => {
-          window.ipadFrameTimeout = null;
-          // Only continue if the game is still active and not paused
-          if (!paused && running) {
+      
+      // Optional: Add a very conservative timeout ONLY if RAF fails completely
+      // But make sure it doesn't run simultaneously with RAF
+      if (!window.ipadEmergencyTimeout) {
+        window.ipadEmergencyTimeout = setTimeout(() => {
+          window.ipadEmergencyTimeout = null;
+          // Only run if RAF hasn't already scheduled the next frame
+          if (!animationFrameId && !paused && running) {
             draw(performance.now());
           }
-        }, 11); // Slightly less aggressive: ~90 FPS fallback instead of 120
+        }, 50); // Much more conservative: only as emergency fallback
       }
     } else {
       animationFrameId = requestAnimationFrame(draw);
@@ -1072,10 +1095,14 @@ async function fullRefresh() {
     animationFrameId = null;
   }
   
-  // Clean up iPad timeout
+  // Clean up iPad timeouts
   if (window.ipadFrameTimeout) {
     clearTimeout(window.ipadFrameTimeout);
     window.ipadFrameTimeout = null;
+  }
+  if (window.ipadEmergencyTimeout) {
+    clearTimeout(window.ipadEmergencyTimeout);
+    window.ipadEmergencyTimeout = null;
   }
 
   // Stop pitch detection loop
@@ -1108,6 +1135,8 @@ async function fullRefresh() {
   birdVelocity = 0;
   pitch = null;
   backgroundOffsetX = 0; // Reset background scroll position
+  lastFrameTime = 0; // Reset timing
+  deltaTime = 0; // Reset delta time
 
   // Clear the canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
