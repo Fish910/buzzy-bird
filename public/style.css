@@ -661,38 +661,38 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
        (max-width: 1024px), 
        (max-height: 1024px) {
   .cosmetics-tab {
-    padding: 6px 10px !important;  /* Smaller padding with !important */
-    font-size: 0.7em !important;   /* Much smaller font size with !important */
-    min-width: 55px !important;    /* Smaller minimum width with !important */
+    padding: 8px 12px !important;  /* Slightly larger padding */
+    font-size: 0.8em !important;   /* Slightly larger font size */
+    min-width: 65px !important;    /* Slightly larger minimum width */
   }
   
   .cosmetics-tabs {
-    top: -42px;         /* Move tabs closer to popup */
+    top: -45px;         /* Move tabs closer to popup */
   }
 }
 
 /* Mobile devices (phones in portrait) */
 @media (max-width: 768px) {
   .cosmetics-tab {
-    padding: 5px 8px !important;   /* Even smaller padding with !important */
-    font-size: 0.65em !important;  /* Even smaller font size with !important */
-    min-width: 50px !important;    /* Even smaller minimum width with !important */
+    padding: 6px 10px !important;  /* Slightly larger padding */
+    font-size: 0.75em !important;  /* Slightly larger font size */
+    min-width: 60px !important;    /* Slightly larger minimum width */
   }
   
   .cosmetics-tabs {
-    top: -38px;         /* Move tabs even closer to popup */
+    top: -40px;         /* Move tabs closer to popup */
   }
 }
 
 /* Extra small devices (small phones) */
 @media (max-width: 480px) {
   .cosmetics-tab {
-    padding: 4px 6px !important;   /* Very small padding with !important */
-    font-size: 0.6em !important;   /* Very small font size with !important */
-    min-width: 45px !important;    /* Very small minimum width with !important */
+    padding: 5px 8px !important;   /* Slightly larger padding */
+    font-size: 0.7em !important;   /* Slightly larger font size */
+    min-width: 55px !important;    /* Slightly larger minimum width */
   }
   
   .cosmetics-tabs {
-    top: -35px;         /* Move tabs very close to popup */
+    top: -38px;         /* Move tabs closer to popup */
   }
 }
