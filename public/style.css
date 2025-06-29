@@ -655,3 +655,29 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 .popup-content {
   position: relative;
 }
+
+/* Mobile/tablet responsive styling for cosmetics tabs */
+@media (max-width: 768px), (max-height: 768px) {
+  .cosmetics-tab {
+    padding: 8px 12px;  /* Smaller padding */
+    font-size: 0.9em;   /* Smaller font size */
+    min-width: 70px;    /* Smaller minimum width */
+  }
+  
+  .cosmetics-tabs {
+    top: -45px;         /* Move tabs closer to popup */
+  }
+}
+
+/* Extra small devices (phones in portrait) */
+@media (max-width: 480px) {
+  .cosmetics-tab {
+    padding: 6px 10px;  /* Even smaller padding */
+    font-size: 0.8em;   /* Even smaller font size */
+    min-width: 60px;    /* Even smaller minimum width */
+  }
+  
+  .cosmetics-tabs {
+    top: -38px;         /* Move tabs even closer to popup */
+  }
+}

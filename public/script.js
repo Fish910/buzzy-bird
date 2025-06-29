@@ -566,8 +566,8 @@ if (creditsPopup) {
 // Difficulty button
 if (difficultyBtn) {
   difficultyBtn.addEventListener("click", (e) => {
-    if (shouldBlockInteraction()) {
-      e.preventDefault();
+    if (shouldBlockIOSAction()) {
+      handleBlockedIOSAction();
       return;
     }
     let idx;
@@ -577,17 +577,19 @@ if (difficultyBtn) {
       idx = (difficultyIndex + 1) % difficulties.length;
     }
     setDifficulty(idx);
+    e.stopPropagation();
   });
 }
 
 // Bug report button
 if (bugBtn) {
   bugBtn.addEventListener("click", (e) => {
-    if (shouldBlockInteraction()) {
-      e.preventDefault();
+    if (shouldBlockIOSAction()) {
+      handleBlockedIOSAction();
       return;
     }
     window.open("https://docs.google.com/forms/d/e/1FAIpQLScwbnly5GXgHmD5vIp9LcuWeZexq_y9r00n8ozvSEInXcCyQA/viewform?usp=dialog", "_blank");
+    e.stopPropagation();
   });
 }
 
