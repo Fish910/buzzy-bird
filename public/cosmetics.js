@@ -165,8 +165,6 @@ function updateBackdropImage() {
 
 // Update the main menu background to match the equipped backdrop
 function updateMainMenuBackground() {
-  console.log('updateMainMenuBackground called - applying backdrop to body with canvas overlay');
-  
   // Remove any existing overlay
   const existingOverlay = document.getElementById("canvasOverlay");
   if (existingOverlay) {
@@ -208,14 +206,10 @@ function updateMainMenuBackground() {
   }
   
   document.body.appendChild(overlay);
-  
-  console.log('Applied backdrop to body with canvas overlay:', backdrop.img);
 }
 
 // Clear the main menu background when starting the game
 function clearMainMenuBackground() {
-  console.log('clearMainMenuBackground called - removing backdrop from body');
-  
   // Remove backdrop from body
   document.body.style.backgroundImage = '';
   document.body.style.backgroundSize = '';
@@ -228,8 +222,6 @@ function clearMainMenuBackground() {
   if (existingOverlay) {
     existingOverlay.remove();
   }
-  
-  console.log('Backdrop and overlay cleared from body');
 }
 
 // --- Cosmetics Popup Management ---

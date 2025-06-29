@@ -24,7 +24,6 @@ function hideLoading() {
 // Show the main menu
 function showMainMenu() {
   hideLoading();
-  console.log('Showing main menu, current high score:', save.highScore);
   updateMenuInfo();
   mainMenu.style.display = "flex";
   running = false;
@@ -338,7 +337,6 @@ async function renderLeaderboard() {
     if (currentUser && currentUser.userId && save && save.highScore) {
       const userIndex = users.findIndex(user => user.userId === currentUser.userId);
       if (userIndex !== -1 && save.highScore > (users[userIndex].highScore || 0)) {
-        console.log('Using local high score for leaderboard display:', save.highScore, 'vs Firebase:', users[userIndex].highScore);
         users[userIndex].highScore = save.highScore;
         // Re-sort after updating the high score
         users.sort((a, b) => (b.highScore || 0) - (a.highScore || 0));

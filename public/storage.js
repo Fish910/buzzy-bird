@@ -4,10 +4,6 @@
 
 // --- Firebase Configuration & Initialization ---
 // Config is loaded from firebase-config.js
-console.log("Initializing Firebase with config:", window.firebaseConfig);
-if (!window.firebaseConfig) {
-  console.error("Firebase configuration not found! Make sure firebase-config.js loaded properly.");
-}
 firebase.initializeApp(window.firebaseConfig);
 const db = firebase.database();
 
@@ -97,9 +93,7 @@ function addPoints(amount) {
 }
 
 async function setHighScoreIfNeeded(newScore) {
-  console.log('Checking high score:', newScore, 'vs current:', save.highScore);
   if (newScore > save.highScore) {
-    console.log('New high score achieved:', newScore);
     const oldHighScore = save.highScore;
     save.highScore = newScore;
     saveData();
@@ -107,7 +101,6 @@ async function setHighScoreIfNeeded(newScore) {
     // Immediately sync to Firebase if user is logged in
     const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
     if (user && user.userId) {
-      console.log('Syncing new high score to Firebase:', oldHighScore, '->', newScore);
       
       // Set sync flag
       if (typeof window !== 'undefined') {
@@ -117,15 +110,12 @@ async function setHighScoreIfNeeded(newScore) {
       try {
         // Wait for sync to complete
         await syncUserDataToDb();
-        console.log('High score sync completed successfully');
         
         // Force a fresh leaderboard fetch after successful sync
         if (typeof renderLeaderboard === 'function') {
-          console.log('Refreshing leaderboard after high score sync');
           await renderLeaderboard();
         }
       } catch (err) {
-        console.error('Failed to sync high score to Firebase:', err);
         // Even if sync fails, try to refresh leaderboard with local data
         if (typeof renderLeaderboard === 'function') {
           renderLeaderboard();
@@ -136,8 +126,6 @@ async function setHighScoreIfNeeded(newScore) {
           window.highScoreSyncInProgress = false;
         }
       }
-    } else {
-      console.log('User not logged in, high score saved locally only');
     }
   }
 }
@@ -310,8 +298,6 @@ async function syncLoggedInUserFromDb() {
   const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
   if (!user || !user.userId) return; // Need userId to sync
   
-  console.log('Syncing user data from DB...');
-  
   try {
     const userRef = db.ref('users/' + user.userId);
     const snapshot = await userRef.get();
@@ -320,11 +306,9 @@ async function syncLoggedInUserFromDb() {
       
       // Merge data intelligently - take the maximum values where appropriate
       const currentLocalData = save || getDefaultSave();
-      console.log('Current local high score:', currentLocalData.highScore, 'DB high score:', dbUser.highScore);
       
       // Only update high score if DB version is higher (prevent overwriting recent achievements)
       const finalHighScore = Math.max(dbUser.highScore || 0, currentLocalData.highScore || 0);
-      console.log('Final merged high score:', finalHighScore);
       
       save = {
         points: Math.max(dbUser.points || 0, currentLocalData.points || 0),
@@ -337,11 +321,8 @@ async function syncLoggedInUserFromDb() {
         equippedBackdrop: dbUser.equippedBackdrop || "default"
       };
       
-      console.log('Merged high score:', save.highScore);
-      
       // If we merged higher local values, sync them back to the database
       if (save.points > (dbUser.points || 0) || save.highScore > (dbUser.highScore || 0)) {
-        console.log('Syncing higher local values back to DB');
         await syncUserDataToDb();
       }
       
@@ -356,7 +337,6 @@ async function syncLoggedInUserFromDb() {
       updateAuthUI && updateAuthUI();
     }
   } catch (e) {
-    console.log('Sync from DB failed:', e);
     // If fetch fails, do nothing (keep local data)
   }
 }
@@ -365,12 +345,6 @@ async function syncLoggedInUserFromDb() {
 async function syncUserDataToDb() {
   const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
   if (!user || !user.userId) return; // Only sync if user is logged in
-  
-  console.log('Syncing data to Firebase:', {
-    points: save.points || 0,
-    highScore: save.highScore || 0,
-    userId: user.userId
-  });
   
   try {
     // Clean arrays to remove any undefined values
@@ -395,20 +369,15 @@ async function syncUserDataToDb() {
       equippedBackdrop: save.equippedBackdrop || "default"
     };
     
-    console.log('Updating Firebase with:', updateData);
     await userRef.update(updateData);
     
     // Verify the update was successful by reading it back
     const verifySnapshot = await userRef.once('value');
     const verifiedData = verifySnapshot.val();
-    console.log('Firebase verification - saved high score:', verifiedData.highScore);
     
     if (verifiedData.highScore !== updateData.highScore) {
-      console.error('Firebase sync verification failed!', 'Expected:', updateData.highScore, 'Got:', verifiedData.highScore);
       throw new Error('Firebase sync verification failed');
     }
-    
-    console.log('Successfully synced and verified Firebase data');
     
     // Update local user data to match
     const updatedUser = {
@@ -425,6 +394,5 @@ async function syncUserDataToDb() {
     localStorage.setItem('buzzyBirdUser', JSON.stringify(updatedUser));
   } catch (e) {
     // If sync fails, keep local data
-    console.warn('Failed to sync purchase to database:', e);
   }
 }

@@ -2,28 +2,6 @@
 // SCRIPT.JS - Main Initialization, Global State & Event Handlers
 // =============================================================================
 
-// --- Debug device detection for responsive layout ---
-function debugDeviceDetection() {
-  console.log('=== Device Detection Debug ===');
-  console.log('Window dimensions:', window.innerWidth, 'x', window.innerHeight);
-  console.log('Screen dimensions:', screen.width, 'x', screen.height);
-  console.log('Device pixel ratio:', window.devicePixelRatio);
-  console.log('User agent:', navigator.userAgent);
-  console.log('Touch support:', 'ontouchstart' in window);
-  
-  // Check if our iPad media query conditions are met
-  const isPortraitTablet = window.matchMedia('(max-width: 1366px) and (min-width: 768px) and (orientation: portrait)').matches;
-  const isLandscapeTablet = window.matchMedia('(max-width: 1024px) and (min-width: 768px) and (orientation: landscape)').matches;
-  console.log('iPad portrait detection:', isPortraitTablet);
-  console.log('iPad landscape detection:', isLandscapeTablet);
-  console.log('Is tablet (either orientation):', isPortraitTablet || isLandscapeTablet);
-  console.log('===============================');
-}
-
-// Run debug on load
-window.addEventListener('load', debugDeviceDetection);
-window.addEventListener('resize', debugDeviceDetection);
-
 // --- Global Canvas & Context ---
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -34,27 +12,19 @@ let save;
 
 // --- High Score Sync Tracking ---
 let highScoreSyncInProgress = false;
-window.highScoreSyncInProgress = false;rogress = false;
+window.highScoreSyncInProgress = false;
 
 // Handle exit to menu with high score sync waiting
 async function handleExitToMenu() {
-  console.log('Exit to menu requested, checking for pending high score sync...');
   
   // Wait for any pending high score sync to complete
   if (window.highScoreSyncInProgress) {
-    console.log('Waiting for high score sync to complete...');
     // Poll for sync completion with timeout
     let attempts = 0;
     const maxAttempts = 50; // 5 seconds max wait
     while (window.highScoreSyncInProgress && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 100));
       attempts++;
-    }
-    
-    if (attempts >= maxAttempts) {
-      console.warn('High score sync timeout, proceeding to menu anyway');
-    } else {
-      console.log('High score sync completed, proceeding to menu');
     }
   }
   
@@ -156,7 +126,6 @@ let activeSettingsTab = "pitchRange";
 
 // Switch settings tab
 function switchSettingsTab(tabName) {
-  console.log('switchSettingsTab called with:', tabName);
   activeSettingsTab = tabName;
   updateSettingsTabButtons();
   showSettingsTabContent();
@@ -164,11 +133,8 @@ function switchSettingsTab(tabName) {
 
 // Update settings tab button appearances
 function updateSettingsTabButtons() {
-  console.log('updateSettingsTabButtons called, activeSettingsTab:', activeSettingsTab);
   const pitchRangeTab = document.getElementById("pitchRangeTab");
   const advancedTab = document.getElementById("advancedTab");
-  
-  console.log('Found tabs:', { pitchRangeTab, advancedTab });
   
   // Remove active class from all tabs
   [pitchRangeTab, advancedTab].forEach(tab => {
@@ -179,22 +145,17 @@ function updateSettingsTabButtons() {
   switch(activeSettingsTab) {
     case "pitchRange":
       if (pitchRangeTab) pitchRangeTab.classList.add("active");
-      console.log('Set pitchRange tab as active');
       break;
     case "advanced":
       if (advancedTab) advancedTab.classList.add("active");
-      console.log('Set advanced tab as active');
       break;
   }
 }
 
 // Show the content for the active settings tab
 function showSettingsTabContent() {
-  console.log('showSettingsTabContent called, activeSettingsTab:', activeSettingsTab);
   const pitchRangeContent = document.getElementById("pitchRangeContent");
   const advancedContent = document.getElementById("advancedContent");
-  
-  console.log('Found content elements:', { pitchRangeContent, advancedContent });
   
   // Hide all content
   [pitchRangeContent, advancedContent].forEach(content => {
@@ -205,11 +166,9 @@ function showSettingsTabContent() {
   switch(activeSettingsTab) {
     case "pitchRange":
       if (pitchRangeContent) pitchRangeContent.classList.remove("hidden");
-      console.log('Showing pitchRange content');
       break;
     case "advanced":
       if (advancedContent) advancedContent.classList.remove("hidden");
-      console.log('Showing advanced content');
       break;
   }
 }
@@ -260,7 +219,6 @@ function detectScreenChange() {
   const resolutionChanged = window.screen.width !== initialScreenWidth || window.screen.height !== initialScreenHeight;
   
   if (orientationChanged || resolutionChanged) {
-    console.log('Screen change detected - reloading page');
     // Reload page on significant screen/orientation changes
     setTimeout(() => {
       window.location.reload();
@@ -930,7 +888,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   initializeSettingsSliders();
   
   // Don't request microphone access on page load - wait for user to start game
-  console.log("Page loaded - microphone will be requested when starting game.");
   
   // Sync user and show UI
   await syncLoggedInUserFromDb();
