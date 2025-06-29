@@ -320,14 +320,34 @@ function resizeCanvas() {
     return; // Exit early if iOS device is in landscape
   }
   
-  // Detect mobile devices
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 1024;
+  // Detect mobile devices - be very aggressive for iPad Safari
+  const userAgent = navigator.userAgent.toLowerCase();
+  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isTabletSize = window.innerWidth <= 1024 || window.innerHeight <= 1024;
+  const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(navigator.userAgent);
+  const isAppleDevice = /ipad|iphone|ipod|macintosh/i.test(navigator.userAgent) && hasTouch;
+  
+  // FORCE MOBILE MODE FOR TESTING - this will force mobile scaling
+  const forceMobile = window.innerWidth <= 1200; // Force mobile for most tablet/mobile sizes
+  
+  // Force mobile detection for iPad and touch devices
+  const isMobile = forceMobile || isMobileUA || isAppleDevice || isTabletSize || hasTouch;
+  
+  // Debug logging for iPad Safari
+  console.log(`Mobile Detection Debug:
+    userAgent: ${navigator.userAgent}
+    hasTouch: ${hasTouch}
+    isTabletSize: ${isTabletSize} (${window.innerWidth}x${window.innerHeight})
+    isMobileUA: ${isMobileUA}
+    isAppleDevice: ${isAppleDevice}
+    forceMobile: ${forceMobile}
+    FINAL isMobile: ${isMobile}`);
   
   // Get device pixel ratio for high-DPI displays (iPad, Retina, etc.)
   const dpr = window.devicePixelRatio || 1;
   
-  // Force minimum scaling on mobile devices
-  const effectiveDpr = isMobile ? Math.max(dpr, 2.0) : dpr;
+  // Force aggressive scaling on mobile devices, especially iPad
+  const effectiveDpr = isMobile ? Math.max(dpr, 2.5) : dpr;
   
   // Get the display size in CSS pixels
   let displayWidth, displayHeight;
@@ -617,14 +637,27 @@ function drawDPIIndicator() {
   
   ctx.save();
   
-  // Draw a large colored indicator box for mobile
+  // SUPER OBVIOUS TEST - Draw a huge overlay if mobile is detected
   if (isMobile) {
+    // Draw a massive orange background covering 70% of screen
+    const bgWidth = displayWidth * 0.7;
+    const bgHeight = displayHeight * 0.5;
     ctx.fillStyle = "rgba(255, 165, 0, 0.9)"; // Bright orange background
-    ctx.fillRect(0, 0, Math.min(250, displayWidth * 0.6), Math.min(200, displayHeight * 0.4));
+    ctx.fillRect(0, 0, bgWidth, bgHeight);
+    
+    // Add a bright red border
+    ctx.strokeStyle = "rgba(255, 0, 0, 1)";
+    ctx.lineWidth = 5;
+    ctx.strokeRect(5, 5, bgWidth - 10, bgHeight - 10);
+    
+    // Large text
+    ctx.fillStyle = "rgba(0, 0, 0, 1)";
+    ctx.font = "bold 24px Arial";
+    ctx.fillText("MOBILE DETECTED!", 20, 40);
   }
   
   ctx.fillStyle = isMobile ? "rgba(0, 0, 0, 1)" : "rgba(255, 0, 0, 0.8)";
-  ctx.font = isMobile ? "20px Arial" : "16px Arial";
+  ctx.font = isMobile ? "18px Arial" : "16px Arial";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   
@@ -636,15 +669,16 @@ function drawDPIIndicator() {
     `Canvas: ${canvas.width}x${canvas.height}`,
   ];
   
+  const startY = isMobile ? 80 : 10;
   info.forEach((text, i) => {
-    ctx.fillText(text, 10, 10 + i * (isMobile ? 25 : 20));
+    ctx.fillText(text, 20, startY + i * (isMobile ? 25 : 20));
   });
   
   // Add a prominent "SCALED" indicator for mobile
   if (isMobile && gameScale > 1.5) {
-    ctx.font = "bold 24px Arial";
+    ctx.font = "bold 28px Arial";
     ctx.fillStyle = "rgba(255, 0, 0, 1)";
-    ctx.fillText("SCALED UP!", 10, 10 + info.length * 25 + 10);
+    ctx.fillText("SCALED UP!", 20, startY + info.length * 25 + 20);
   }
   
   ctx.restore();
