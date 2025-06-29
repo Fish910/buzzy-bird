@@ -594,11 +594,15 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     min-width: 140px !important;
   }
   
-  /* Version text at bottom */
+  /* Version text at bottom - position on far left for iPad */
   .menu > div:last-child {
     font-size: 1.1em !important; /* Larger version text */
     left: 20px !important; /* More margin from edge */
     bottom: 16px !important;
+    max-width: none !important; /* Remove width limit */
+    margin: 0 !important; /* Remove auto centering */
+    width: auto !important; /* Don't take full width */
+    right: auto !important; /* Don't stretch to right */
   }
 }
 
