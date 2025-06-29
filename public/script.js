@@ -369,6 +369,9 @@ canvas.addEventListener("click", function (e) {
   // If paused, unpause on tap
   if (running && paused) {
     paused = false;
+    // Reset timing to prevent delta time spike after pause
+    lastFrameTime = 0;
+    deltaTime = 0;
     if (!animationFrameId) {
       animationFrameId = requestAnimationFrame(draw);
     }
