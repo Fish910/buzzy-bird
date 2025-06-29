@@ -350,13 +350,14 @@ function resizeCanvas() {
   canvas.style.position = 'absolute';
   
   // Set the canvas internal resolution (accounting for device pixel ratio)
-  canvas.width = displayWidth * dpr;
-  canvas.height = displayHeight * dpr;
+  canvas.width = Math.floor(displayWidth * dpr);
+  canvas.height = Math.floor(displayHeight * dpr);
   
-  // Scale the drawing context to match the device pixel ratio
+  // Reset the context and scale it to match the device pixel ratio
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any previous transforms
   ctx.scale(dpr, dpr);
   
-  // Disable image smoothing after resize
+  // Disable image smoothing after resize for pixel-perfect rendering
   ctx.imageSmoothingEnabled = false;
   
   // Store the scale factor globally for use in drawing functions
@@ -365,6 +366,8 @@ function resizeCanvas() {
   window.displayHeight = displayHeight;
   
   console.log(`Canvas resized: ${displayWidth}x${displayHeight} CSS, ${canvas.width}x${canvas.height} internal, DPR: ${dpr}`);
+  console.log(`Canvas style dimensions: ${canvas.style.width} x ${canvas.style.height}`);
+  console.log(`Window dimensions: ${window.innerWidth}x${window.innerHeight}`);
   
   // Only redraw if not running (so splash/buttons show up)
   if (!running) draw();
@@ -392,7 +395,12 @@ function drawScore(x, y, score) {
   
   // Scale digits based on display size, with better scaling for larger screens
   const minScale = Math.min(displayWidth / 480, displayHeight / 800); // Base scale
-  const scale = Math.max(0.8, Math.min(2.0, minScale)); // Clamp between 0.8x and 2x
+  const scale = Math.max(1.5, Math.min(4.0, minScale * 2)); // Much more aggressive scaling for testing
+  
+  // Debug output on first call
+  if (score === 0) {
+    console.log(`Score scaling: displayWidth=${displayWidth}, displayHeight=${displayHeight}, minScale=${minScale}, finalScale=${scale}`);
+  }
   
   const scaledWidth = baseDigitWidth * scale;
   const scaledHeight = baseDigitHeight * scale;
@@ -413,7 +421,7 @@ function drawScore(x, y, score) {
 // Draw in-canvas buttons (quit button in top right)
 function drawGameButtons() {
   const displayWidth = window.displayWidth || canvas.width;
-  const btnSize = 48;
+  const btnSize = 64; // Made larger for testing
   const padding = 20;
   const quitX = displayWidth - btnSize - padding;
   const btnY = padding;
@@ -424,7 +432,7 @@ function drawGameButtons() {
   ctx.fillStyle = "#d32f2f";
   ctx.fillRect(quitX, btnY, btnSize, btnSize);
   ctx.fillStyle = "#fff";
-  ctx.font = "bold 28px sans-serif";
+  ctx.font = "bold 36px sans-serif"; // Larger font for testing
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("✖", quitX + btnSize / 2, btnY + btnSize / 2 + 1);
@@ -461,7 +469,7 @@ function drawRestAnimation() {
 // Check if exit button was clicked
 function exitButtonClicked(x, y) {
   const displayWidth = window.displayWidth || canvas.width;
-  const btnSize = 48;
+  const btnSize = 64; // Match the new button size
   const padding = 20;
   const btnX = displayWidth - btnSize - padding;
   const btnY = padding;
@@ -574,6 +582,32 @@ function drawScrollingBackground() {
     const x = startX + (i * scaledBgWidth);
     ctx.drawImage(bgImg, x, 0, scaledBgWidth, scaledBgHeight);
   }
+}
+
+// Draw DPI indicator in top-left corner for debugging
+function drawDPIIndicator() {
+  const dpr = window.devicePixelRatio || 1;
+  const displayWidth = window.displayWidth || canvas.width;
+  const displayHeight = window.displayHeight || canvas.height;
+  
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 0, 0, 0.8)";
+  ctx.font = "16px Arial";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  
+  const info = [
+    `DPR: ${dpr}`,
+    `Display: ${displayWidth}x${displayHeight}`,
+    `Canvas: ${canvas.width}x${canvas.height}`,
+    `Style: ${canvas.style.width} x ${canvas.style.height}`
+  ];
+  
+  info.forEach((text, i) => {
+    ctx.fillText(text, 10, 10 + i * 20);
+  });
+  
+  ctx.restore();
 }
 
 // --- Main Draw Function ---
@@ -811,7 +845,7 @@ function draw() {
     ctx.fillRect(0, 0, displayWidth, displayHeight);
     const goNaturalWidth = gameoverImg.naturalWidth || 300;
     const goNaturalHeight = gameoverImg.naturalHeight || 80;
-    const goDrawWidth = Math.min(300, displayWidth * 0.8); // Scale for smaller screens
+    const goDrawWidth = Math.min(600, displayWidth * 0.9); // Much larger for testing
     const goDrawHeight = goDrawWidth * (goNaturalHeight / goNaturalWidth);
     ctx.drawImage(
       gameoverImg,
@@ -851,6 +885,9 @@ function draw() {
 
   // Always draw buttons last so they appear on top
   drawGameButtons();
+  
+  // Draw DPI debug info
+  drawDPIIndicator();
 }
 
 // Draw initial splash/background/buttons as soon as possible
@@ -931,3 +968,16 @@ function fullRefresh() {
   // Show main menu or splash
   showMainMenu();
 }
+
+// Force canvas refresh - call this from browser console if needed
+function forceCanvasRefresh() {
+  console.log("Forcing canvas refresh...");
+  resizeCanvas();
+  if (!running) {
+    draw();
+  }
+  console.log("Canvas refresh complete");
+}
+
+// Make it globally available
+window.forceCanvasRefresh = forceCanvasRefresh;

@@ -238,11 +238,16 @@ function detectScreenChange() {
   const resolutionChanged = window.screen.width !== initialScreenWidth || window.screen.height !== initialScreenHeight;
   
   if (orientationChanged || resolutionChanged) {
-    console.log('Screen change detected, refreshing page...');
-    // Small delay to ensure the change is complete
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
+    console.log('Screen change detected - updates disabled for testing');
+    // Temporarily disabled for testing high-DPI fixes
+    // setTimeout(() => {
+    //   window.location.reload();
+    // }, 100);
+    
+    // Update the stored values instead
+    initialScreenWidth = window.screen.width;
+    initialScreenHeight = window.screen.height;
+    initialOrientation = currentOrientation;
   }
 }
 
@@ -311,6 +316,7 @@ if (leaderboardContainer) {
 // --- Canvas Event Handlers ---
 canvas.addEventListener("click", function (e) {
   const rect = canvas.getBoundingClientRect();
+  // Convert to display coordinates (CSS pixels)
   const mouseX = e.clientX - rect.left;
   const mouseY = e.clientY - rect.top;
 
@@ -350,6 +356,7 @@ canvas.addEventListener("click", function (e) {
 
 canvas.addEventListener("mousedown", function(e) {
   const rect = canvas.getBoundingClientRect();
+  // Convert to display coordinates (CSS pixels)  
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
 
