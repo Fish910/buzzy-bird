@@ -265,8 +265,8 @@ async function setupAudio() {
 function modelLoaded() {
   getPitch();
   
-  // Ensure the animation loop starts
-  if (!animationFrameId && !paused) {
+  // Immediately start the animation loop when the model is ready
+  if (!animationFrameId) {
     animationFrameId = requestAnimationFrame(draw);
   }
 }
@@ -321,7 +321,7 @@ async function ensureMicAndStart() {
     );
     // If modelLoaded is not called, hideLoading() after a timeout as fallback
     setTimeout(hideLoading, 4000);
-    draw();
+    // Don't call draw() here - let modelLoaded() handle starting the animation loop
   } catch (err) {
     hideLoading();
     alert("Microphone access is required to play!");
@@ -712,7 +712,8 @@ function draw(currentTime = 0) {
   // Draw sidescrolling tiled background
   drawScrollingBackground();
 
-  // If not running and not in game over state, return (show main menu)
+  // Only return early if we're truly not in a game state
+  // (not running, not in game over, and not transitioning between states)
   if (!running && !gameOver) return;
 
   // Prevent bird from falling below the bottom of the screen
