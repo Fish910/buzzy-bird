@@ -664,6 +664,12 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     padding: 8px 16px !important;  /* Wider padding */
     font-size: 0.8em !important;   /* Slightly larger font size */
     min-width: 80px !important;    /* Much wider minimum width */
+    flex: 1 !important;            /* Make tabs fill available space equally */
+    margin-left: -1px !important;  /* Overlap borders to connect tabs */
+  }
+  
+  .cosmetics-tab:first-child {
+    margin-left: 0 !important;     /* First tab doesn't need left margin */
   }
   
   .cosmetics-tabs {
@@ -677,6 +683,12 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     padding: 6px 14px !important;  /* Wider padding */
     font-size: 0.75em !important;  /* Slightly larger font size */
     min-width: 75px !important;    /* Wider minimum width */
+    flex: 1 !important;            /* Make tabs fill available space equally */
+    margin-left: -1px !important;  /* Overlap borders to connect tabs */
+  }
+  
+  .cosmetics-tab:first-child {
+    margin-left: 0 !important;     /* First tab doesn't need left margin */
   }
   
   .cosmetics-tabs {
@@ -690,6 +702,12 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     padding: 5px 12px !important;  /* Wider padding */
     font-size: 0.7em !important;   /* Slightly larger font size */
     min-width: 70px !important;    /* Wider minimum width */
+    flex: 1 !important;            /* Make tabs fill available space equally */
+    margin-left: -1px !important;  /* Overlap borders to connect tabs */
+  }
+  
+  .cosmetics-tab:first-child {
+    margin-left: 0 !important;     /* First tab doesn't need left margin */
   }
   
   .cosmetics-tabs {
