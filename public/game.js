@@ -91,6 +91,11 @@ for (let i = 0; i <= 9; i++) {
 
 // --- Utility Functions ---
 
+// Helper function to detect iPad consistently
+function isIPadDevice() {
+  return /ipad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
 // Clamp a value between min and max
 function clamp(val, min, max) {
   return Math.max(min, Math.min(max, val));
@@ -140,8 +145,7 @@ function getPipeGap() {
 // Calculate dynamic pipe interval based on speed (now returns milliseconds)
 function getPipeIntervalMs() {
   // Desired distance between pipes in pixels - increase for iPad
-  const isIPad = /ipad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const desiredDistance = isIPad ? 400 : 320; // 25% more spacing on iPad
+  const desiredDistance = isIPadDevice() ? 400 : 320; // 25% more spacing on iPad
   // Convert to time: distance / speed * (1000ms/60fps) for consistent timing
   return (desiredDistance / pipeSpeed) * (1000 / TARGET_FPS);
 }
@@ -347,8 +351,20 @@ function resizeCanvas() {
   // Get device pixel ratio for high-DPI displays (iPad, Retina, etc.)
   const dpr = window.devicePixelRatio || 1;
   
-  // Force moderate scaling on mobile devices for better balance
-  const effectiveDpr = isMobile ? Math.max(dpr, 1.8) : dpr;
+  // Optimize for performance - cap DPR for better frame rates
+  // iPad often has DPR of 2-3, which can cause performance issues when multiplied
+  let effectiveDpr;
+  
+  if (isIPadDevice()) {
+    // iPad: Cap at 1.5x for better performance while maintaining crisp visuals
+    effectiveDpr = Math.min(dpr, 1.5);
+  } else if (isMobile) {
+    // Other mobile: Moderate scaling
+    effectiveDpr = Math.min(dpr, 2.0);
+  } else {
+    // Desktop: Use actual DPR
+    effectiveDpr = dpr;
+  }
   
   // Get the display size in CSS pixels
   let displayWidth, displayHeight;
@@ -396,9 +412,7 @@ function resizeCanvas() {
   window.isMobile = isMobile;
   
   // Calculate base game scale factor for sprites and UI - differentiate between iPad and other devices
-  const isIPad = /ipad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  
-  if (isIPad) {
+  if (isIPadDevice()) {
     // iPad: Keep current larger scaling for touch-friendly gameplay
     window.gameScale = Math.max(1.5, displayWidth / 600);
   } else {
