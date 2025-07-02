@@ -74,6 +74,7 @@ button {
 
 .main-menu-btns button {
   width: 160px;
+  height: 48px;
 }
 .menu-buttons button {
   background: #32cd32;
@@ -331,7 +332,6 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   font-size: 1.1em;
 }
 #bugBtn {
-  width: 180px;
   margin-top: 10px;
 }
 #loadingOverlay {
@@ -616,7 +616,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   /* Main menu specific iPad layout - make everything wider and more spread out */
   .menu {
     padding: 0 8vw; /* Add horizontal padding to use more screen width */
-    gap: 24px; /* More spacing between main menu elements */
+    gap: 12px; /* Reduced spacing between main menu elements */
   }
   
   /* Make leaderboard container larger on iPad */
@@ -626,7 +626,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     height: 45vh !important; /* Restored original height */
     min-height: 360px !important; /* Restored original minimum height */
     font-size: 1.1em !important; /* Slightly larger text */
-    margin-bottom: 24px !important; /* More spacing */
+    margin-bottom: 8px !important; /* Reduced spacing */
   }
   
   .menu-info {
@@ -643,19 +643,9 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   
   .main-menu-btns button {
     width: 200px !important; /* Wider buttons */
+    height: 56px !important; /* Consistent height */
     font-size: 1.4em !important;
     padding: 18px 32px !important;
-  }
-  
-  /* Style the bottom buttons row (Report a Bug, Difficulty) */
-  .menu-buttons > div:last-child {
-    gap: 20px !important; /* More spacing between bottom buttons */
-  }
-  
-  .menu-buttons > div:last-child button {
-    padding: 16px 24px !important; /* Larger bottom buttons */
-    font-size: 1.2em !important;
-    min-width: 140px !important;
   }
   
   /* Version text at bottom - position on far left for iPad */
