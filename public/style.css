@@ -413,6 +413,11 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   max-height: 320px;
 }
 
+/* Adjust leaderboard list max-height for shorter iPad container */
+.leaderboard-list {
+  max-height: 240px !important; /* Reduced from default 320px to fit shorter container */
+}
+
 /* Leaderboard entry styling */
 .leaderboard-list .entry {
   display: flex;
@@ -586,8 +591,8 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   #leaderboardContainer {
     width: 500px !important; /* Larger leaderboard */
     max-width: 75vw !important; /* Use more of the screen width */
-    height: 45vh !important; /* Taller on iPad - nearly half the viewport */
-    min-height: 360px !important; /* Increased minimum height */
+    height: 38vh !important; /* Shorter height to prevent logout button touching */
+    min-height: 320px !important; /* Reduced minimum height */
     font-size: 1.1em !important; /* Slightly larger text */
     margin-bottom: 24px !important; /* More spacing */
   }

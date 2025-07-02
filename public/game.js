@@ -137,8 +137,16 @@ function noteNameToMidi(note) {
 // Calculate pipe gap based on display height
 function getPipeGap() {
   const displayHeight = window.displayHeight || canvas.height;
-  // 18% of the display height, but clamp between 120 and 260 pixels
-  return clamp(Math.floor(displayHeight * 0.18), 120, 260);
+  // Base gap: 18% of the display height, but clamp between 120 and 260 pixels
+  let baseGap = clamp(Math.floor(displayHeight * 0.18), 120, 260);
+  
+  // iPad gets larger gap for easier gameplay with bigger sprites
+  if (window.isIPad) {
+    baseGap = Math.floor(baseGap * 1.3); // 30% larger gap on iPad
+    baseGap = clamp(baseGap, 150, 340); // Adjust clamp limits for iPad
+  }
+  
+  return baseGap;
 }
 
 // Calculate dynamic pipe interval based on speed (now returns milliseconds)
@@ -529,7 +537,7 @@ function resizeCanvas() {
   
   // Debug: Log device information
   if (window.isIPad) {
-    console.log("iPad detected - using enhanced scaling and speed");
+    console.log("iPad detected - using enhanced scaling (1.2x sprites, 1.6x speed, 1.3x pipe gap)");
   }
   
   // Calculate base game scale factor for sprites and UI - simplified scaling
@@ -948,7 +956,7 @@ function draw(currentTime = 0) {
       // Move pipes (frame-rate independent with scaling compensation)
       const gameScale = window.gameScale || 1;
       // iPad gets faster pipe speed for increased difficulty
-      const ipadSpeedMultiplier = window.isIPad ? 1.4 : 1.0;
+      const ipadSpeedMultiplier = window.isIPad ? 1.6 : 1.0;
       const scaledPipeSpeed = pipeSpeed * gameScale * ipadSpeedMultiplier; // Scale pipe speed with sprite size and iPad multiplier
       
       for (let pipe of pipes) {
@@ -976,7 +984,7 @@ function draw(currentTime = 0) {
   if (showGameElements && running && !paused && !gameOver) {
     const gameScale = window.gameScale || 1;
     // iPad gets faster background scrolling to match faster pipes
-    const ipadSpeedMultiplier = window.isIPad ? 1.4 : 1.0;
+    const ipadSpeedMultiplier = window.isIPad ? 1.6 : 1.0;
     const scaledPipeSpeed = pipeSpeed * gameScale * ipadSpeedMultiplier; // Use same scaled speed as pipes
     backgroundOffsetX += scaledPipeSpeed * 0.5 * deltaMultiplier;
   }
