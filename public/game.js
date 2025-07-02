@@ -461,16 +461,53 @@ function resizeCanvas() {
     // Portrait: full screen
     displayWidth = window.innerWidth;
     displayHeight = window.innerHeight;
+    
+    // For mobile devices, especially iOS, ensure we use the full available space
+    if (isMobile) {
+      // Use the largest available viewport height
+      const availableHeight = Math.max(
+        window.innerHeight,
+        document.documentElement.clientHeight,
+        screen.height || 0
+      );
+      displayHeight = availableHeight;
+    }
+    
     canvasLeft = 0;
     canvasTop = 0;
   }
   
-  // Set the canvas CSS size (what the user sees)
-  canvas.style.width = displayWidth + 'px';
-  canvas.style.height = displayHeight + 'px';
-  canvas.style.left = canvasLeft + 'px';
-  canvas.style.top = canvasTop + 'px';
-  canvas.style.position = 'absolute';
+  // iOS-specific viewport adjustments
+  if (isMobile && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+    // Force canvas to fill entire iOS viewport
+    canvas.style.position = 'fixed';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.right = '0';
+    canvas.style.bottom = '0';
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
+    canvas.style.height = '100dvh'; // Dynamic viewport height for modern iOS
+    canvas.style.zIndex = '1';
+    
+    // Also ensure body fills viewport
+    document.body.style.position = 'fixed';
+    document.body.style.top = '0';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.bottom = '0';
+    document.body.style.width = '100vw';
+    document.body.style.height = '100vh';
+    document.body.style.height = '100dvh';
+    document.body.style.overflow = 'hidden';
+  } else {
+    // Set the canvas CSS size (what the user sees) for non-iOS devices
+    canvas.style.width = displayWidth + 'px';
+    canvas.style.height = displayHeight + 'px';
+    canvas.style.left = canvasLeft + 'px';
+    canvas.style.top = canvasTop + 'px';
+    canvas.style.position = 'absolute';
+  }
   
   // Set the canvas internal resolution (accounting for device pixel ratio)
   canvas.width = Math.floor(displayWidth * effectiveDpr);
