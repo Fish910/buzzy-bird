@@ -272,6 +272,9 @@ async function setupAudio() {
 
 // Called when pitch detection model is loaded
 function modelLoaded() {
+  // Ensure pitch loop is active before starting
+  pitchLoopActive = true;
+  
   getPitch();
   
   // Immediately start the animation loop when the model is ready
@@ -283,16 +286,26 @@ function modelLoaded() {
 // Continuous pitch detection loop
 function getPitch() {
   // Allow pitch detection during initial setup (when !running but pitchLoopActive)
-  if (!pitchLoopActive || paused) return;
-  if (!pitchDetector) return;
+  if (!pitchLoopActive || paused) {
+    return;
+  }
+  if (!pitchDetector) {
+    return;
+  }
+  
   pitchDetector.getPitch((err, frequency) => {
+    if (err) {
+      console.log('getPitch error:', err);
+    }
     if (frequency) {
       pitch = frequency;
     } else {
       pitch = null;
     }
     // Only continue if pitchLoopActive is still true
-    if (pitchLoopActive) getPitch();
+    if (pitchLoopActive) {
+      getPitch();
+    }
   });
 }
 
@@ -308,6 +321,7 @@ async function ensureMicAndStart() {
       micStream.getTracks().forEach(track => track.stop());
       micStream = null;
     }
+    
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
     showLoading("Loading pitch model...");
@@ -334,6 +348,7 @@ async function ensureMicAndStart() {
     setTimeout(hideLoading, 4000);
     // Don't call draw() here - let modelLoaded() handle starting the animation loop
   } catch (err) {
+    console.error('Error setting up microphone:', err);
     hideLoading();
     alert("Microphone access is required to play!");
     showMainMenu();
@@ -709,6 +724,75 @@ function drawDPIIndicator() {
   // Debug display removed - game is working properly now
 }
 
+// Draw debug information panel
+function drawDebugPanel() {
+  if (!window.debugMode) return; // Only show when debug mode is enabled
+  
+  const displayWidth = window.displayWidth || canvas.width;
+  const displayHeight = window.displayHeight || canvas.height;
+  
+  // Create semi-transparent background for debug panel
+  ctx.save();
+  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+  ctx.fillRect(10, 10, 300, 200);
+  
+  // Set text style
+  ctx.fillStyle = "#00ff00";
+  ctx.font = "12px monospace";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  
+  let y = 25;
+  const lineHeight = 15;
+  
+  // Display debug information
+  ctx.fillText(`Pitch: ${pitch ? pitch.toFixed(2) + ' Hz' : 'None'}`, 20, y);
+  y += lineHeight;
+  
+  ctx.fillText(`Bird Y: ${birdY.toFixed(2)}`, 20, y);
+  y += lineHeight;
+  
+  ctx.fillText(`Bird Velocity: ${birdVelocity.toFixed(2)}`, 20, y);
+  y += lineHeight;
+  
+  ctx.fillText(`Pitch Range: ${PITCH_MIN.toFixed(1)} - ${PITCH_MAX.toFixed(1)} Hz`, 20, y);
+  y += lineHeight;
+  
+  ctx.fillText(`Audio Context: ${audioContext ? audioContext.state : 'None'}`, 20, y);
+  y += lineHeight;
+  
+  ctx.fillText(`Microphone: ${micStream ? (micStream.active ? 'Active' : 'Inactive') : 'None'}`, 20, y);
+  y += lineHeight;
+  
+  ctx.fillText(`Pitch Detector: ${pitchDetector ? 'Ready' : 'None'}`, 20, y);
+  y += lineHeight;
+  
+  ctx.fillText(`Pitch Loop: ${pitchLoopActive ? 'Active' : 'Inactive'}`, 20, y);
+  y += lineHeight;
+  
+  ctx.fillText(`Running: ${running}`, 20, y);
+  y += lineHeight;
+  
+  ctx.fillText(`Game Over: ${gameOver}`, 20, y);
+  y += lineHeight;
+  
+  ctx.fillText(`Paused: ${paused}`, 20, y);
+  y += lineHeight;
+  
+  // Freeze delta time and FPS display when game is over or paused
+  if (gameOver || paused) {
+    ctx.fillText(`Delta Time: FROZEN`, 20, y);
+    y += lineHeight;
+    ctx.fillText(`FPS: FROZEN`, 20, y);
+  } else {
+    ctx.fillText(`Delta Time: ${deltaTime.toFixed(2)} ms`, 20, y);
+    y += lineHeight;
+    ctx.fillText(`FPS: ${deltaTime > 0 ? (1000 / deltaTime).toFixed(1) : 'N/A'}`, 20, y);
+  }
+  
+  ctx.restore();
+}
+
 // --- Main Draw Function ---
 function draw(currentTime = 0) {
   // Calculate delta time for frame-rate independent movement
@@ -775,9 +859,9 @@ function draw(currentTime = 0) {
   // Draw sidescrolling tiled background
   drawScrollingBackground();
 
-  // Only return early if we're truly not in a game state
-  // (not running, not in game over, and not transitioning between states)
-  if (!running && !gameOver) return;
+  // Only return early if we're truly not in a game state and not detecting pitch
+  // Allow bird physics to run when pitch detection is active, even if not fully "running"
+  if (!running && !gameOver && !pitchLoopActive) return;
 
   // Prevent bird from falling below the bottom of the screen
   const gameScale = window.gameScale || 1;
@@ -1066,6 +1150,9 @@ function draw(currentTime = 0) {
   
   // Draw DPI debug info
   drawDPIIndicator();
+  
+  // Draw debug panel
+  drawDebugPanel();
 }
 
 // Draw initial splash/background/buttons as soon as possible
@@ -1156,3 +1243,43 @@ function forceCanvasRefresh() {
 
 // Make it globally available
 window.forceCanvasRefresh = forceCanvasRefresh;
+
+// Debug mode functions - accessible from browser console
+window.enableDebug = function() {
+  window.debugMode = true;
+  console.log('Debug mode enabled - debug panel will be visible');
+};
+
+window.disableDebug = function() {
+  window.debugMode = false;
+  console.log('Debug mode disabled');
+};
+
+window.checkPitchStatus = function() {
+  console.log('=== PITCH STATUS CHECK ===');
+  console.log('audioContext:', audioContext ? `${audioContext.state} (sampleRate: ${audioContext.sampleRate})` : 'null');
+  console.log('micStream:', micStream ? `active: ${micStream.active}, tracks: ${micStream.getTracks().length}` : 'null');
+  console.log('mic (MediaStreamSource):', mic ? 'created' : 'null');
+  console.log('pitchDetector:', pitchDetector ? 'initialized' : 'null');
+  console.log('pitchLoopActive:', pitchLoopActive);
+  console.log('current pitch:', pitch);
+  console.log('pitch range:', `${PITCH_MIN.toFixed(2)} - ${PITCH_MAX.toFixed(2)} Hz`);
+  console.log('bird Y:', birdY);
+  console.log('bird velocity:', birdVelocity);
+  console.log('running:', running);
+  console.log('paused:', paused);
+  console.log('gameOver:', gameOver);
+  console.log('========================');
+};
+
+// Add a function to manually restart pitch detection
+window.restartPitchDetection = function() {
+  if (pitchDetector && !pitchLoopActive) {
+    pitchLoopActive = true;
+    getPitch();
+  } else if (!pitchDetector) {
+    console.log('No pitch detector available - ensure microphone is set up first');
+  } else {
+    console.log('Pitch loop is already active');
+  }
+};
