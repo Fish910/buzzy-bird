@@ -488,9 +488,20 @@ function resizeCanvas() {
   window.displayWidth = displayWidth;
   window.displayHeight = displayHeight;
   window.isMobile = isMobile;
+  window.isIPad = isIPadDevice();
+  
+  // Debug: Log device information
+  if (window.isIPad) {
+    console.log("iPad detected - using enhanced scaling and speed");
+  }
   
   // Calculate base game scale factor for sprites and UI - simplified scaling
-  window.gameScale = isMobile ? Math.max(0.8, displayWidth / 800) : Math.max(0.7, displayWidth / 1000);
+  // iPad gets additional scaling for bigger birds and pipes
+  if (window.isIPad) {
+    window.gameScale = Math.max(1.2, displayWidth / 600); // Larger scaling factor for iPad
+  } else {
+    window.gameScale = isMobile ? Math.max(0.8, displayWidth / 800) : Math.max(0.7, displayWidth / 1000);
+  }
   
   // Only redraw if not running (so splash/buttons show up)
   if (!running) draw();
@@ -899,7 +910,9 @@ function draw(currentTime = 0) {
       }
       // Move pipes (frame-rate independent with scaling compensation)
       const gameScale = window.gameScale || 1;
-      const scaledPipeSpeed = pipeSpeed * gameScale; // Scale pipe speed with sprite size
+      // iPad gets faster pipe speed for increased difficulty
+      const ipadSpeedMultiplier = window.isIPad ? 1.4 : 1.0;
+      const scaledPipeSpeed = pipeSpeed * gameScale * ipadSpeedMultiplier; // Scale pipe speed with sprite size and iPad multiplier
       
       for (let pipe of pipes) {
         pipe.x -= scaledPipeSpeed * deltaMultiplier;
@@ -925,7 +938,9 @@ function draw(currentTime = 0) {
   // Update background scrolling continuously when game is running and not paused
   if (showGameElements && running && !paused && !gameOver) {
     const gameScale = window.gameScale || 1;
-    const scaledPipeSpeed = pipeSpeed * gameScale; // Use same scaled speed as pipes
+    // iPad gets faster background scrolling to match faster pipes
+    const ipadSpeedMultiplier = window.isIPad ? 1.4 : 1.0;
+    const scaledPipeSpeed = pipeSpeed * gameScale * ipadSpeedMultiplier; // Use same scaled speed as pipes
     backgroundOffsetX += scaledPipeSpeed * 0.5 * deltaMultiplier;
   }
 
