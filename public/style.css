@@ -543,6 +543,26 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     height: 40vh !important; /* Taller on desktop */
     min-height: 320px !important;
   }
+  
+  /* Make logged-in buttons bigger on PC */
+  #logoutBtn {
+    padding: 10px 20px !important;
+    font-size: 1.1em !important;
+    min-width: 100px !important;
+  }
+  
+  #deleteAccountBtn {
+    padding: 10px 20px !important;
+    font-size: 1.1em !important;
+    min-width: 130px !important;
+  }
+  
+  /* Make sign up and log in buttons bigger on PC */
+  #signUpBtn, #logInBtn {
+    padding: 12px 24px !important;
+    font-size: 1.1em !important;
+    min-width: 100px !important;
+  }
 }
 
 /* Responsive for mobile/iPhone - shorter leaderboard popup but keep name container size */
@@ -655,24 +675,24 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     right: 18px !important;
     bottom: 14px !important; /* Position below signed-in container */
     margin-top: 0 !important;
-    padding: 8px 18px !important; /* Same padding as delete button */
-    font-size: 1.1em !important;
-    min-width: 120px !important; /* Ensure consistent button width */
+    padding: 12px 24px !important; /* Larger padding for iPad */
+    font-size: 1.2em !important; /* Larger text for iPad */
+    min-width: 140px !important; /* Wider for iPad touch targets */
   }
   
   #deleteAccountBtn {
     position: absolute !important;
-    right: 150px !important; /* More distance from logout button */
+    right: 170px !important; /* More distance from logout button for wider buttons */
     bottom: 14px !important; /* Position below signed-in container */
-    font-size: 1.1em !important;
-    padding: 8px 18px !important; /* Consistent padding */
-    min-width: 120px !important; /* Ensure consistent button width */
+    font-size: 1.2em !important; /* Larger text for iPad */
+    padding: 12px 24px !important; /* Larger padding for iPad */
+    min-width: 140px !important; /* Wider for iPad touch targets */
   }
   
   /* Ensure signed-in container has proper spacing on iPad and is above buttons */
   .signed-in-container {
-    margin: 8px 0 50px 0 !important; /* Bottom margin to create space for buttons below */
-    font-size: 1.1em !important;
+    margin: 8px 0 60px 0 !important; /* More bottom margin for larger buttons */
+    font-size: 1.2em !important; /* Larger text for iPad */
   }
 }
 
