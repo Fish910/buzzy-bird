@@ -648,18 +648,35 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     width: auto !important; /* Don't take full width */
     right: auto !important; /* Don't stretch to right */
   }
+  
+  /* Fix overlapping logged-in elements on iPad */
+  #logoutBtn {
+    position: absolute !important;
+    right: 18px !important;
+    bottom: 60px !important; /* Move higher to avoid overlap */
+    margin-top: 0 !important;
+    padding-top: 8px !important;
+    font-size: 1.1em !important;
+  }
+  
+  #deleteAccountBtn {
+    position: absolute !important;
+    right: 120px !important;
+    bottom: 60px !important; /* Move higher to avoid overlap */
+    font-size: 1.1em !important;
+  }
+  
+  /* Ensure signed-in container has proper spacing on iPad */
+  .signed-in-container {
+    margin: 8px 0 !important;
+    font-size: 1.1em !important;
+  }
 }
 
 /* Increase leaderboard footer margin on iPad for more button separation */
   .leaderboard-footer {
     margin-top: 32px !important; /* Increased from 24px to provide more separation */
   }
-
-  /* Add padding to logout button on iPad to prevent touching leaderboard container */
-#logoutBtn {
-  margin-top: 16px !important; /* Add extra top margin to create separation */
-  padding-top: 12px !important; /* Add extra top padding */
-}
 
 /* Fix X button size for iPad */
 .popup-close-x {
