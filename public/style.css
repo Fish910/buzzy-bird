@@ -411,12 +411,10 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   padding: 12px 6px; /* Increased side padding to prevent outline cutoff */
   margin-bottom: 18px; /* Reduced since footer margin increased */
   max-height: 320px;
-}
-
-/* Adjust leaderboard list max-height for shorter iPad container */
-.leaderboard-list {
-  max-height: 240px !important; /* Reduced from default 320px to fit shorter container */
-}
+}  /* Adjust leaderboard list max-height for shorter iPad container */
+  .leaderboard-list {
+    max-height: 180px !important; /* Further reduced from 240px to fit even shorter container */
+  }
 
 /* Leaderboard entry styling */
 .leaderboard-list .entry {
@@ -591,8 +589,8 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   #leaderboardContainer {
     width: 500px !important; /* Larger leaderboard */
     max-width: 75vw !important; /* Use more of the screen width */
-    height: 38vh !important; /* Shorter height to prevent logout button touching */
-    min-height: 320px !important; /* Reduced minimum height */
+    height: 32vh !important; /* Even shorter height to prevent logout button touching */
+    min-height: 280px !important; /* Further reduced minimum height */
     font-size: 1.1em !important; /* Slightly larger text */
     margin-bottom: 24px !important; /* More spacing */
   }

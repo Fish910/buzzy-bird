@@ -203,16 +203,15 @@ async function logIn(name, passcode, localData) {
   const passcodeHash = await hashPasscode(passcode);
   if (userData.passcodeHash !== passcodeHash) throw new Error("Incorrect passcode.");
 
-  // --- Only add new local progress since last sync ---
-  // Get last synced points from localStorage (or 0 if not set)
-  const lastSyncedPoints = Number(localStorage.getItem('buzzyBirdLastSyncedPoints') || 0);
-  const newLocalPoints = Math.max(0, (localData.points || 0) - lastSyncedPoints);
+  // --- Take the higher point total instead of adding them ---
+  // Compare local and database points, use the higher value
+  const higherPoints = Math.max(userData.points || 0, localData.points || 0);
 
   const merged = {
     ...userData,
     userId: userId, // Ensure userId is set
     highScore: Math.max(userData.highScore || 0, localData.highScore || 0),
-    points: (userData.points || 0) + newLocalPoints,
+    points: higherPoints, // Use higher points instead of adding
     ownedSkins: Array.from(new Set([...(userData.ownedSkins || []), ...(localData.ownedSkins || [])])).filter(item => item !== undefined && item !== null),
     ownedPipes: Array.from(new Set([...(userData.ownedPipes || ["default"]), ...(localData.ownedPipes || ["default"])])).filter(item => item !== undefined && item !== null),
     ownedBackdrops: Array.from(new Set([...(userData.ownedBackdrops || ["default"]), ...(localData.ownedBackdrops || ["default"])])).filter(item => item !== undefined && item !== null),
@@ -224,7 +223,7 @@ async function logIn(name, passcode, localData) {
   // Update user data in Firebase
   await db.ref('users/' + userId).update(merged);
 
-  // Update last synced points
+  // Update last synced points to the merged points value
   localStorage.setItem('buzzyBirdLastSyncedPoints', merged.points);
 
   return merged;
