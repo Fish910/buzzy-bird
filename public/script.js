@@ -28,6 +28,16 @@ async function handleExitToMenu() {
     }
   }
   
+  // Stop the game properly if it's running
+  if (typeof running !== 'undefined' && running) {
+    await stopGame();
+  } else {
+    // Reset background scrolling when returning to menu (if not already done by stopGame)
+    if (typeof backgroundOffsetX !== 'undefined') {
+      backgroundOffsetX = 0;
+    }
+  }
+  
   showMainMenu();
 }
 
@@ -907,9 +917,6 @@ window.addEventListener("DOMContentLoaded", showMainMenu);
 
 // --- Initialize Game ---
 
-// Call preload functions
-preloadPitchModel();
-
 // Try to draw initial screen
 tryDrawInitial();
 
@@ -930,6 +937,23 @@ if (advancedTab) {
     e.stopPropagation();
   });
 }
+
+// Early user interaction handler to warm up pitch detection
+let warmupTriggered = false;
+function triggerEarlyWarmup() {
+  if (!warmupTriggered) {
+    warmupTriggered = true;
+    console.log('User interaction detected - warming up pitch detection');
+    if (typeof warmupPitchDetection === 'function') {
+      warmupPitchDetection().catch(err => console.log('Early warmup failed:', err));
+    }
+  }
+}
+
+// Add early interaction listeners
+['click', 'touchstart', 'keydown'].forEach(eventType => {
+  document.addEventListener(eventType, triggerEarlyWarmup, { once: true, passive: true });
+});
 
 // Helper function to check if iOS actions should be blocked
 function shouldBlockIOSAction() {

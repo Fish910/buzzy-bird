@@ -11,7 +11,6 @@ const GRAVITY = 0.7;  // Gravity constant for physics
 
 // Audio context and pitch detection
 let audioContext, mic, pitchDetector, micStream;
-let pitchModel = null; // Store the loaded model
 let pitchLoopActive = false;
 
 // Game state flags
@@ -28,10 +27,6 @@ let lastFrameTime = 0;
 let deltaTime = 0;
 const TARGET_FPS = 60; // Target frame rate for consistent movement
 const FIXED_DELTA = 1000 / TARGET_FPS; // Fixed delta time in milliseconds
-
-// iPad-specific performance optimization
-const IPAD_TARGET_FPS = 90; // Higher target FPS for smoother motion on iPad
-const IPAD_FIXED_DELTA = 1000 / IPAD_TARGET_FPS;
 
 // --- Game Constants ---
 const BIRD_WIDTH = 40;
@@ -148,11 +143,10 @@ function getPipeGap() {
 
 // Calculate dynamic pipe interval based on speed (now returns milliseconds)
 function getPipeIntervalMs() {
-  // Desired distance between pipes in pixels - increase for iPad
-  const desiredDistance = isIPadDevice() ? 400 : 320; // 25% more spacing on iPad
+  // Desired distance between pipes in pixels
+  const desiredDistance = 320;
   // Convert to time: distance / speed * (1000ms/targetFPS) for consistent timing
-  const targetFps = isIPadDevice() ? IPAD_TARGET_FPS : TARGET_FPS;
-  return (desiredDistance / pipeSpeed) * (1000 / targetFps);
+  return (desiredDistance / pipeSpeed) * (1000 / TARGET_FPS);
 }
 
 // Map slider value to actual pipe speed
@@ -172,6 +166,23 @@ function updatePitchRange() {
 
 // Reset game to initial state
 function resetGame() {
+  // Stop any existing animation loops immediately
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+  
+  // Clean up any emergency timeouts
+  if (window.ipadFrameTimeout) {
+    clearTimeout(window.ipadFrameTimeout);
+    window.ipadFrameTimeout = null;
+  }
+  if (window.ipadEmergencyTimeout) {
+    clearTimeout(window.ipadEmergencyTimeout);
+    window.ipadEmergencyTimeout = null;
+  }
+  
+  // Reset all game state
   birdY = 300;
   birdVelocity = 0;
   pitch = null;
@@ -189,30 +200,7 @@ function resetGame() {
   lastFrameTime = 0; // Reset delta time tracking
   deltaTime = 0; // Also reset delta time itself
 
-  // Cancel animation frame and restart pitch loop
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
-  }
-  
-  // Clean up iPad timeouts more thoroughly
-  if (window.ipadFrameTimeout) {
-    clearTimeout(window.ipadFrameTimeout);
-    window.ipadFrameTimeout = null;
-  }
-  if (window.ipadEmergencyTimeout) {
-    clearTimeout(window.ipadEmergencyTimeout);
-    window.ipadEmergencyTimeout = null;
-  }
-  
-  // Clean up any other iPad-related timeouts that might exist
-  // Clear all timeouts to prevent accumulation
-  let timeoutId = setTimeout(() => {}, 0);
-  while (timeoutId > 0) {
-    clearTimeout(timeoutId);
-    timeoutId--;
-  }
-  
+  // Ensure pitch loop will be active for new game
   pitchLoopActive = true;
 }
 
@@ -223,16 +211,14 @@ async function stopGame() {
   pitch = null;
   birdY = 300;
   pipes = [];
+  backgroundOffsetX = 0; // Reset background scroll position
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
-  // Clean up iPad timeouts
-  if (window.ipadFrameTimeout) {
-    clearTimeout(window.ipadFrameTimeout);
-    window.ipadFrameTimeout = null;
-  }
+  
+  // Clear any emergency timeouts
   if (window.ipadEmergencyTimeout) {
     clearTimeout(window.ipadEmergencyTimeout);
     window.ipadEmergencyTimeout = null;
@@ -245,40 +231,37 @@ async function stopGame() {
 
 // --- Audio Setup & Pitch Detection ---
 
-// Preload the pitch detection model
-async function preloadPitchModel() {
-  if (!pitchModel) {
-    pitchModel = await ml5.pitchDetection(
-      "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
-      null, // No audioContext yet
-      null, // No stream yet
-      () => {}
-    );
-  }
-}
-
-// Set up audio context and microphone
-async function setupAudio() {
-  if (!mic) mic = audioContext.createMediaStreamSource(micStream);
-  if (!pitchDetector) {
-    pitchDetector = await ml5.pitchDetection(
-      "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
-      audioContext,
-      micStream,
-      modelLoaded
-    );
+// Warm up pitch detection - call this on first user interaction to prepare everything
+async function warmupPitchDetection() {
+  // Prepare audio context early if possible
+  if (!audioContext) {
+    try {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      // Immediately suspend it to save resources until game starts
+      if (audioContext.state === 'running') {
+        await audioContext.suspend();
+      }
+      console.log('Audio context prepared early');
+    } catch (err) {
+      console.log('Could not create audio context early:', err);
+    }
   }
 }
 
 // Called when pitch detection model is loaded
 function modelLoaded() {
+  console.log('Pitch detection model loaded and ready');
+  
   // Ensure pitch loop is active before starting
   pitchLoopActive = true;
   
-  getPitch();
+  // Start pitch detection only if not already running
+  if (pitchDetector && !pitch) {
+    getPitch();
+  }
   
-  // Immediately start the animation loop when the model is ready
-  if (!animationFrameId) {
+  // Only start the animation loop if the game is actually running and no animation is already active
+  if (running && !animationFrameId) {
     animationFrameId = requestAnimationFrame(draw);
   }
 }
@@ -302,9 +285,14 @@ function getPitch() {
     } else {
       pitch = null;
     }
-    // Only continue if pitchLoopActive is still true
-    if (pitchLoopActive) {
-      getPitch();
+    // Only continue if pitchLoopActive is still true and we're not in a cleanup state
+    if (pitchLoopActive && pitchDetector) {
+      // Use requestAnimationFrame to prevent callback stacking
+      requestAnimationFrame(() => {
+        if (pitchLoopActive && pitchDetector) {
+          getPitch();
+        }
+      });
     }
   });
 }
@@ -313,28 +301,24 @@ function getPitch() {
 async function ensureMicAndStart() {
   showLoading("Setting up microphone...");
   try {
-    // Clean up any existing resources first
+    // Clean up any existing resources first - wait for complete cleanup
     await cleanupAudioResources();
     
-    // Always stop and request a new mic stream for each game
-    if (micStream) {
-      micStream.getTracks().forEach(track => track.stop());
-      micStream = null;
-    }
+    // Wait a bit to ensure cleanup is complete
+    await new Promise(resolve => setTimeout(resolve, 100));
     
+    // Always request a fresh mic stream for each game session
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    showLoading("Loading pitch model...");
-    // Always close and create a new AudioContext for each game
-    if (audioContext) {
-      try { await audioContext.close(); } catch {}
-    }
+    // Always create a fresh audio context for better performance
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
     // Always create a new MediaStreamSource from the new micStream
     mic = audioContext.createMediaStreamSource(micStream);
 
-    // Use the preloaded model, but set up with the new context and stream
+    // Always use the URL - ml5.pitchDetection expects a URL string
+    showLoading("Loading pitch model...");
+    console.log('Initializing pitch detection model');
     pitchDetector = await ml5.pitchDetection(
       "https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/",
       audioContext,
@@ -357,8 +341,11 @@ async function ensureMicAndStart() {
 
 // Clean up audio resources thoroughly
 async function cleanupAudioResources() {
-  // Stop pitch detection
+  // Stop pitch detection immediately
   pitchLoopActive = false;
+  
+  // Wait a frame to ensure any pending pitch callbacks are cancelled
+  await new Promise(resolve => requestAnimationFrame(resolve));
   
   // Clean up pitch detector
   if (pitchDetector) {
@@ -376,18 +363,27 @@ async function cleanupAudioResources() {
     micStream = null;
   }
   
-  // Clean up audio context
+  // Clean up mic reference
+  if (mic) {
+    try {
+      mic.disconnect();
+    } catch {}
+    mic = null;
+  }
+  
+  // Clean up audio context more aggressively on restart
   if (audioContext) {
     try {
+      if (audioContext.state === 'running') {
+        await audioContext.suspend(); // Suspend instead of closing for reuse
+      }
+      // For multiple restarts, close the context completely to prevent accumulation
       if (audioContext.state !== 'closed') {
         await audioContext.close();
       }
     } catch {}
-    audioContext = null;
+    audioContext = null; // Always reset to null to force recreation
   }
-  
-  // Clean up mic reference
-  mic = null;
   
   // Force garbage collection if available (mainly for testing)
   if (window.gc) {
@@ -437,18 +433,15 @@ function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
   
   // Optimize for performance - cap DPR for better frame rates
-  // iPad often has DPR of 2-3, which can cause performance issues when multiplied
+  // High DPR can cause performance issues, so limit it
   let effectiveDpr;
   
-  if (isIPadDevice()) {
-    // iPad: Cap at 1.5x for better performance while maintaining crisp visuals
+  if (isMobile) {
+    // Mobile devices: Cap at 1.5x for better performance
     effectiveDpr = Math.min(dpr, 1.5);
-  } else if (isMobile) {
-    // Other mobile: Moderate scaling
-    effectiveDpr = Math.min(dpr, 2.0);
   } else {
-    // Desktop: Use actual DPR
-    effectiveDpr = dpr;
+    // Desktop: Use actual DPR but cap at 2x
+    effectiveDpr = Math.min(dpr, 2.0);
   }
   
   // Get the display size in CSS pixels
@@ -496,14 +489,8 @@ function resizeCanvas() {
   window.displayHeight = displayHeight;
   window.isMobile = isMobile;
   
-  // Calculate base game scale factor for sprites and UI - differentiate between iPad and other devices
-  if (isIPadDevice()) {
-    // iPad: Keep current larger scaling for touch-friendly gameplay
-    window.gameScale = Math.max(1.5, displayWidth / 600);
-  } else {
-    // iPhone, PC, and other devices: Use smaller scaling for assets
-    window.gameScale = isMobile ? Math.max(0.8, displayWidth / 800) : Math.max(0.7, displayWidth / 1000);
-  }
+  // Calculate base game scale factor for sprites and UI - simplified scaling
+  window.gameScale = isMobile ? Math.max(0.8, displayWidth / 800) : Math.max(0.7, displayWidth / 1000);
   
   // Only redraw if not running (so splash/buttons show up)
   if (!running) draw();
@@ -795,9 +782,10 @@ function drawDebugPanel() {
 
 // --- Main Draw Function ---
 function draw(currentTime = 0) {
-  // Calculate delta time for frame-rate independent movement
-  if (lastFrameTime === 0) {
+  // Reset frame tracking on first frame or after reset
+  if (lastFrameTime === 0 || !running) {
     lastFrameTime = currentTime;
+    deltaTime = FIXED_DELTA; // Use fixed delta for first frame
   }
   
   // Calculate raw delta time
@@ -805,17 +793,16 @@ function draw(currentTime = 0) {
   lastFrameTime = currentTime;
   
   // Use device-specific delta timing for better performance
-  const targetDelta = isIPadDevice() ? IPAD_FIXED_DELTA : FIXED_DELTA;
+  const targetDelta = FIXED_DELTA;
   
   // Cap delta time more aggressively to prevent timing spikes
-  // This is especially important for iPad's dual animation system
-  const maxDelta = targetDelta * 1.5; // Reduced from 2x to 1.5x
+  const maxDelta = targetDelta * 2; // Allow some variance but prevent huge spikes
   rawDeltaTime = Math.min(rawDeltaTime, maxDelta);
   
-  // Smooth out delta time to prevent jitter (especially important for iPad)
-  if (isIPadDevice()) {
-    // Use exponential smoothing for iPad to reduce timing jitter
-    deltaTime = deltaTime * 0.8 + rawDeltaTime * 0.2;
+  // Smooth out delta time to prevent jitter - simplified for better performance
+  if (deltaTime > 0) {
+    // Light smoothing only to prevent major spikes
+    deltaTime = deltaTime * 0.9 + rawDeltaTime * 0.1;
   } else {
     deltaTime = rawDeltaTime;
   }
@@ -854,6 +841,8 @@ function draw(currentTime = 0) {
   }
 
   if (animationFrameId) animationFrameId = null;
+  
+  // Only clear and redraw if something has actually changed
   ctx.clearRect(0, 0, displayWidth, displayHeight);
   
   // Draw sidescrolling tiled background
@@ -863,6 +852,10 @@ function draw(currentTime = 0) {
   // Allow bird physics to run when pitch detection is active, even if not fully "running"
   if (!running && !gameOver && !pitchLoopActive) return;
 
+  // If we're not running but pitch detection is active, only show the bird if we're still in game transition
+  // Don't show pipes, scoring, or other game elements when returning to menu
+  const showGameElements = running || gameOver;
+
   // Prevent bird from falling below the bottom of the screen
   const gameScale = window.gameScale || 1;
   const scaledBirdHeight = BIRD_HEIGHT * gameScale;
@@ -871,8 +864,8 @@ function draw(currentTime = 0) {
     birdVelocity = 0;
   }
 
-  // --- Rest Break Logic ---
-  if (inRestBreak) {
+  // --- Rest Break Logic --- (only when game is running)
+  if (showGameElements && inRestBreak) {
     if (!paused) restBreakTimer += deltaTime; // Time-based rest break timer
     drawRestAnimation();
     if (restBreakTimer >= REST_BREAK_DURATION * 1000) { // Convert to milliseconds
@@ -883,7 +876,7 @@ function draw(currentTime = 0) {
       skipNextPipe = true; // Skip the next pipe spawn after break
     }
   } else {
-    if (!paused && !gameOver) {
+    if (showGameElements && !paused && !gameOver) {
       pipeTimer += deltaTime;
       // Only add a pipe if we are not about to enter a break
       if (!pendingRest && pipesPassedSinceBreak < pipesPerBreak) {
@@ -930,14 +923,15 @@ function draw(currentTime = 0) {
   }
   
   // Update background scrolling continuously when game is running and not paused
-  if (!paused && !gameOver) {
+  if (showGameElements && running && !paused && !gameOver) {
     const gameScale = window.gameScale || 1;
     const scaledPipeSpeed = pipeSpeed * gameScale; // Use same scaled speed as pipes
     backgroundOffsetX += scaledPipeSpeed * 0.5 * deltaMultiplier;
   }
 
-  // Draw pipes with proper scaling
-  for (let pipe of pipes) {
+  // Draw pipes with proper scaling (only when game is running)
+  if (showGameElements) {
+    for (let pipe of pipes) {
     const gameScale = window.gameScale || 1;
     const scaledPipeWidth = PIPE_WIDTH * gameScale;
     const scaledPipeCapHeight = PIPE_CAP_HEIGHT * gameScale;
@@ -979,11 +973,12 @@ function draw(currentTime = 0) {
           pipe.x, bottomPipeY + scaledPipeCapHeight, scaledPipeWidth, bottomPipeHeight - scaledPipeCapHeight
         );
       }
+      }
     }
   }
 
-  // Draw bird with proper scaling and aspect ratio
-  {
+  // Draw bird with proper scaling and aspect ratio (only when game is running)
+  if (showGameElements) {
     const gameScale = window.gameScale || 1;
     const drawHeight = BIRD_HEIGHT * gameScale;
     const aspect = birdImg.naturalWidth && birdImg.naturalHeight
@@ -994,8 +989,8 @@ function draw(currentTime = 0) {
     ctx.drawImage(birdImg, birdX, birdY, drawWidth, drawHeight);
   }
 
-  // Score logic - only count pipes when not in rest break
-  if (!gameOver && !inRestBreak) {
+  // Score logic - only count pipes when not in rest break and game is running
+  if (showGameElements && !gameOver && !inRestBreak) {
     for (let pipe of pipes) {
       const gameScale = window.gameScale || 1;
       const scaledPipeWidth = PIPE_WIDTH * gameScale;
@@ -1019,14 +1014,14 @@ function draw(currentTime = 0) {
   }
 
   // Draw score
-  if (!gameOver) {
+  if (showGameElements && !gameOver) {
     // Position score at top with proper spacing based on scaled digit height
     const scoreY = 20; // Top margin
     drawScore(displayWidth / 2, scoreY, score);
   }
 
   // Collision detection
-  if (!gameOver) {
+  if (showGameElements && !gameOver) {
     for (let pipe of pipes) {
       const gameScale = window.gameScale || 1;
       const scaledPipeWidth = PIPE_WIDTH * gameScale;
@@ -1124,29 +1119,19 @@ function draw(currentTime = 0) {
 
   // Continue animation loop even during game over (but not when paused)
   if (!paused) {
-    if (isIPadDevice()) {
-      // iPad: Use only requestAnimationFrame to avoid timing conflicts
-      // The dual system was causing delta time corruption
-      animationFrameId = requestAnimationFrame(draw);
-      
-      // Optional: Add a very conservative timeout ONLY if RAF fails completely
-      // But make sure it doesn't run simultaneously with RAF
-      if (!window.ipadEmergencyTimeout) {
-        window.ipadEmergencyTimeout = setTimeout(() => {
-          window.ipadEmergencyTimeout = null;
-          // Only run if RAF hasn't already scheduled the next frame
-          if (!animationFrameId && !paused && running) {
-            draw(performance.now());
-          }
-        }, 50); // Much more conservative: only as emergency fallback
-      }
-    } else {
-      animationFrameId = requestAnimationFrame(draw);
+    // Prevent multiple animation frames from stacking
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
     }
+    // Simplified animation loop - use requestAnimationFrame for all devices
+    // The iPad dual system was causing timing conflicts and performance issues
+    animationFrameId = requestAnimationFrame(draw);
   }
 
-  // Always draw buttons last so they appear on top
-  drawGameButtons();
+  // Always draw buttons last so they appear on top (only during game)
+  if (showGameElements) {
+    drawGameButtons();
+  }
   
   // Draw DPI debug info
   drawDPIIndicator();
@@ -1183,11 +1168,7 @@ async function fullRefresh() {
     animationFrameId = null;
   }
   
-  // Clean up iPad timeouts
-  if (window.ipadFrameTimeout) {
-    clearTimeout(window.ipadFrameTimeout);
-    window.ipadFrameTimeout = null;
-  }
+  // Clean up any emergency timeouts
   if (window.ipadEmergencyTimeout) {
     clearTimeout(window.ipadEmergencyTimeout);
     window.ipadEmergencyTimeout = null;
@@ -1199,14 +1180,7 @@ async function fullRefresh() {
   // Use the comprehensive cleanup function
   await cleanupAudioResources();
 
-  // Clear all timeouts and intervals more aggressively
-  let id = window.setTimeout(() => {}, 0);
-  while (id--) {
-    window.clearTimeout(id);
-    window.clearInterval(id);
-  }
-
-  // Reset all game state variables
+  // Reset all game state variables more efficiently
   running = false;
   paused = false;
   gameOver = false;
@@ -1283,3 +1257,33 @@ window.restartPitchDetection = function() {
     console.log('Pitch loop is already active');
   }
 };
+
+// Warm up pitch detection - call this on first user interaction to prepare everything
+async function warmupPitchDetection() {
+  // Prepare audio context early if possible
+  if (!audioContext) {
+    try {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      // Immediately suspend it to save resources until game starts
+      if (audioContext.state === 'running') {
+        await audioContext.suspend();
+      }
+      console.log('Audio context prepared early');
+    } catch (err) {
+      console.log('Could not create audio context early:', err);
+    }
+  }
+}
+
+// Called when pitch detection model is loaded
+function modelLoaded() {
+  // Ensure pitch loop is active before starting
+  pitchLoopActive = true;
+  
+  getPitch();
+  
+  // Immediately start the animation loop when the model is ready
+  if (!animationFrameId) {
+    animationFrameId = requestAnimationFrame(draw);
+  }
+}

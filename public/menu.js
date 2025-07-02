@@ -30,6 +30,16 @@ function showMainMenu() {
   paused = false;
   gameOver = false;
   
+  // Reset background scrolling when showing main menu
+  if (typeof backgroundOffsetX !== 'undefined') {
+    backgroundOffsetX = 0;
+  }
+  
+  // Warm up pitch detection on first menu display
+  if (typeof warmupPitchDetection === 'function') {
+    warmupPitchDetection().catch(err => console.log('Warmup failed:', err));
+  }
+  
   // Update main menu background to match equipped backdrop
   if (typeof updateMainMenuBackground === 'function') {
     updateMainMenuBackground();
@@ -72,11 +82,13 @@ async function startGameFromMenu(e) {
   }
   
   hideMainMenu();
-  resetGame();
+  resetGame(); // This already handles animation frame cleanup
   running = true;
   paused = false;
   gameOver = false;
   pitchLoopActive = true;
+  
+  // Let ensureMicAndStart handle the animation loop via modelLoaded
   await ensureMicAndStart();
 }
 
