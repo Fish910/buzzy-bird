@@ -295,22 +295,36 @@ function getBoxBorderColor(val, min, max) {
 
 // Show username and logout button
 function showUsername(name) {
-  usernameDisplay.textContent = `Signed in as: ${name}`;
+  signedInText.textContent = `Signed in as: ${name}`;
+  signedInContainer.classList.remove('hidden');
+  
   const leaderboard = document.getElementById('leaderboardContainer');
-  if (leaderboard && !leaderboard.contains(usernameDisplay)) {
-    leaderboard.appendChild(usernameDisplay);
-  }
   if (leaderboard && !leaderboard.contains(logoutBtn)) {
     leaderboard.appendChild(logoutBtn);
   }
-  usernameDisplay.style.display = '';
+  if (leaderboard && !leaderboard.contains(deleteAccountBtn)) {
+    leaderboard.appendChild(deleteAccountBtn);
+  }
   logoutBtn.style.display = '';
+  deleteAccountBtn.style.display = '';
+  
+  // Add class to leaderboard to apply responsive bottom margin
+  if (leaderboard) {
+    leaderboard.classList.add('logged-in');
+  }
 }
 
 // Hide username and logout button
 function hideUsername() {
-  if (usernameDisplay.parentNode) usernameDisplay.parentNode.removeChild(usernameDisplay);
+  signedInContainer.classList.add('hidden');
   if (logoutBtn.parentNode) logoutBtn.parentNode.removeChild(logoutBtn);
+  if (deleteAccountBtn.parentNode) deleteAccountBtn.parentNode.removeChild(deleteAccountBtn);
+  
+  // Remove class from leaderboard to reset margin
+  const leaderboard = document.getElementById('leaderboardContainer');
+  if (leaderboard) {
+    leaderboard.classList.remove('logged-in');
+  }
 }
 
 // Update authentication UI based on login status

@@ -62,6 +62,9 @@
       <div id="leaderboardList" class="leaderboard-list">
         <!-- Leaderboard entries will be rendered here -->
       </div>
+      <div id="signedInContainer" class="signed-in-container hidden">
+        <span id="signedInText">Signed in as: </span>
+      </div>
       <div class="leaderboard-footer">
         <button type="button" id="signUpBtn" class="bottom-right-btn">Sign Up</button>
         <button type="button" id="logInBtn" class="bottom-right-btn">Log In</button>
@@ -84,7 +87,7 @@
       <span id="highScoreDisplay">High Score: 0</span>
     </div>
     <div style="position: absolute; left: 12px; right: 0; bottom: 8px; width: 100%; text-align: left; color: #ffffff; font-size: 0.8em; pointer-events: none; max-width: 480px; margin: 0 auto;">
-         Pitch Bird v5.3.1
+         Pitch Bird v5.4.0
     </div>
   </div>
 
@@ -96,9 +99,11 @@
       <input type="text" id="signUpName" maxlength="20" autocomplete="off">
       <label for="signUpPasscode">4-digit Passcode:</label>
       <input type="password" id="signUpPasscode" maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="off">
-      <button type="submit" id="signUpSubmitBtn">Create Account</button>
-      <button type="button" id="signUpCancelBtn">Cancel</button>
       <div id="signUpError" class="error-msg"></div>
+      <div style="display: flex; gap: 12px; justify-content: center; margin-top: 16px;">
+        <button type="submit" id="signUpSubmitBtn">Create Account</button>
+        <button type="button" id="signUpCancelBtn">Cancel</button>
+      </div>
     </div>
   </div>
 
@@ -110,9 +115,11 @@
       <input type="text" id="logInName" maxlength="20" autocomplete="off">
       <label for="logInPasscode">4-digit Passcode:</label>
       <input type="password" id="logInPasscode" maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="off">
-      <button type="submit" id="logInSubmitBtn">Log In</button>
-      <button type="button" id="logInCancelBtn">Cancel</button>
       <div id="logInError" class="error-msg"></div>
+      <div style="display: flex; gap: 12px; justify-content: center; margin-top: 16px;">
+        <button type="submit" id="logInSubmitBtn">Log In</button>
+        <button type="button" id="logInCancelBtn">Cancel</button>
+      </div>
     </div>
   </div>
 
@@ -124,9 +131,45 @@
       <input type="text" id="changeNameNew" maxlength="20" autocomplete="off">
       <label for="changeNamePasscode">Your 4-digit Passcode:</label>
       <input type="password" id="changeNamePasscode" maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="off">
-      <button type="submit" id="changeNameSubmitBtn">Change Name</button>
-      <button type="button" id="changeNameCancelBtn">Cancel</button>
       <div id="changeNameError" class="error-msg"></div>
+      <div style="display: flex; gap: 12px; justify-content: center; margin-top: 16px;">
+        <button type="submit" id="changeNameSubmitBtn">Change Name</button>
+        <button type="button" id="changeNameCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Warning Modal -->
+  <div id="loginWarningModal" class="popup hidden">
+    <div class="popup-content">
+      <h2>Warning</h2>
+      <p><strong>Logging in will replace local data with account data.</strong></p>
+      <p>Your current local progress will be overwritten with the data from your account.</p>
+      <p>Proceed?</p>
+      <div style="display: flex; align-items: center; justify-content: center; margin: 16px 0;">
+        <input type="checkbox" id="dontAskAgainCheckbox" style="margin-right: 8px;">
+        <label for="dontAskAgainCheckbox">Don't ask me again</label>
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button type="button" id="loginWarningProceedBtn">Yes, Proceed</button>
+        <button type="button" id="loginWarningCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Account Modal -->
+  <div id="deleteAccountModal" class="popup hidden">
+    <div class="popup-content">
+      <h2>Delete Account</h2>
+      <p><strong>Warning:</strong> This will permanently delete your account from the server.</p>
+      <p>Deleting your account will not affect locally stored data.</p>
+      <label for="deleteAccountPasscode">Enter your passcode to confirm:</label>
+      <input type="password" id="deleteAccountPasscode" maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="off">
+      <div id="deleteAccountError" class="error-msg"></div>
+      <div style="display: flex; gap: 12px; justify-content: center; margin-top: 16px;">
+        <button type="submit" id="deleteAccountSubmitBtn">Delete Account</button>
+        <button type="button" id="deleteAccountCancelBtn">Cancel</button>
+      </div>
     </div>
   </div>
 

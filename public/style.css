@@ -399,7 +399,30 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 24px; /* Increased spacing to push logout button away from leaderboard list */
+  margin-top: 12px !important; /* Reduced since we now have the signed-in container */
+}
+
+/* Signed in container */
+.signed-in-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  margin: 4px 0; /* Reduced margin for smaller gap */
+  background: rgba(0,0,0,0.4);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.signed-in-container span {
+  color: #fff;
+  font-weight: bold;
+  font-size: 1em;
+  text-align: center;
+}
+
+.signed-in-container.hidden {
+  display: none;
 }
 
 /* Leaderboard list styling */
@@ -409,12 +432,9 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   background: rgba(0,0,0,0.7);
   border-radius: 10px;
   padding: 12px 6px; /* Increased side padding to prevent outline cutoff */
-  margin-bottom: 18px; /* Reduced since footer margin increased */
+  margin-bottom: 4px; /* Reduced gap to signed-in container */
   max-height: 320px;
-}  /* Adjust leaderboard list max-height for shorter iPad container */
-  .leaderboard-list {
-    max-height: 180px !important; /* Further reduced from 240px to fit even shorter container */
-  }
+}
 
 /* Leaderboard entry styling */
 .leaderboard-list .entry {
@@ -547,12 +567,6 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 /* iPad and large tablet scaling (iPhone uses default desktop scaling) - covers all iPad models */
 @media (max-width: 1366px) and (min-width: 768px) and (orientation: portrait),
        (max-width: 1024px) and (min-width: 768px) and (orientation: landscape) {
-  
-  /* Adjust username display for iPad */
-  #usernameDisplay {
-    font-size: 1.2em !important; /* Slightly larger text for iPad */
-    left: 24px !important; /* More margin from left edge on iPad */
-  }
 
   /* iPad/Large tablet scaling */
   button {
@@ -589,8 +603,8 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   #leaderboardContainer {
     width: 500px !important; /* Larger leaderboard */
     max-width: 75vw !important; /* Use more of the screen width */
-    height: 32vh !important; /* Even shorter height to prevent logout button touching */
-    min-height: 280px !important; /* Further reduced minimum height */
+    height: 45vh !important; /* Restored original height */
+    min-height: 360px !important; /* Restored original minimum height */
     font-size: 1.1em !important; /* Slightly larger text */
     margin-bottom: 24px !important; /* More spacing */
   }
@@ -634,6 +648,17 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     width: auto !important; /* Don't take full width */
     right: auto !important; /* Don't stretch to right */
   }
+}
+
+/* Increase leaderboard footer margin on iPad for more button separation */
+  .leaderboard-footer {
+    margin-top: 32px !important; /* Increased from 24px to provide more separation */
+  }
+
+  /* Add padding to logout button on iPad to prevent touching leaderboard container */
+#logoutBtn {
+  margin-top: 16px !important; /* Add extra top margin to create separation */
+  padding-top: 12px !important; /* Add extra top padding */
 }
 
 /* Fix X button size for iPad */
@@ -837,11 +862,44 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
 }
 
-/* Username display positioning for all devices */
-#usernameDisplay {
-  left: 18px !important;
-  right: auto !important;
-  text-align: left !important;
+/* Error message styling for authentication forms */
+.error-msg {
+  color: #ff4444;
+  font-size: 0.9em;
+  margin-top: 8px;
+  text-align: center;
+  min-height: 20px;
+}
+
+/* Checkbox styling for login warning */
+#dontAskAgainCheckbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+#dontAskAgainCheckbox + label {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Leaderboard margin adjustments when user is logged in */
+#leaderboardContainer.logged-in {
+  margin-bottom: 110px !important;
+}
+
+/* Device-specific leaderboard margin adjustments for logged in users */
+@media (max-width: 600px) {
+  #leaderboardContainer.logged-in {
+    margin-bottom: 100px !important; /* Less margin on mobile */
+  }
+}
+
+@media (max-width: 1366px) and (min-width: 768px) and (orientation: portrait),
+       (max-width: 1024px) and (min-width: 768px) and (orientation: landscape) {
+  #leaderboardContainer.logged-in {
+    margin-bottom: 120px !important; /* More margin on iPad */
+  }
 }
 
 

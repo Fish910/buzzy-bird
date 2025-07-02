@@ -86,12 +86,18 @@ const changeNameBtn = document.getElementById('changeNameBtn');
 const signUpModal = document.getElementById('signUpModal');
 const logInModal = document.getElementById('logInModal');
 const changeNameModal = document.getElementById('changeNameModal');
+const loginWarningModal = document.getElementById('loginWarningModal');
+const deleteAccountModal = document.getElementById('deleteAccountModal');
 const signUpCancelBtn = document.getElementById('signUpCancelBtn');
 const logInCancelBtn = document.getElementById('logInCancelBtn');
 const changeNameCancelBtn = document.getElementById('changeNameCancelBtn');
+const loginWarningProceedBtn = document.getElementById('loginWarningProceedBtn');
+const loginWarningCancelBtn = document.getElementById('loginWarningCancelBtn');
+const deleteAccountCancelBtn = document.getElementById('deleteAccountCancelBtn');
 const signUpSubmitBtn = document.getElementById('signUpSubmitBtn');
 const logInSubmitBtn = document.getElementById('logInSubmitBtn');
 const changeNameSubmitBtn = document.getElementById('changeNameSubmitBtn');
+const deleteAccountSubmitBtn = document.getElementById('deleteAccountSubmitBtn');
 const signUpName = document.getElementById('signUpName');
 const signUpPasscode = document.getElementById('signUpPasscode');
 const signUpError = document.getElementById('signUpError');
@@ -101,17 +107,13 @@ const logInError = document.getElementById('logInError');
 const changeNameNew = document.getElementById('changeNameNew');
 const changeNamePasscode = document.getElementById('changeNamePasscode');
 const changeNameError = document.getElementById('changeNameError');
+const deleteAccountPasscode = document.getElementById('deleteAccountPasscode');
+const deleteAccountError = document.getElementById('deleteAccountError');
+const dontAskAgainCheckbox = document.getElementById('dontAskAgainCheckbox');
 
-// Create username display and logout button
-const usernameDisplay = document.createElement('span');
-usernameDisplay.id = 'usernameDisplay';
-usernameDisplay.style.position = 'absolute';
-usernameDisplay.style.left = '18px';
-usernameDisplay.style.bottom = '18px';
-usernameDisplay.style.color = '#fff';
-usernameDisplay.style.fontWeight = 'bold';
-usernameDisplay.style.fontSize = '1.1em';
-usernameDisplay.style.pointerEvents = 'none';
+// Get the signed-in container and text elements
+const signedInContainer = document.getElementById('signedInContainer');
+const signedInText = document.getElementById('signedInText');
 
 const logoutBtn = document.createElement('button');
 logoutBtn.id = 'logoutBtn';
@@ -129,6 +131,24 @@ logoutBtn.style.padding = '8px 18px';
 logoutBtn.style.fontSize = '1em';
 logoutBtn.style.cursor = 'pointer';
 logoutBtn.style.transition = 'background 0.2s';
+
+const deleteAccountBtn = document.createElement('button');
+deleteAccountBtn.id = 'deleteAccountBtn';
+deleteAccountBtn.textContent = 'Delete Account';
+deleteAccountBtn.style.position = 'absolute';
+deleteAccountBtn.style.right = '120px';
+deleteAccountBtn.style.bottom = '14px';
+deleteAccountBtn.style.zIndex = '2';
+deleteAccountBtn.style.pointerEvents = 'auto';
+deleteAccountBtn.style.background = '#dc3545';
+deleteAccountBtn.style.color = '#fff';
+deleteAccountBtn.style.border = 'none';
+deleteAccountBtn.style.borderRadius = '8px';
+deleteAccountBtn.style.padding = '8px 18px';
+deleteAccountBtn.style.fontSize = '1em';
+deleteAccountBtn.style.cursor = 'pointer';
+deleteAccountBtn.style.transition = 'background 0.2s';
+deleteAccountBtn.style.display = 'none';
 
 // --- Settings Tab Management ---
 
@@ -705,176 +725,313 @@ function initializeSettingsSliders() {
 
 // --- Authentication Event Handlers ---
 
-// Logout button styling
-logoutBtn.addEventListener('mouseenter', () => logoutBtn.style.background = '#14a625');
-logoutBtn.addEventListener('mouseleave', () => logoutBtn.style.background = '#000');
+// Temporary storage for login data during warning process
+let pendingLoginData = null;
+
+// Login warning flow
+logInBtn.addEventListener('click', () => {
+  logInModal.classList.remove('hidden');
+});
+
+// When user submits login form, validate credentials first
+logInSubmitBtn.addEventListener('click', async () => {
+  const name = logInName.value.trim();
+  const passcode = logInPasscode.value.trim();
+  
+  if (!name || !passcode) {
+    logInError.textContent = 'Please fill in all fields.';
+    return;
+  }
+  
+  if (passcode.length !== 4 || !/^\d{4}$/.test(passcode)) {
+    logInError.textContent = 'Passcode must be exactly 4 digits.';
+    return;
+  }
+  
+  showLoading('Validating credentials...');
+  
+  try {
+    // First validate the credentials
+    await validateLoginCredentials(name, passcode);
+    
+    hideLoading();
+    
+    // Check if user has opted out of the warning
+    const skipWarning = localStorage.getItem('buzzyBirdSkipLoginWarning') === 'true';
+    
+    if (skipWarning) {
+      // Proceed directly with login
+      await proceedWithLogin(name, passcode);
+    } else {
+      // Store login data and show warning
+      pendingLoginData = { name, passcode };
+      logInModal.classList.add('hidden');
+      loginWarningModal.classList.remove('hidden');
+    }
+  } catch (error) {
+    hideLoading();
+    logInError.textContent = error.message;
+  }
+});
+
+// Function to proceed with actual login
+async function proceedWithLogin(name, passcode) {
+  showLoading('Logging in...');
+  
+  try {
+    const userData = await logIn(name, passcode, save);
+    
+    // Completely overwrite local data with account data
+    save = userData;
+    saveData();
+    
+    // Store user info
+    localStorage.setItem('buzzyBirdUser', JSON.stringify({
+      name: userData.name,
+      userId: userData.userId
+    }));
+    
+    // Update UI
+    updateCosmeticImages();
+    updateMenuInfo();
+    updateAuthUI();
+    renderLeaderboard();
+    
+    // Clear form and hide modal
+    logInName.value = '';
+    logInPasscode.value = '';
+    logInError.textContent = '';
+    logInModal.classList.add('hidden'); // Hide the login modal on successful login
+    
+    hideLoading();
+  } catch (error) {
+    hideLoading();
+    // Show login modal again with error
+    logInModal.classList.remove('hidden');
+    logInError.textContent = error.message;
+  }
+}
+
+// Handle login warning proceed
+loginWarningProceedBtn.addEventListener('click', async () => {
+  if (!pendingLoginData) return;
+  
+  // Check if user checked "don't ask again"
+  if (dontAskAgainCheckbox && dontAskAgainCheckbox.checked) {
+    localStorage.setItem('buzzyBirdSkipLoginWarning', 'true');
+  }
+  
+  loginWarningModal.classList.add('hidden');
+  await proceedWithLogin(pendingLoginData.name, pendingLoginData.passcode);
+  pendingLoginData = null;
+  
+  // Reset the checkbox for next time
+  if (dontAskAgainCheckbox) {
+    dontAskAgainCheckbox.checked = false;
+  }
+});
+
+// Handle login warning cancel
+loginWarningCancelBtn.addEventListener('click', () => {
+  loginWarningModal.classList.add('hidden');
+  logInModal.classList.remove('hidden');
+  pendingLoginData = null;
+});
+
+// Login modal cancel
+logInCancelBtn.addEventListener('click', () => {
+  logInModal.classList.add('hidden');
+  logInName.value = '';
+  logInPasscode.value = '';
+  logInError.textContent = '';
+});
+
+// Sign up
+signUpBtn.addEventListener('click', () => {
+  signUpModal.classList.remove('hidden');
+});
+
+signUpSubmitBtn.addEventListener('click', async () => {
+  const name = signUpName.value.trim();
+  const passcode = signUpPasscode.value.trim();
+  
+  if (!name || !passcode) {
+    signUpError.textContent = 'Please fill in all fields.';
+    return;
+  }
+  
+  if (name.length > 20) {
+    signUpError.textContent = 'Name must be 20 characters or less.';
+    return;
+  }
+  
+  if (passcode.length !== 4 || !/^\d{4}$/.test(passcode)) {
+    signUpError.textContent = 'Passcode must be exactly 4 digits.';
+    return;
+  }
+  
+  showLoading('Creating account...');
+  
+  try {
+    const userData = await signUp(name, passcode, save);
+    
+    // Store user info
+    localStorage.setItem('buzzyBirdUser', JSON.stringify({
+      name: userData.name,
+      userId: userData.userId
+    }));
+    
+    // Update UI
+    updateAuthUI();
+    renderLeaderboard();
+    
+    signUpModal.classList.add('hidden');
+    signUpName.value = '';
+    signUpPasscode.value = '';
+    signUpError.textContent = '';
+    
+    hideLoading();
+  } catch (error) {
+    hideLoading();
+    signUpError.textContent = error.message;
+  }
+});
+
+signUpCancelBtn.addEventListener('click', () => {
+  signUpModal.classList.add('hidden');
+  signUpName.value = '';
+  signUpPasscode.value = '';
+  signUpError.textContent = '';
+});
+
+// Change name
+changeNameBtn.addEventListener('click', () => {
+  changeNameModal.classList.remove('hidden');
+});
+
+changeNameSubmitBtn.addEventListener('click', async () => {
+  const newName = changeNameNew.value.trim();
+  const passcode = changeNamePasscode.value.trim();
+  const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
+  
+  if (!user || !user.name) {
+    changeNameError.textContent = 'No logged in user found.';
+    return;
+  }
+  
+  if (!newName || !passcode) {
+    changeNameError.textContent = 'Please fill in all fields.';
+    return;
+  }
+  
+  if (newName.length > 20) {
+    changeNameError.textContent = 'Name must be 20 characters or less.';
+    return;
+  }
+  
+  if (passcode.length !== 4 || !/^\d{4}$/.test(passcode)) {
+    changeNameError.textContent = 'Passcode must be exactly 4 digits.';
+    return;
+  }
+  
+  showLoading('Changing name...');
+  
+  try {
+    const userData = await changeName(user.name, passcode, newName);
+    
+    // Update user info with new name
+    localStorage.setItem('buzzyBirdUser', JSON.stringify({
+      name: userData.name,
+      userId: userData.userId
+    }));
+    
+    // Update UI
+    updateAuthUI();
+    renderLeaderboard();
+    
+    changeNameModal.classList.add('hidden');
+    changeNameNew.value = '';
+    changeNamePasscode.value = '';
+    changeNameError.textContent = '';
+    
+    hideLoading();
+  } catch (error) {
+    hideLoading();
+    changeNameError.textContent = error.message;
+  }
+});
+
+changeNameCancelBtn.addEventListener('click', () => {
+  changeNameModal.classList.add('hidden');
+  changeNameNew.value = '';
+  changeNamePasscode.value = '';
+  changeNameError.textContent = '';
+});
+
+// Delete account
+deleteAccountBtn.addEventListener('click', () => {
+  deleteAccountModal.classList.remove('hidden');
+});
+
+deleteAccountSubmitBtn.addEventListener('click', async () => {
+  const passcode = deleteAccountPasscode.value.trim();
+  const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
+  
+  if (!user || !user.name) {
+    deleteAccountError.textContent = 'No logged in user found.';
+    return;
+  }
+  
+  if (!passcode) {
+    deleteAccountError.textContent = 'Please enter your passcode.';
+    return;
+  }
+  
+  if (passcode.length !== 4 || !/^\d{4}$/.test(passcode)) {
+    deleteAccountError.textContent = 'Passcode must be exactly 4 digits.';
+    return;
+  }
+  
+  showLoading('Deleting account...');
+  
+  try {
+    await deleteAccount(user.name, passcode);
+    
+    // Remove user info and log out
+    localStorage.removeItem('buzzyBirdUser');
+    
+    // Update UI
+    updateAuthUI();
+    renderLeaderboard();
+    
+    deleteAccountModal.classList.add('hidden');
+    deleteAccountPasscode.value = '';
+    deleteAccountError.textContent = '';
+    
+    hideLoading();
+  } catch (error) {
+    hideLoading();
+    deleteAccountError.textContent = error.message;
+  }
+});
+
+deleteAccountCancelBtn.addEventListener('click', () => {
+  deleteAccountModal.classList.add('hidden');
+  deleteAccountPasscode.value = '';
+  deleteAccountError.textContent = '';
+});
+
+// Logout
 logoutBtn.addEventListener('click', () => {
+  // Remove user info but keep local data
   localStorage.removeItem('buzzyBirdUser');
+  
+  // Update UI
   updateAuthUI();
   renderLeaderboard();
 });
 
-// Sign up modal
-if (signUpBtn && signUpModal) {
-  signUpBtn.addEventListener('click', (e) => {
-    signUpModal.classList.remove('hidden');
-    signUpError.textContent = '';
-    signUpName.value = '';
-    signUpPasscode.value = '';
-    e.stopPropagation();
-  });
-}
-
-if (signUpSubmitBtn) {
-  signUpSubmitBtn.addEventListener('click', async () => {
-    const name = signUpName.value.trim();
-    const passcode = signUpPasscode.value.trim();
-    signUpError.textContent = '';
-    if (!name || name.length > 20) {
-      signUpError.textContent = 'Name required (max 20 chars).';
-      return;
-    }
-    if (!/^\d{4}$/.test(passcode)) {
-      signUpError.textContent = 'Passcode must be 4 digits.';
-      return;
-    }
-    try {
-      const userData = await signUp(name, passcode, save);
-      localStorage.setItem('buzzyBirdUser', JSON.stringify(userData));
-      // Update local save and persist
-      save = {
-        points: userData.points || 0,
-        highScore: userData.highScore || 0,
-        ownedSkins: userData.ownedSkins || ["default"],
-        equippedSkin: save.equippedSkin || "default"
-      };
-      saveData();
-      signUpModal.classList.add('hidden');
-      updateAuthUI();
-      renderLeaderboard();
-      // Update main menu background to reflect cosmetics
-      if (typeof updateMainMenuBackground === 'function') {
-        updateMainMenuBackground();
-      }
-    } catch (err) {
-      signUpError.textContent = err.message || 'Sign up failed.';
-    }
-  });
-}
-
-if (signUpCancelBtn && signUpModal) {
-  signUpCancelBtn.addEventListener('click', () => {
-    signUpModal.classList.add('hidden');
-  });
-}
-
-// Log in modal
-if (logInBtn && logInModal) {
-  logInBtn.addEventListener('click', (e) => {
-    logInModal.classList.remove('hidden');
-    logInError.textContent = '';
-    logInName.value = '';
-    logInPasscode.value = '';
-    e.stopPropagation();
-  });
-}
-
-if (logInSubmitBtn) {
-  logInSubmitBtn.addEventListener('click', async () => {
-    const name = logInName.value.trim();
-    const passcode = logInPasscode.value.trim();
-    logInError.textContent = '';
-    if (!name) {
-      logInError.textContent = 'Name required.';
-      return;
-    }
-    if (!/^\d{4}$/.test(passcode)) {
-      logInError.textContent = 'Passcode must be 4 digits.';
-      return;
-    }
-    try {
-      const userData = await logIn(name, passcode, save);
-      localStorage.setItem('buzzyBirdUser', JSON.stringify(userData));
-      // Update local save and persist
-      save = {
-        points: userData.points || 0,
-        highScore: userData.highScore || 0,
-        ownedSkins: userData.ownedSkins || ["default"],
-        equippedSkin: save.equippedSkin || "default"
-      };
-      saveData();
-      logInModal.classList.add('hidden');
-      updateAuthUI();
-      renderLeaderboard();
-      updateMenuInfo();
-      renderCosmeticsGrid();
-      // Update main menu background to reflect newly loaded cosmetics
-      if (typeof updateMainMenuBackground === 'function') {
-        updateMainMenuBackground();
-      }
-    } catch (err) {
-      logInError.textContent = err.message || 'Log in failed.';
-    }
-  });
-}
-
-if (logInCancelBtn && logInModal) {
-  logInCancelBtn.addEventListener('click', () => {
-    logInModal.classList.add('hidden');
-  });
-}
-
-// Change name modal
-if (changeNameBtn && changeNameModal) {
-  changeNameBtn.addEventListener('click', (e) => {
-    changeNameModal.classList.remove('hidden');
-    changeNameError.textContent = '';
-    changeNameNew.value = '';
-    changeNamePasscode.value = '';
-    e.stopPropagation();
-  });
-}
-
-if (changeNameSubmitBtn) {
-  changeNameSubmitBtn.addEventListener('click', async () => {
-    const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
-    if (!user) {
-      changeNameError.textContent = 'You must be logged in.';
-      return;
-    }
-    const oldName = user.name;
-    const newName = changeNameNew.value.trim();
-    const passcode = changeNamePasscode.value.trim();
-    changeNameError.textContent = '';
-    if (!newName || newName.length > 20) {
-      changeNameError.textContent = 'New name required (max 20 chars).';
-      return;
-    }
-    if (!/^\d{4}$/.test(passcode)) {
-      changeNameError.textContent = 'Passcode must be 4 digits.';
-      return;
-    }
-    try {
-      await changeName(oldName, passcode, newName);
-      // Update localStorage
-      const updatedUser = { ...user, name: newName };
-      localStorage.setItem('buzzyBirdUser', JSON.stringify(updatedUser));
-      changeNameModal.classList.add('hidden');
-      updateAuthUI();
-      renderLeaderboard();
-    } catch (err) {
-      changeNameError.textContent = err.message || 'Change name failed.';
-    }
-  });
-}
-
-if (changeNameCancelBtn && changeNameModal) {
-  changeNameCancelBtn.addEventListener('click', () => {
-    changeNameModal.classList.add('hidden');
-  });
-}
-
-
+// Initialize authentication UI on load
 
 // --- Initialization Functions ---
 

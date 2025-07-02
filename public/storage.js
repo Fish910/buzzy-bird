@@ -139,8 +139,22 @@ function generateUserId() {
 
 // Check if a display name is available
 async function isNameAvailable(name) {
-  const snapshot = await db.ref('users').orderByChild('name').equalTo(name.trim()).once('value');
-  return !snapshot.exists();
+  const displayName = name.trim();
+  
+  // Check if name is available (case-insensitive)
+  const allUsersSnapshot = await db.ref('users').once('value');
+  if (allUsersSnapshot.exists()) {
+    let nameExists = false;
+    allUsersSnapshot.forEach(child => {
+      const user = child.val();
+      if (user.name && user.name.toLowerCase() === displayName.toLowerCase()) {
+        nameExists = true;
+        return true; // Break out of forEach
+      }
+    });
+    return !nameExists;
+  }
+  return true;
 }
 
 // Hash passcode for secure storage
@@ -188,45 +202,46 @@ async function signUp(name, passcode, localData) {
 async function logIn(name, passcode, localData) {
   const displayName = name.trim();
   
-  // Find user by name
-  const snapshot = await db.ref('users').orderByChild('name').equalTo(displayName).once('value');
-  if (!snapshot.exists()) throw new Error("Account not found.");
-  
-  // Get the user data (should be only one match)
+  // Find user by name (case-insensitive search)
+  const allUsersSnapshot = await db.ref('users').once('value');
   let userData = null;
   let userId = null;
-  snapshot.forEach(child => {
-    userData = child.val();
-    userId = child.key;
-  });
+  
+  if (allUsersSnapshot.exists()) {
+    allUsersSnapshot.forEach(child => {
+      const user = child.val();
+      if (user.name && user.name.toLowerCase() === displayName.toLowerCase()) {
+        userData = user;
+        userId = child.key;
+        return true; // Break out of forEach
+      }
+    });
+  }
+  
+  if (!userData) throw new Error("Account not found.");
   
   const passcodeHash = await hashPasscode(passcode);
   if (userData.passcodeHash !== passcodeHash) throw new Error("Incorrect passcode.");
 
-  // --- Take the higher point total instead of adding them ---
-  // Compare local and database points, use the higher value
-  const higherPoints = Math.max(userData.points || 0, localData.points || 0);
-
-  const merged = {
+  // --- Complete overwrite: use account data, ignore local data ---
+  const accountData = {
     ...userData,
     userId: userId, // Ensure userId is set
-    highScore: Math.max(userData.highScore || 0, localData.highScore || 0),
-    points: higherPoints, // Use higher points instead of adding
-    ownedSkins: Array.from(new Set([...(userData.ownedSkins || []), ...(localData.ownedSkins || [])])).filter(item => item !== undefined && item !== null),
-    ownedPipes: Array.from(new Set([...(userData.ownedPipes || ["default"]), ...(localData.ownedPipes || ["default"])])).filter(item => item !== undefined && item !== null),
-    ownedBackdrops: Array.from(new Set([...(userData.ownedBackdrops || ["default"]), ...(localData.ownedBackdrops || ["default"])])).filter(item => item !== undefined && item !== null),
-    equippedSkin: localData.equippedSkin || userData.equippedSkin || "default",
-    equippedPipe: localData.equippedPipe || userData.equippedPipe || "default",
-    equippedBackdrop: localData.equippedBackdrop || userData.equippedBackdrop || "default"
+    // Use account data completely, ignore local data
+    highScore: userData.highScore || 0,
+    points: userData.points || 0,
+    ownedSkins: (userData.ownedSkins || ["default"]).filter(item => item !== undefined && item !== null),
+    ownedPipes: (userData.ownedPipes || ["default"]).filter(item => item !== undefined && item !== null),
+    ownedBackdrops: (userData.ownedBackdrops || ["default"]).filter(item => item !== undefined && item !== null),
+    equippedSkin: userData.equippedSkin || "default",
+    equippedPipe: userData.equippedPipe || "default",
+    equippedBackdrop: userData.equippedBackdrop || "default"
   };
   
-  // Update user data in Firebase
-  await db.ref('users/' + userId).update(merged);
+  // Update last synced points to the account points value
+  localStorage.setItem('buzzyBirdLastSyncedPoints', accountData.points);
 
-  // Update last synced points to the merged points value
-  localStorage.setItem('buzzyBirdLastSyncedPoints', merged.points);
-
-  return merged;
+  return accountData;
 }
 
 // Change user's name in Firebase
@@ -240,38 +255,89 @@ async function changeName(oldName, passcode, newName) {
     throw new Error("New name is already taken.");
   }
   
-  // Find user by current name
-  const snapshot = await db.ref('users').orderByChild('name').equalTo(oldDisplayName).once('value');
-  if (!snapshot.exists()) throw new Error("Current account not found.");
-  
-  // Get the user data
+  // Find user by current name (case-insensitive)
+  const allUsersSnapshot = await db.ref('users').once('value');
   let userData = null;
   let userId = null;
-  snapshot.forEach(child => {
-    userData = child.val();
-    userId = child.key;
-  });
+  
+  if (allUsersSnapshot.exists()) {
+    allUsersSnapshot.forEach(child => {
+      const user = child.val();
+      if (user.name && user.name.toLowerCase() === oldDisplayName.toLowerCase()) {
+        userData = user;
+        userId = child.key;
+        return true; // Break out of forEach
+      }
+    });
+  }
+  
+  if (!userData) throw new Error("Current account not found.");
   
   const passcodeHash = await hashPasscode(passcode);
   if (userData.passcodeHash !== passcodeHash) throw new Error("Incorrect passcode.");
 
   // Update the name (user ID stays the same)
   await db.ref('users/' + userId + '/name').set(newDisplayName);
+  
+  // Return the updated user data
+  return {
+    name: newDisplayName,
+    userId: userId,
+    points: userData.points,
+    passcodeHash: userData.passcodeHash
+  };
+}
+
+// Delete user account from Firebase
+async function deleteAccount(name, passcode) {
+  const displayName = name.trim();
+  
+  // Find user by name (case-insensitive)
+  const allUsersSnapshot = await db.ref('users').once('value');
+  let userData = null;
+  let userId = null;
+  
+  if (allUsersSnapshot.exists()) {
+    allUsersSnapshot.forEach(child => {
+      const user = child.val();
+      if (user.name && user.name.toLowerCase() === displayName.toLowerCase()) {
+        userData = user;
+        userId = child.key;
+        return true; // Break out of forEach
+      }
+    });
+  }
+  
+  if (!userData) throw new Error("Account not found.");
+  
+  const passcodeHash = await hashPasscode(passcode);
+  if (userData.passcodeHash !== passcodeHash) throw new Error("Incorrect passcode.");
+  
+  // Delete the user account from Firebase
+  await db.ref('users/' + userId).remove();
+  
+  return true;
 }
 
 // Update user's high score in Firebase
 async function updateHighScore(name, newScore) {
   const displayName = name.trim();
   
-  // Find user by name
-  const snapshot = await db.ref('users').orderByChild('name').equalTo(displayName).once('value');
-  if (!snapshot.exists()) return; // User not found
-  
-  // Get the user ID
+  // Find user by name (case-insensitive)
+  const allUsersSnapshot = await db.ref('users').once('value');
   let userId = null;
-  snapshot.forEach(child => {
-    userId = child.key;
-  });
+  
+  if (allUsersSnapshot.exists()) {
+    allUsersSnapshot.forEach(child => {
+      const user = child.val();
+      if (user.name && user.name.toLowerCase() === displayName.toLowerCase()) {
+        userId = child.key;
+        return true; // Break out of forEach
+      }
+    });
+  }
+  
+  if (!userId) return; // User not found
   
   const userRef = db.ref('users/' + userId + '/highScore');
   const scoreSnapshot = await userRef.get();
@@ -394,4 +460,30 @@ async function syncUserDataToDb() {
   } catch (e) {
     // If sync fails, keep local data
   }
+}
+
+// Validate login credentials without logging in
+async function validateLoginCredentials(name, passcode) {
+  const displayName = name.trim();
+  
+  // Find user by name (case-insensitive search)
+  const allUsersSnapshot = await db.ref('users').once('value');
+  let userData = null;
+  
+  if (allUsersSnapshot.exists()) {
+    allUsersSnapshot.forEach(child => {
+      const user = child.val();
+      if (user.name && user.name.toLowerCase() === displayName.toLowerCase()) {
+        userData = user;
+        return true; // Break out of forEach
+      }
+    });
+  }
+  
+  if (!userData) throw new Error("Account not found.");
+  
+  const passcodeHash = await hashPasscode(passcode);
+  if (userData.passcodeHash !== passcodeHash) throw new Error("Incorrect passcode.");
+  
+  return true; // Credentials are valid
 }
