@@ -653,22 +653,25 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   #logoutBtn {
     position: absolute !important;
     right: 18px !important;
-    bottom: 60px !important; /* Move higher to avoid overlap */
+    bottom: 14px !important; /* Position below signed-in container */
     margin-top: 0 !important;
-    padding-top: 8px !important;
+    padding: 8px 18px !important; /* Same padding as delete button */
     font-size: 1.1em !important;
+    min-width: 120px !important; /* Ensure consistent button width */
   }
   
   #deleteAccountBtn {
     position: absolute !important;
-    right: 120px !important;
-    bottom: 60px !important; /* Move higher to avoid overlap */
+    right: 150px !important; /* More distance from logout button */
+    bottom: 14px !important; /* Position below signed-in container */
     font-size: 1.1em !important;
+    padding: 8px 18px !important; /* Consistent padding */
+    min-width: 120px !important; /* Ensure consistent button width */
   }
   
-  /* Ensure signed-in container has proper spacing on iPad */
+  /* Ensure signed-in container has proper spacing on iPad and is above buttons */
   .signed-in-container {
-    margin: 8px 0 !important;
+    margin: 8px 0 50px 0 !important; /* Bottom margin to create space for buttons below */
     font-size: 1.1em !important;
   }
 }
