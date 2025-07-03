@@ -584,6 +584,29 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
 }
 
+/* iPad and large tablet scaling (covers all iPad models, both orientations) */
+@media (max-width: 1366px) and (min-width: 768px) {
+  .main-menu-btns {
+    display: grid !important;
+    grid-template-columns: repeat(2, 200px) !important;
+    gap: 20px !important;
+    margin-bottom: 24px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+  .main-menu-btns button {
+    width: 200px !important;
+    height: 56px !important;
+    font-size: 1.4em !important;
+    padding: 12px 16px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    text-align: center !important;
+  }
+}
+
 /* iPad and large tablet scaling (iPhone uses default desktop scaling) - covers all iPad models */
 @media (max-width: 1366px) and (min-width: 768px) and (orientation: portrait),
        (max-width: 1024px) and (min-width: 768px) and (orientation: landscape) {
