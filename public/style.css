@@ -582,6 +582,59 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   .leaderboard-footer {
     margin-top: 12px; /* Reduced spacing */
   }
+  
+  /* iPhone-specific popup adjustments - make popups narrower and more mobile-friendly */
+  .popup-content {
+    min-width: 280px !important; /* Reduced from 320px */
+    max-width: 90vw !important; /* Ensure popup doesn't exceed screen width */
+    padding: 20px 16px 16px 16px !important; /* Reduced horizontal padding */
+    margin: 0 10px !important; /* Add horizontal margins for safety */
+    box-sizing: border-box !important;
+  }
+  
+  .cosmetics-popup {
+    min-width: 300px !important; /* Slightly larger for cosmetics, but still mobile-friendly */
+    max-width: 95vw !important;
+  }
+  
+  /* Adjust grid layouts for smaller screens */
+  .skins-grid {
+    grid-template-columns: repeat(4, 40px) !important; /* Reduce from 5 to 4 columns */
+    grid-gap: 12px !important; /* Reduce gap */
+    margin: 12px 0 !important;
+  }
+  
+  /* Make buttons more touch-friendly */
+  .popup-content button {
+    padding: 12px 20px !important;
+    font-size: 1em !important;
+    min-height: 44px !important; /* iOS recommended touch target size */
+  }
+}
+
+/* Extra small screens (iPhone SE, etc.) - even more compact */
+@media (max-width: 375px) {
+  .popup-content {
+    min-width: 260px !important;
+    max-width: 85vw !important;
+    padding: 16px 12px !important;
+    margin: 0 8px !important;
+  }
+  
+  .cosmetics-popup {
+    min-width: 280px !important;
+    max-width: 90vw !important;
+  }
+  
+  .skins-grid {
+    grid-template-columns: repeat(3, 36px) !important; /* Even fewer columns for very small screens */
+    grid-gap: 10px !important;
+  }
+  
+  .popup-content h2 {
+    font-size: 1.3em !important;
+    margin-bottom: 8px !important;
+  }
 }
 
 /* iPad and large tablet scaling (covers all iPad models, both orientations) */
