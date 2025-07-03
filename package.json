@@ -1,0 +1,23 @@
+{
+  "name": "buzzy-bird-dev",
+  "version": "1.0.0",
+  "description": "Development server for Buzzy Bird with live reload",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "dev-https": "node dev-server.js",
+    "dev-http": "node dev-server.js --http-only",
+    "start": "node dev-server.js",
+    "serve": "python -m http.server 8000"
+  },
+  "keywords": [
+    "game",
+    "flappy-bird",
+    "web-audio",
+    "ml5"
+  ],
+  "author": "Liam Downing",
+  "license": "MIT",
+  "devDependencies": {
+    "selfsigned": "^2.4.1"
+  }
+}
