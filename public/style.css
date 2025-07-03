@@ -595,6 +595,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   .cosmetics-popup {
     min-width: 300px !important; /* Slightly larger for cosmetics, but still mobile-friendly */
     max-width: 95vw !important;
+    padding: 40px 16px 16px 16px !important; /* Extra top padding to avoid X button overlap */
   }
   
   /* Adjust grid layouts for smaller screens */
@@ -602,6 +603,13 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     grid-template-columns: repeat(4, 40px) !important; /* Reduce from 5 to 4 columns */
     grid-gap: 12px !important; /* Reduce gap */
     margin: 12px 0 !important;
+  }
+  
+  /* Cosmetics grid adjustments for mobile */
+  .cosmetics-grid {
+    grid-template-columns: repeat(4, 40px) !important; /* Reduce from 5 to 4 columns */
+    grid-gap: 12px !important; /* Reduce gap */
+    margin: 8px 0 12px 0 !important; /* Reduced top margin to account for extra padding */
   }
   
   /* Make buttons more touch-friendly */
@@ -624,6 +632,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   .cosmetics-popup {
     min-width: 280px !important;
     max-width: 90vw !important;
+    padding: 40px 12px 12px 12px !important; /* Extra top padding to avoid X button overlap */
   }
   
   .skins-grid {
@@ -631,9 +640,24 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     grid-gap: 10px !important;
   }
   
+  .cosmetics-grid {
+    grid-template-columns: repeat(3, 36px) !important; /* Even fewer columns for very small screens */
+    grid-gap: 10px !important;
+    margin: 8px 0 12px 0 !important;
+  }
+  
   .popup-content h2 {
     font-size: 1.3em !important;
     margin-bottom: 8px !important;
+  }
+  
+  /* Make X button slightly smaller for very small screens */
+  .popup-close-x {
+    font-size: 28px !important;
+    width: 36px !important;
+    height: 36px !important;
+    top: 6px !important;
+    right: 6px !important;
   }
 }
 
@@ -840,11 +864,33 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   transition: background-color 0.15s, color 0.15s;
   margin: 0;
   padding: 0;
+  z-index: 100; /* Ensure it's above all content */
 }
 
 .popup-close-x:hover {
   background-color: rgba(0, 0, 0, 0.008);
   color: #333;
+}
+
+/* Mobile-specific X button styling */
+@media (max-width: 600px) {
+  .popup-close-x {
+    top: 8px !important;
+    right: 8px !important;
+    font-size: 32px !important;
+    width: 40px !important;
+    height: 40px !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #333 !important;
+    border: 2px solid #ddd !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  .popup-close-x:hover {
+    background: rgba(255, 255, 255, 1) !important;
+    color: #000 !important;
+    border-color: #999 !important;
+  }
 }
 
 /* Ensure popup content has relative positioning for absolute X button */
