@@ -33,9 +33,10 @@ canvas {
   touch-action: none;
   /* REMOVE any width/height here! */
   /* Do NOT set width: 100vw or height: 100vh */
-  /* Improve canvas rendering on high-DPI displays */
-  image-rendering: -webkit-crisp-edges;
-  image-rendering: crisp-edges;
+  /* Smooth rendering for sprites and assets */
+  image-rendering: auto;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: smooth;
 }
 
 button {
@@ -944,10 +945,10 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     position: fixed !important;
     left: 0 !important;
     right: 0 !important;
-    top: 0 !important;
+    top: 25px !important; /* Add 25px safety padding at the top */
     bottom: 0 !important;
     width: 100vw !important;
-    height: 100dvh !important;
+    height: calc(100dvh - 25px) !important; /* Adjust height to account for top padding */
     background: #e0f7fa;
     z-index: 1 !important;
   }
@@ -961,21 +962,15 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     overflow: hidden !important;
     position: relative !important;
   }
-  body {
-    /* Account for iOS safe area (notch/home bar) */
-    padding-top: env(safe-area-inset-top, 0px) !important;
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-    box-sizing: border-box !important;
-  }
   canvas {
     position: fixed !important;
-    top: 0 !important;
+    top: 25px !important; /* Add 25px safety padding at the top */
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
     width: 100vw !important;
-    height: 100dvh !important;
-    min-height: 100dvh !important;
+    height: calc(100dvh - 25px) !important; /* Adjust height to account for top padding */
+    min-height: calc(100dvh - 25px) !important; /* Adjust min-height to account for top padding */
     background: #e0f7fa;
     z-index: 1 !important;
   }
@@ -1058,10 +1053,10 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
       position: fixed !important;
       left: 0 !important;
       right: 0 !important;
-      top: 0 !important;
+      top: 25px !important; /* Add 25px safety padding at the top */
       bottom: 0 !important;
       width: 100vw !important;
-      height: 100dvh !important;
+      height: calc(100dvh - 25px) !important; /* Adjust height to account for top padding */
       background: #e0f7fa;
       z-index: 1 !important;
     }
@@ -1085,8 +1080,9 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 /* Fallback for browsers that do not support 100dvh - mobile only */
 @media (max-width: 768px) {
   canvas {
-    height: 100vh;
+    height: calc(100vh - 25px); /* Adjust height to account for top padding */
     width: 100vw;
+    top: 25px; /* Add 25px safety padding at the top */
   }
   body {
     height: 100vh;

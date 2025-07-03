@@ -440,16 +440,16 @@ function resizeCanvas() {
   // Get device pixel ratio for high-DPI displays (iPad, Retina, etc.)
   const dpr = window.devicePixelRatio || 1;
   
-  // Optimize for performance - cap DPR for better frame rates
-  // High DPR can cause performance issues, so limit it
+  // Optimize for performance - use integer DPR values to avoid fractional scaling
+  // which can cause sprite deformation
   let effectiveDpr;
   
   if (isMobile) {
-    // Mobile devices: Cap at 1.5x for better performance
-    effectiveDpr = Math.min(dpr, 1.5);
+    // Mobile devices: Use integer DPR (1 or 2) for crisp rendering
+    effectiveDpr = dpr >= 2 ? 2 : 1;
   } else {
-    // Desktop: Use actual DPR but cap at 2x
-    effectiveDpr = Math.min(dpr, 2.0);
+    // Desktop: Use integer DPR, cap at 2x for performance
+    effectiveDpr = Math.min(Math.round(dpr), 2);
   }
   
   // Get the display size in CSS pixels
@@ -518,15 +518,17 @@ function resizeCanvas() {
   }
   
   // Set the canvas internal resolution (accounting for device pixel ratio)
-  canvas.width = Math.floor(displayWidth * effectiveDpr);
-  canvas.height = Math.floor(displayHeight * effectiveDpr);
+  // Use integer values to prevent sub-pixel rendering issues
+  canvas.width = Math.round(displayWidth * effectiveDpr);
+  canvas.height = Math.round(displayHeight * effectiveDpr);
   
   // Reset the context and scale it to match the device pixel ratio
   ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any previous transforms
   ctx.scale(effectiveDpr, effectiveDpr);
   
-  // Disable image smoothing after resize for pixel-perfect rendering
-  ctx.imageSmoothingEnabled = false;
+  // Enable image smoothing for better sprite rendering
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   
   // Store the scale factor globally for use in drawing functions
   window.canvasScale = effectiveDpr;
@@ -538,14 +540,22 @@ function resizeCanvas() {
   // Debug: Log device information
   if (window.isIPad) {
     console.log("iPad detected - using enhanced scaling (1.2x sprites, 1.6x speed, 1.3x pipe gap)");
+  } else if (!isMobile) {
+    console.log("PC/Desktop detected - using moderately larger sprites (1.1x+ scaling)");
+  } else {
+    console.log("Mobile detected - using smaller sprites for efficiency");
   }
   
   // Calculate base game scale factor for sprites and UI - simplified scaling
-  // iPad gets additional scaling for bigger birds and pipes
+  // PC gets bigger sprites for better visibility, iPad gets additional scaling, mobile stays smaller
   if (window.isIPad) {
     window.gameScale = Math.max(1.2, displayWidth / 600); // Larger scaling factor for iPad
+  } else if (!isMobile) {
+    // PC/Desktop: Make sprites moderately bigger for better visibility
+    window.gameScale = Math.max(1.1, displayWidth / 800); // Moderately larger scaling for PC
   } else {
-    window.gameScale = isMobile ? Math.max(0.8, displayWidth / 800) : Math.max(0.7, displayWidth / 1000);
+    // Mobile: Keep smaller for screen space efficiency
+    window.gameScale = Math.max(0.8, displayWidth / 800);
   }
   
   // Only redraw if not running (so splash/buttons show up)

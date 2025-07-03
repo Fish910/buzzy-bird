@@ -5,7 +5,9 @@
 // --- Global Canvas & Context ---
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-ctx.imageSmoothingEnabled = false; // Disable image smoothing
+// Enable image smoothing for better sprite rendering
+ctx.imageSmoothingEnabled = true;
+ctx.imageSmoothingQuality = 'high';
 
 // --- Global Save Object ---
 let save;
