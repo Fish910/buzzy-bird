@@ -17,6 +17,7 @@ let pitchLoopActive = false;
 let running = false;
 let paused = false;
 let gameOver = false;
+let gameOverProcessed = false; // Flag to prevent duplicate point awarding
 let score = 0;
 
 // Animation frame management
@@ -197,6 +198,7 @@ function resetGame() {
   pipes = [];
   pipeTimer = 0;
   gameOver = false;
+  gameOverProcessed = false; // Reset game over processing flag
   score = 0;
   pipesPassedSinceBreak = 0;
   inRestBreak = false;
@@ -1134,9 +1136,12 @@ function draw(currentTime = 0) {
 
   // Game over screen
   if (gameOver) {
-    // Award points and update high score
-    addPoints(score);
-    setHighScoreIfNeeded(score);
+    // Award points and update high score (only once)
+    if (!gameOverProcessed) {
+      addPoints(score);
+      setHighScoreIfNeeded(score);
+      gameOverProcessed = true;
+    }
 
     ctx.fillStyle = "rgba(80,80,80,0.5)";
     ctx.fillRect(0, 0, displayWidth, displayHeight);
@@ -1244,6 +1249,7 @@ async function fullRefresh() {
   running = false;
   paused = false;
   gameOver = false;
+  gameOverProcessed = false; // Reset game over processing flag
   score = 0;
   pipes = [];
   pipeTimer = 0;

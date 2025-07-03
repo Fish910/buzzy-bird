@@ -358,7 +358,7 @@ async function fetchLeaderboard() {
   return users;
 }
 
-// --- Fetch and overwrite local user data from DB on main menu open ---
+// --- Smart sync local user data from DB on main menu open ---
 async function syncLoggedInUserFromDb() {
   const user = JSON.parse(localStorage.getItem('buzzyBirdUser') || 'null');
   if (!user || !user.userId) return; // Need userId to sync
@@ -369,23 +369,43 @@ async function syncLoggedInUserFromDb() {
     if (snapshot.exists()) {
       const dbUser = snapshot.val();
       
-      // Always use database values for points and high score
-      save = {
-        points: dbUser.points || 0,
-        highScore: dbUser.highScore || 0,
-        ownedSkins: dbUser.ownedSkins || ["default"],
-        equippedSkin: dbUser.equippedSkin || "default",
-        ownedPipes: dbUser.ownedPipes || ["default"],
-        equippedPipe: dbUser.equippedPipe || "default",
-        ownedBackdrops: dbUser.ownedBackdrops || ["default"],
-        equippedBackdrop: dbUser.equippedBackdrop || "default"
+      // Smart merge: use the higher values between local and database
+      const mergedData = {
+        // Use the higher value for points and high score
+        points: Math.max(save.points || 0, dbUser.points || 0),
+        highScore: Math.max(save.highScore || 0, dbUser.highScore || 0),
+        // For cosmetics, merge owned items and use database equipped items
+        ownedSkins: [...new Set([
+          ...(save.ownedSkins || ["default"]),
+          ...(dbUser.ownedSkins || ["default"])
+        ])],
+        equippedSkin: dbUser.equippedSkin || save.equippedSkin || "default",
+        ownedPipes: [...new Set([
+          ...(save.ownedPipes || ["default"]),
+          ...(dbUser.ownedPipes || ["default"])
+        ])],
+        equippedPipe: dbUser.equippedPipe || save.equippedPipe || "default",
+        ownedBackdrops: [...new Set([
+          ...(save.ownedBackdrops || ["default"]),
+          ...(dbUser.ownedBackdrops || ["default"])
+        ])],
+        equippedBackdrop: dbUser.equippedBackdrop || save.equippedBackdrop || "default"
       };
+      
+      // Update local save with merged data
+      save = mergedData;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
       localStorage.setItem('buzzyBirdUser', JSON.stringify({
         ...dbUser,
         points: save.points,
         highScore: save.highScore
       }));
+      
+      // If local data was higher, sync it back to database
+      if (save.points > (dbUser.points || 0) || save.highScore > (dbUser.highScore || 0)) {
+        await syncUserDataToDb();
+      }
+      
       updateMenuInfo && updateMenuInfo();
       renderCosmeticsGrid && renderCosmeticsGrid();
       updateAuthUI && updateAuthUI();
