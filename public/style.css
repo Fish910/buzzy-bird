@@ -375,7 +375,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   border-radius: 18px;
   box-shadow: 0 4px 32px rgba(0,0,0,0.5);
   padding: 16px 24px 24px 24px; /* Reduced top padding from 32px to 16px */
-  margin: 32px auto 24px auto;
+  margin: 32px auto 18px auto; /* Increased bottom margin from 12px to 18px */
   width: 90%;
   max-width: 340px; /* Reduced from 420px */
   height: 30vh;         /* Dynamic height: one third of the viewport */
@@ -399,7 +399,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 12px !important; /* Reduced since we now have the signed-in container */
+  margin-top: 16px; /* Increased margin for better spacing from signed-in text */
 }
 
 /* Signed in container */
@@ -408,7 +408,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   justify-content: center;
   align-items: center;
   padding: 8px 12px;
-  margin: 4px 0; /* Reduced margin for smaller gap */
+  margin: 8px 0 32px 0; /* Increased bottom margin for better spacing from buttons */
   background: rgba(0,0,0,0.4);
   border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.2);
@@ -432,7 +432,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   background: rgba(0,0,0,0.7);
   border-radius: 10px;
   padding: 12px 6px; /* Increased side padding to prevent outline cutoff */
-  margin-bottom: 4px; /* Reduced gap to signed-in container */
+  margin-bottom: 8px; /* Consistent spacing to signed-in container */
   max-height: 320px;
 }
 
@@ -570,8 +570,8 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   #leaderboardContainer {
     max-width: 98vw;
     padding: 12px 4vw 16px 4vw;
-    min-height: 280px; /* Reduced from 320px to make popup shorter */
-    height: 28vh; /* Shorter on iPhone */
+    min-height: 320px; /* Increased from 280px to make name container taller */
+    height: 32vh; /* Taller on iPhone - increased from 28vh */
   }
   
   /* Keep the name list container the same size by adjusting other elements */
@@ -731,7 +731,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     height: 45vh !important; /* Restored original height */
     min-height: 360px !important; /* Restored original minimum height */
     font-size: 1.1em !important; /* Slightly larger text */
-    margin-bottom: 8px !important; /* Reduced spacing */
+    margin-bottom: 18px !important; /* Match the consistent spacing */
   }
   
   .menu-info {
@@ -786,24 +786,24 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     min-width: 140px !important; /* Wider for iPad touch targets */
   }
   
-  /* Ensure signed-in container has proper spacing on iPad and is above buttons */
+  /* Ensure signed-in container has consistent spacing */
   .signed-in-container {
-    margin: 8px 0 60px 0 !important; /* More bottom margin for larger buttons */
-    font-size: 1.2em !important; /* Larger text for iPad */
+    margin: 8px 0 40px 0; /* Match PC spacing with increased bottom margin */
+    font-size: 1.1em; /* Slightly larger text for iPad */
   }
   
   /* Override signed-in container spacing for mobile devices within iPad media query */
   @media (max-width: 600px) {
     .signed-in-container {
-      margin: 4px 0 12px 0 !important; /* Reset to mobile spacing */
-      font-size: 1em !important; /* Reset to mobile font size */
+      margin: 8px 0 32px 0; /* Keep consistent spacing with PC */
+      font-size: 1em; /* Reset to mobile font size */
     }
   }
 }
 
-/* Increase leaderboard footer margin on iPad for more button separation */
+/* Consistent leaderboard footer margin */
   .leaderboard-footer {
-    margin-top: 32px !important; /* Increased from 24px to provide more separation */
+    margin-top: 16px; /* Consistent spacing with increased margin */
   }
 
 /* Fix X button size for iPad */
@@ -1024,71 +1024,75 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 
 /* Leaderboard margin adjustments when user is logged in */
 #leaderboardContainer.logged-in {
-  margin-bottom: 110px !important;
+  margin-bottom: 18px !important; /* Match the consistent spacing */
 }
 
 /* Device-specific leaderboard margin adjustments for logged in users */
 @media (max-width: 600px) {
   #leaderboardContainer.logged-in {
-    margin-bottom: 80px !important; /* Reduced from 100px to give less space */
+    margin-bottom: 18px; /* Match the consistent spacing */
   }
   
-  /* Adjust signed-in container spacing on mobile */
+  /* Match the PC spacing for signed-in container on mobile */
   .signed-in-container {
-    margin: 4px 0 12px 0 !important; /* Much smaller bottom margin on mobile */
+    margin: 8px 0 32px 0; /* Increased bottom margin to match PC spacing */
   }
   
   /* Ensure leaderboard footer has proper spacing on mobile */
   .leaderboard-footer {
-    margin-top: 8px !important; /* Reduced spacing to prevent overlap */
+    margin-top: 16px; /* Consistent spacing with increased margin */
   }
 }
 
 @media (max-width: 1366px) and (min-width: 768px) and (orientation: portrait),
        (max-width: 1024px) and (min-width: 768px) and (orientation: landscape) {
   #leaderboardContainer.logged-in {
-    margin-bottom: 120px !important; /* More margin on iPad */
+    margin-bottom: 18px !important; /* Match the consistent spacing */
   }
 }
 
 /* iPhone/iOS: Let canvas fill the screen, but add safe area padding for overlays (score, UI) */
 @supports (height: 100dvh) {
-  canvas {
-    position: fixed !important;
-    left: 0 !important;
-    right: 0 !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100dvh !important;
-    background: #e0f7fa;
-    z-index: 1 !important;
-  }
-  /* Add safe area padding for overlays at the top (score) and bottom (UI) */
-  .menu-info, .score-overlay, .top-overlay {
-    padding-top: env(safe-area-inset-top, 0px) !important;
-  }
-  .bottom-overlay, .version-text {
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-  }
-  body {
-    height: 100dvh !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    background: #e0f7fa;
-    overflow: hidden;
+  @media (max-width: 768px) {
+    canvas {
+      position: fixed !important;
+      left: 0 !important;
+      right: 0 !important;
+      top: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important;
+      height: 100dvh !important;
+      background: #e0f7fa;
+      z-index: 1 !important;
+    }
+    /* Add safe area padding for overlays at the top (score) and bottom (UI) */
+    .menu-info, .score-overlay, .top-overlay {
+      padding-top: env(safe-area-inset-top, 0px) !important;
+    }
+    .bottom-overlay, .version-text {
+      padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    }
+    body {
+      height: 100dvh !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      background: #e0f7fa;
+      overflow: hidden;
+    }
   }
 }
 
-/* Fallback for browsers that do not support 100dvh */
-canvas {
-  height: 100vh;
-  width: 100vw;
-}
-body {
-  height: 100vh;
-  background: #e0f7fa;
-  overflow: hidden;
+/* Fallback for browsers that do not support 100dvh - mobile only */
+@media (max-width: 768px) {
+  canvas {
+    height: 100vh;
+    width: 100vw;
+  }
+  body {
+    height: 100vh;
+    background: #e0f7fa;
+    overflow: hidden;
+  }
 }
 
 

@@ -265,8 +265,8 @@ function modelLoaded() {
   // Ensure pitch loop is active before starting
   pitchLoopActive = true;
   
-  // Start pitch detection only if not already running
-  if (pitchDetector && !pitch) {
+  // Start pitch detection if we have a detector
+  if (pitchDetector) {
     getPitch();
   }
   
@@ -433,11 +433,9 @@ function resizeCanvas() {
   const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(navigator.userAgent);
   const isAppleDevice = /ipad|iphone|ipod|macintosh/i.test(navigator.userAgent) && hasTouch;
   
-  // FORCE MOBILE MODE FOR TESTING - this will force mobile scaling
-  const forceMobile = window.innerWidth <= 1200; // Force mobile for most tablet/mobile sizes
-  
-  // Force mobile detection for iPad and touch devices
-  const isMobile = forceMobile || isMobileUA || isAppleDevice || isTabletSize || hasTouch;
+  // More accurate mobile detection - don't force mobile mode based on screen width alone
+  // Only consider it mobile if it's actually a mobile device or has touch as primary input
+  const isMobile = isMobileUA || isAppleDevice || (hasTouch && isTabletSize);
   
   // Get device pixel ratio for high-DPI displays (iPad, Retina, etc.)
   const dpr = window.devicePixelRatio || 1;
@@ -461,8 +459,8 @@ function resizeCanvas() {
   
   if (window.innerWidth > window.innerHeight) {
     // Landscape: fixed width, full height, horizontally centered
-    // Make canvas wider on PC/desktop, keep mobile the same
-    const canvasWidth = isMobile ? 480 : 600;
+    // Use 480px width for both PC and mobile
+    const canvasWidth = 480;
     displayWidth = canvasWidth;
     displayHeight = window.innerHeight;
     canvasLeft = (window.innerWidth - canvasWidth) / 2;
@@ -1338,18 +1336,5 @@ async function warmupPitchDetection() {
     } catch (err) {
       console.log('Could not create audio context early:', err);
     }
-  }
-}
-
-// Called when pitch detection model is loaded
-function modelLoaded() {
-  // Ensure pitch loop is active before starting
-  pitchLoopActive = true;
-  
-  getPitch();
-  
-  // Immediately start the animation loop when the model is ready
-  if (!animationFrameId) {
-    animationFrameId = requestAnimationFrame(draw);
   }
 }
