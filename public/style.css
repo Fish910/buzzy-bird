@@ -653,11 +653,16 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   
   /* Make X button slightly smaller for very small screens */
   .popup-close-x {
-    font-size: 28px !important;
-    width: 36px !important;
-    height: 36px !important;
+    font-size: 20px !important;
+    width: 40px !important;
+    height: 40px !important;
     top: 6px !important;
     right: 6px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #333 !important;
+    border: 2px solid #ccc !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25) !important;
+    font-weight: bold !important;
   }
 }
 
@@ -877,13 +882,14 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   .popup-close-x {
     top: 8px !important;
     right: 8px !important;
-    font-size: 32px !important;
-    width: 40px !important;
-    height: 40px !important;
-    background: rgba(255, 255, 255, 0.9) !important;
+    font-size: 24px !important;
+    width: 44px !important;
+    height: 44px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
     color: #333 !important;
-    border: 2px solid #ddd !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    border: 2px solid #ccc !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25) !important;
+    font-weight: bold !important;
   }
   
   .popup-close-x:hover {
