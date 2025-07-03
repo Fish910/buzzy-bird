@@ -966,8 +966,9 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     bottom: 0 !important;
     width: 100vw !important;
     height: 100dvh !important;
-    min-height: 100dvh !important;
-    max-height: 100dvh !important;
+    /* Remove min-height and max-height to avoid black bars in standalone/PWA mode */
+    /* min-height: 100dvh !important; */
+    /* max-height: 100dvh !important; */
     background: #e0f7fa;
     z-index: 1 !important;
   }
@@ -978,6 +979,24 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   .bottom-overlay, .version-text {
     padding-bottom: env(safe-area-inset-bottom, 0px) !important;
   }
+  body {
+    height: 100dvh !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    background: #e0f7fa;
+    overflow: hidden;
+  }
+}
+
+/* Fallback for browsers that do not support 100dvh */
+canvas {
+  height: 100vh;
+  width: 100vw;
+}
+body {
+  height: 100vh;
+  background: #e0f7fa;
+  overflow: hidden;
 }
 
 
