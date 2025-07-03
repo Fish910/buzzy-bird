@@ -831,10 +831,10 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     position: fixed !important;
     left: 0 !important;
     right: 0 !important;
-    bottom: env(safe-area-inset-bottom, 0px) !important;
-    top: auto !important;
+    top: 0 !important;
+    bottom: 0 !important;
     width: 100vw !important;
-    height: 70vh !important; /* Adjust this value as needed */
+    height: 100dvh !important;
     background: #e0f7fa;
     z-index: 1 !important;
   }

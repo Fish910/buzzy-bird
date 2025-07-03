@@ -25,6 +25,10 @@ function hideLoading() {
 function showMainMenu() {
   hideLoading();
   updateMenuInfo();
+  // Always update leaderboard when menu opens
+  if (typeof renderLeaderboard === 'function') {
+    renderLeaderboard();
+  }
   mainMenu.style.display = "flex";
   running = false;
   paused = false;

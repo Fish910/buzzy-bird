@@ -369,15 +369,10 @@ async function syncLoggedInUserFromDb() {
     if (snapshot.exists()) {
       const dbUser = snapshot.val();
       
-      // Merge data intelligently - take the maximum values where appropriate
-      const currentLocalData = save || getDefaultSave();
-      
-      // Only update high score if DB version is higher (prevent overwriting recent achievements)
-      const finalHighScore = Math.max(dbUser.highScore || 0, currentLocalData.highScore || 0);
-      
+      // Always use database values for points and high score
       save = {
-        points: Math.max(dbUser.points || 0, currentLocalData.points || 0),
-        highScore: finalHighScore,
+        points: dbUser.points || 0,
+        highScore: dbUser.highScore || 0,
         ownedSkins: dbUser.ownedSkins || ["default"],
         equippedSkin: dbUser.equippedSkin || "default",
         ownedPipes: dbUser.ownedPipes || ["default"],
@@ -385,12 +380,6 @@ async function syncLoggedInUserFromDb() {
         ownedBackdrops: dbUser.ownedBackdrops || ["default"],
         equippedBackdrop: dbUser.equippedBackdrop || "default"
       };
-      
-      // If we merged higher local values, sync them back to the database
-      if (save.points > (dbUser.points || 0) || save.highScore > (dbUser.highScore || 0)) {
-        await syncUserDataToDb();
-      }
-      
       localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
       localStorage.setItem('buzzyBirdUser', JSON.stringify({
         ...dbUser,
