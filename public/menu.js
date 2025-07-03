@@ -29,6 +29,12 @@ function showMainMenu() {
   if (typeof renderLeaderboard === 'function') {
     renderLeaderboard();
   }
+  
+  // Sync user data between games (smart merge, don't force DB priority)
+  if (typeof syncLoggedInUserFromDb === 'function') {
+    syncLoggedInUserFromDb(false).catch(err => console.log('Menu sync failed:', err));
+  }
+  
   mainMenu.style.display = "flex";
   running = false;
   paused = false;

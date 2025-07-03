@@ -1056,8 +1056,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   
   // Don't request microphone access on page load - wait for user to start game
   
-  // Sync user and show UI
-  await syncLoggedInUserFromDb();
+  // Sync user and show UI (prioritize database values on page load)
+  await syncLoggedInUserFromDb(true);
   updateAuthUI();
   renderLeaderboard();
   
