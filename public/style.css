@@ -826,50 +826,22 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
 }
 
-/* iOS specific viewport adjustments - more aggressive approach */
-@supports (-webkit-touch-callout: none) {
-  html, body {
-    height: -webkit-fill-available !important;
-    height: 100dvh !important;
-    height: 100vh !important;
-    min-height: 100vh !important;
-    min-height: 100dvh !important;
-    min-height: -webkit-fill-available !important;
-    overflow: hidden !important;
-    position: relative !important;
-  }
-  
-  body {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-  }
-  
+@media screen and (max-width: 768px) {
   canvas {
     position: fixed !important;
-    top: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    bottom: 0 !important;
+    top: auto !important;
+    bottom: env(safe-area-inset-bottom, 0px) !important;
     width: 100vw !important;
-    height: -webkit-fill-available !important;
-    height: 100dvh !important;
-    height: 100vh !important;
-    min-height: 100vh !important;
-    min-height: 100dvh !important;
-    min-height: -webkit-fill-available !important;
+    height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    background: #e0f7fa;
+    z-index: 1 !important;
   }
-}
-
-/* Additional mobile viewport fixes - more comprehensive */
-@media screen and (max-width: 768px) {
-  html, body {
+  body {
     height: 100dvh !important;
     min-height: 100dvh !important;
-    background: #232323 !important;
+    background: #e0f7fa !important;
     /* Remove any margin/padding that could cause bars */
     margin: 0 !important;
     padding: 0 !important;
@@ -960,15 +932,12 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 @supports (height: 100dvh) {
   canvas {
     position: fixed !important;
-    top: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    bottom: 0 !important;
+    top: auto !important;
+    bottom: env(safe-area-inset-bottom, 0px) !important;
     width: 100vw !important;
-    height: 100dvh !important;
-    /* Remove min-height and max-height to avoid black bars in standalone/PWA mode */
-    /* min-height: 100dvh !important; */
-    /* max-height: 100dvh !important; */
+    height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
     background: #e0f7fa;
     z-index: 1 !important;
   }
