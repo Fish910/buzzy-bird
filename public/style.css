@@ -956,13 +956,14 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
 }
 
-/* iPhone/iOS: Let canvas fill the screen, but add safe area padding for overlays (score, UI) */
+/* iPhone/iOS: Let canvas fill the screen, but add safe area padding for overlays (score, UI) and fix bottom bar */
 @supports (height: 100dvh) {
   canvas {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
+    /* Use only bottom: 0 so canvas fills the screen, but overlays use safe area */
     bottom: 0 !important;
     width: 100vw !important;
     height: 100dvh !important;
@@ -970,13 +971,39 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     max-height: 100dvh !important;
     background: #e0f7fa;
     z-index: 1 !important;
+    /* Remove any padding/margin that could cause a bar */
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
   }
   /* Add safe area padding for overlays at the top (score) and bottom (UI) */
   .menu-info, .score-overlay, .top-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     padding-top: env(safe-area-inset-top, 0px) !important;
+    z-index: 2;
   }
   .bottom-overlay, .version-text {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
     padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    z-index: 2;
+  }
+}
+
+/* Remove mobile-specific canvas bottom padding that causes bar */
+@media screen and (max-width: 768px) {
+  canvas {
+    bottom: 0 !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
   }
 }
 
