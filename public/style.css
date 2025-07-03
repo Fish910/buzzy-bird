@@ -791,6 +791,14 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     margin: 8px 0 60px 0 !important; /* More bottom margin for larger buttons */
     font-size: 1.2em !important; /* Larger text for iPad */
   }
+  
+  /* Override signed-in container spacing for mobile devices within iPad media query */
+  @media (max-width: 600px) {
+    .signed-in-container {
+      margin: 4px 0 12px 0 !important; /* Reset to mobile spacing */
+      font-size: 1em !important; /* Reset to mobile font size */
+    }
+  }
 }
 
 /* Increase leaderboard footer margin on iPad for more button separation */
@@ -1022,7 +1030,17 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 /* Device-specific leaderboard margin adjustments for logged in users */
 @media (max-width: 600px) {
   #leaderboardContainer.logged-in {
-    margin-bottom: 100px !important; /* Less margin on mobile */
+    margin-bottom: 80px !important; /* Reduced from 100px to give less space */
+  }
+  
+  /* Adjust signed-in container spacing on mobile */
+  .signed-in-container {
+    margin: 4px 0 12px 0 !important; /* Much smaller bottom margin on mobile */
+  }
+  
+  /* Ensure leaderboard footer has proper spacing on mobile */
+  .leaderboard-footer {
+    margin-top: 8px !important; /* Reduced spacing to prevent overlap */
   }
 }
 
