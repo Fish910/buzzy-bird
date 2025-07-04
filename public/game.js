@@ -485,18 +485,53 @@ function resizeCanvas() {
     canvasTop = 0;
   }
   
-  // iOS-specific viewport adjustments
+  // iOS-specific viewport adjustments - Enhanced for iPhone/iPad
   if (isMobile && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
-    // Force canvas to fill entire iOS viewport
+    // Force canvas to fill entire iOS viewport using CSS - don't override width/height
     canvas.style.position = 'fixed';
     canvas.style.top = '0';
     canvas.style.left = '0';
     canvas.style.right = '0';
     canvas.style.bottom = '0';
-    canvas.style.width = '100vw';
-    canvas.style.height = '100vh';
-    canvas.style.height = '100dvh'; // Dynamic viewport height for modern iOS
+    // Let CSS handle both width and height - no pixel overrides
     canvas.style.zIndex = '1';
+    
+    // Get actual rendered canvas dimensions (after CSS is applied)
+    // Add small delay to ensure CSS has been applied
+    setTimeout(() => {
+      const canvasRect = canvas.getBoundingClientRect();
+      const actualDisplayWidth = canvasRect.width;
+      const actualDisplayHeight = canvasRect.height;
+      
+      // Only update if dimensions have changed significantly
+      if (Math.abs(displayWidth - actualDisplayWidth) > 1 || Math.abs(displayHeight - actualDisplayHeight) > 1) {
+        displayWidth = actualDisplayWidth;
+        displayHeight = actualDisplayHeight;
+        
+        // Update canvas internal resolution to match
+        canvas.width = Math.round(displayWidth * effectiveDpr);
+        canvas.height = Math.round(displayHeight * effectiveDpr);
+        
+        // Reset context scaling
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(effectiveDpr, effectiveDpr);
+        
+        // Update global variables
+        window.displayWidth = displayWidth;
+        window.displayHeight = displayHeight;
+        
+        console.log('iOS Canvas dimensions corrected:', {
+          width: displayWidth,
+          height: displayHeight,
+          ratio: displayWidth / displayHeight
+        });
+      }
+    }, 50);
+    
+    // Use immediate dimensions as fallback
+    const canvasRect = canvas.getBoundingClientRect();
+    displayWidth = canvasRect.width || window.innerWidth;
+    displayHeight = canvasRect.height || window.innerHeight;
     
     // Also ensure body fills viewport
     document.body.style.position = 'fixed';
@@ -504,12 +539,24 @@ function resizeCanvas() {
     document.body.style.left = '0';
     document.body.style.right = '0';
     document.body.style.bottom = '0';
-    document.body.style.width = '100vw';
-    document.body.style.height = '100vh';
-    document.body.style.height = '100dvh';
+    // Let CSS handle body dimensions
     document.body.style.overflow = 'hidden';
+  } else if (isMobile) {
+    // Enhanced mobile sizing for non-iOS devices (Android tablets, etc.)
+    canvas.style.position = 'fixed';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.right = '0';
+    canvas.style.bottom = '0';
+    // Let CSS handle both width and height - no pixel overrides
+    canvas.style.zIndex = '1';
+    
+    // Get actual rendered canvas dimensions (after CSS is applied)
+    const canvasRect = canvas.getBoundingClientRect();
+    displayWidth = canvasRect.width || window.innerWidth;
+    displayHeight = canvasRect.height || window.innerHeight;
   } else {
-    // Set the canvas CSS size (what the user sees) for non-iOS devices
+    // Set the canvas CSS size (what the user sees) for non-mobile devices
     canvas.style.width = displayWidth + 'px';
     canvas.style.height = displayHeight + 'px';
     canvas.style.left = canvasLeft + 'px';
@@ -536,6 +583,7 @@ function resizeCanvas() {
   window.displayHeight = displayHeight;
   window.isMobile = isMobile;
   window.isIPad = isIPadDevice();
+  window.isIPhone = /iPhone|iPod/.test(navigator.userAgent);
   
   // Debug: Log device information
   if (window.isIPad) {
@@ -543,19 +591,29 @@ function resizeCanvas() {
   } else if (!isMobile) {
     console.log("PC/Desktop detected - using moderately larger sprites (1.1x+ scaling)");
   } else {
-    console.log("Mobile detected - using smaller sprites for efficiency");
+    if (window.isIPhone) {
+      console.log("iPhone detected - using larger sprites for better visibility (1.0x base scaling)");
+    } else {
+      console.log("Mobile detected - using smaller sprites for efficiency");
+    }
   }
   
   // Calculate base game scale factor for sprites and UI - simplified scaling
-  // PC gets bigger sprites for better visibility, iPad gets additional scaling, mobile stays smaller
+  // PC gets bigger sprites for better visibility, iPad gets additional scaling, mobile gets iPhone optimization
   if (window.isIPad) {
     window.gameScale = Math.max(1.2, displayWidth / 600); // Larger scaling factor for iPad
   } else if (!isMobile) {
     // PC/Desktop: Make sprites moderately bigger for better visibility
     window.gameScale = Math.max(1.1, displayWidth / 800); // Moderately larger scaling for PC
   } else {
-    // Mobile: Keep smaller for screen space efficiency
-    window.gameScale = Math.max(0.8, displayWidth / 800);
+    // Mobile: Check if it's iPhone specifically for better scaling
+    if (window.isIPhone) {
+      // iPhone: Make bird bigger for better visibility
+      window.gameScale = Math.max(1.0, displayWidth / 700); // Bigger scaling for iPhone
+    } else {
+      // Other mobile devices: Keep smaller for screen space efficiency
+      window.gameScale = Math.max(0.8, displayWidth / 800);
+    }
   }
   
   // Only redraw if not running (so splash/buttons show up)
@@ -607,9 +665,16 @@ function drawGameButtons() {
   const displayWidth = window.displayWidth || canvas.width;
   const gameScale = window.gameScale || 1;
   const btnSize = Math.max(48, 36 * Math.min(gameScale, 1.3)); // Smaller button size, cap the scaling
-  const padding = 20 * Math.max(1, gameScale * 0.5); // Less padding scaling
+  let padding = 20 * Math.max(1, gameScale * 0.5); // Less padding scaling
+  
+  // Add extra top padding for iPhone to avoid notch
+  let topPadding = padding;
+  if (window.isIPhone) {
+    topPadding = 50; // Move down more for iPhone to avoid notch
+  }
+  
   const quitX = displayWidth - btnSize - padding;
-  const btnY = padding;
+  const btnY = topPadding;
 
   // Quit button only
   ctx.save();
@@ -656,9 +721,16 @@ function exitButtonClicked(x, y) {
   const displayWidth = window.displayWidth || canvas.width;
   const gameScale = window.gameScale || 1;
   const btnSize = Math.max(48, 36 * Math.min(gameScale, 1.3)); // Match the new button size
-  const padding = 20 * Math.max(1, gameScale * 0.5); // Match the new padding
+  let padding = 20 * Math.max(1, gameScale * 0.5); // Match the new padding
+  
+  // Add extra top padding for iPhone to match visual button position
+  let topPadding = padding;
+  if (window.isIPhone) {
+    topPadding = 50; // Match the visual button position
+  }
+  
   const btnX = displayWidth - btnSize - padding;
-  const btnY = padding;
+  const btnY = topPadding; // Use adjusted top padding
   return x >= btnX && x <= btnX + btnSize && y >= btnY && y <= btnY + btnSize;
 }
 
@@ -1056,6 +1128,26 @@ function draw(currentTime = 0) {
       : BIRD_WIDTH / BIRD_HEIGHT; // fallback if not loaded
     const drawWidth = drawHeight * aspect;
     const birdX = 100 * gameScale;
+    
+    // Debug: Log bird dimensions on mobile devices to check for stretching
+    if (window.isMobile && !window.birdDebugLogged) {
+      console.log('Bird rendering debug:', {
+        gameScale,
+        drawWidth,
+        drawHeight,
+        aspect,
+        naturalWidth: birdImg.naturalWidth,
+        naturalHeight: birdImg.naturalHeight,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        displayWidth: window.displayWidth,
+        displayHeight: window.displayHeight,
+        devicePixelRatio: window.devicePixelRatio,
+        effectiveDpr: window.canvasScale
+      });
+      window.birdDebugLogged = true;
+    }
+    
     ctx.drawImage(birdImg, birdX, birdY, drawWidth, drawHeight);
   }
 
@@ -1086,7 +1178,11 @@ function draw(currentTime = 0) {
   // Draw score
   if (showGameElements && !gameOver) {
     // Position score at top with proper spacing based on scaled digit height
-    const scoreY = 20; // Top margin
+    // Add safe area padding for iPhone notch
+    let scoreY = 20; // Top margin
+    if (window.isIPhone) {
+      scoreY = 50; // Move down more for iPhone to avoid notch
+    }
     drawScore(displayWidth / 2, scoreY, score);
   }
 
@@ -1348,3 +1444,46 @@ async function warmupPitchDetection() {
     }
   }
 }
+
+// Force canvas dimension refresh for mobile devices
+function refreshCanvasDimensions() {
+  if (window.isMobile) {
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+      const canvasRect = canvas.getBoundingClientRect();
+      const actualWidth = canvasRect.width;
+      const actualHeight = canvasRect.height;
+      
+      // Update global display dimensions
+      window.displayWidth = actualWidth;
+      window.displayHeight = actualHeight;
+      
+      // Get device pixel ratio and effective DPR
+      const dpr = window.devicePixelRatio || 1;
+      const effectiveDpr = window.isMobile ? (dpr >= 2 ? 2 : 1) : Math.min(Math.round(dpr), 2);
+      
+      // Update canvas internal resolution
+      canvas.width = Math.round(actualWidth * effectiveDpr);
+      canvas.height = Math.round(actualHeight * effectiveDpr);
+      
+      // Reset context scaling
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(effectiveDpr, effectiveDpr);
+      
+      // Enable image smoothing
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      console.log('Canvas dimensions refreshed:', {
+        actualWidth,
+        actualHeight,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        effectiveDpr
+      });
+    }
+  }
+}
+
+// --- Canvas Rendering ---

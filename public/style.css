@@ -11,8 +11,8 @@ html, body {
 }
 
 body {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   /* Ensure full height on mobile devices */
   height: 100dvh; /* Dynamic viewport height for mobile browsers */
   touch-action: none;
@@ -20,6 +20,8 @@ body {
   /* Disable iOS rubber band scrolling */
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
+  /* Safe area padding for devices with home indicators */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 canvas {
@@ -29,6 +31,7 @@ canvas {
   top: 0;
   margin: 0;
   padding: 0;
+  height: 100dvh; 
   background: #e0f7fa;
   touch-action: none;
   /* REMOVE any width/height here! */
@@ -619,6 +622,28 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     font-size: 1em !important;
     min-height: 44px !important; /* iOS recommended touch target size */
   }
+  
+  /* iPhone-specific main menu button adjustments */
+  .main-menu-btns {
+    grid-template-columns: repeat(2, 1fr) !important; /* Use flexible width */
+    gap: 16px !important; /* Increased gap for better spacing on iPhone */
+    margin-bottom: 18px !important;
+    max-width: 95vw !important; /* Ensure buttons don't exceed screen width */
+    width: 100% !important;
+    padding: 0 2.5vw !important; /* Add padding to prevent edge clipping */
+    box-sizing: border-box !important;
+  }
+  
+  .main-menu-btns button {
+    width: 100% !important; /* Fill available space */
+    min-width: 140px !important; /* Minimum width for readability */
+    max-width: 160px !important; /* Maximum width to prevent too wide */
+    height: 48px !important;
+    font-size: 1.1em !important;
+    padding: 12px 8px !important; /* Reduced horizontal padding */
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
 }
 
 /* Extra small screens (iPhone SE, etc.) - even more compact */
@@ -664,6 +689,33 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     border: 2px solid #ccc !important;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25) !important;
     font-weight: bold !important;
+  }
+  
+  /* Extra small iPhone main menu button adjustments */
+  .main-menu-btns {
+    grid-template-columns: repeat(2, 1fr) !important; /* Use flexible width */
+    gap: 10px !important; /* Slightly larger gap for better spacing */
+    margin-bottom: 16px !important;
+    max-width: 92vw !important; /* More conservative width */
+    width: 100% !important;
+    padding: 0 4vw !important; /* More padding to prevent edge clipping */
+    box-sizing: border-box !important;
+  }
+  
+  .main-menu-btns button {
+    width: 100% !important; /* Fill available space */
+    min-width: 120px !important; /* Smaller minimum width */
+    max-width: 140px !important; /* Smaller maximum width */
+    height: 44px !important; /* Slightly smaller height */
+    font-size: 1.0em !important; /* Smaller font */
+    padding: 10px 6px !important; /* Reduced padding */
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Move version text up on very small screens too */
+  .menu > div:last-child {
+    bottom: 22px !important; /* Move up even more for iPhone SE */
   }
 }
 
@@ -935,44 +987,42 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 
 /* Mobile-specific styling to eliminate grey bars and ensure full viewport coverage */
 @supports (height: 100dvh) {
-  body {
-    height: 100dvh !important; /* Dynamic viewport height for mobile browsers */
+  @media screen and (max-width: 1366px) {
+    body {
+      height: 100% !important; /* Use 100% instead of 100dvh for phones and tablets */
+    }
   }
 }
 
 @media screen and (max-width: 768px) {
+  html {
+    height: 100% !important;
+    height: 100dvh !important; /* Dynamic viewport height for mobile */
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
   canvas {
     position: fixed !important;
     left: 0 !important;
     right: 0 !important;
-    top: 25px !important; /* Add 25px safety padding at the top */
+    top: 0 !important;
     bottom: 0 !important;
-    width: 100vw !important;
-    height: calc(100dvh - 25px) !important; /* Adjust height to account for top padding */
+    width: 100% !important; /* Use 100% instead of 100vw */
+    max-width: 100% !important;
+    height: 100dvh !important; /* Use dvh for dynamic viewport height */
     background: #e0f7fa;
     z-index: 1 !important;
+    overflow: hidden !important;
   }
   body {
-    height: 100dvh !important;
-    min-height: 100dvh !important;
+    height: 100% !important;
+    min-height: 100% !important;
     background: #e0f7fa !important;
-    /* Remove any margin/padding that could cause bars */
     margin: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
     position: relative !important;
-  }
-  canvas {
-    position: fixed !important;
-    top: 25px !important; /* Add 25px safety padding at the top */
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: calc(100dvh - 25px) !important; /* Adjust height to account for top padding */
-    min-height: calc(100dvh - 25px) !important; /* Adjust min-height to account for top padding */
-    background: #e0f7fa;
-    z-index: 1 !important;
   }
   .menu {
     position: fixed !important;
@@ -980,13 +1030,32 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    width: 100vw !important;
-    height: 100dvh !important;
-    min-height: 100dvh !important;
+    width: 100% !important; /* Use 100% instead of 100vw to prevent horizontal scrolling */
+    max-width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
     z-index: 10 !important;
     padding-top: env(safe-area-inset-top, 0px) !important;
     padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
     box-sizing: border-box !important;
+    overflow-x: hidden !important; /* Prevent horizontal scrolling */
+  }
+  
+  /* Ensure menu buttons container is properly constrained */
+  .menu-buttons {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+  
+  /* Move version text up to avoid iPhone rounded screen edges */
+  .menu > div:last-child {
+    bottom: 20px !important; /* Move up from 8px to 20px */
   }
   /* Prevent wrapping for Report a Bug button */
   #bugBtn {
@@ -996,98 +1065,66 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
 }
 
-/* Error message styling for authentication forms */
-.error-msg {
-  color: #ff4444;
-  font-size: 0.9em;
-  margin-top: 8px;
-  text-align: center;
-  min-height: 20px;
+/* Emergency viewport fix applied via JavaScript */
+.emergency-viewport-fix {
+  height: 100vh !important;
+  overflow: hidden !important;
 }
 
-/* Checkbox styling for login warning */
-#dontAskAgainCheckbox {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
+.emergency-viewport-fix canvas {
+  height: 100vh !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
 }
 
-#dontAskAgainCheckbox + label {
-  cursor: pointer;
-  user-select: none;
-}
-
-/* Leaderboard margin adjustments when user is logged in */
-#leaderboardContainer.logged-in {
-  margin-bottom: 18px !important; /* Match the consistent spacing */
-}
-
-/* Device-specific leaderboard margin adjustments for logged in users */
-@media (max-width: 600px) {
-  #leaderboardContainer.logged-in {
-    margin-bottom: 18px; /* Match the consistent spacing */
+/* Additional mobile viewport fixes */
+@media (max-width: 768px) {
+  * {
+    box-sizing: border-box !important;
   }
   
-  /* Match the PC spacing for signed-in container on mobile */
-  .signed-in-container {
-    margin: 8px 0 32px 0; /* Increased bottom margin to match PC spacing */
+  /* Ensure no elements create unwanted spacing */
+  div, span, p, h1, h2, h3, h4, h5, h6 {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
   }
   
-  /* Ensure leaderboard footer has proper spacing on mobile */
-  .leaderboard-footer {
-    margin-top: 16px; /* Consistent spacing with increased margin */
+  /* Force full viewport coverage */
+  html, body {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    position: relative !important;
+  }
+  
+  /* Prevent any elements from creating scrollbars */
+  .menu, .popup, .popup-content {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
   }
 }
 
-@media (max-width: 1366px) and (min-width: 768px) and (orientation: portrait),
-       (max-width: 1024px) and (min-width: 768px) and (orientation: landscape) {
-  #leaderboardContainer.logged-in {
-    margin-bottom: 18px !important; /* Match the consistent spacing */
-  }
+/* Utility class for viewport height fix if 100dvh doesn't work */
+.viewport-height-fix {
+  height: 100vh !important;
 }
 
-/* iPhone/iOS: Let canvas fill the screen, but add safe area padding for overlays (score, UI) */
-@supports (height: 100dvh) {
-  @media (max-width: 768px) {
-    canvas {
-      position: fixed !important;
-      left: 0 !important;
-      right: 0 !important;
-      top: 25px !important; /* Add 25px safety padding at the top */
-      bottom: 0 !important;
-      width: 100vw !important;
-      height: calc(100dvh - 25px) !important; /* Adjust height to account for top padding */
-      background: #e0f7fa;
-      z-index: 1 !important;
-    }
-    /* Add safe area padding for overlays at the top (score) and bottom (UI) */
-    .menu-info, .score-overlay, .top-overlay {
-      padding-top: env(safe-area-inset-top, 0px) !important;
-    }
-    .bottom-overlay, .version-text {
-      padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-    }
-    body {
-      height: 100dvh !important;
-      min-height: 0 !important;
-      max-height: none !important;
-      background: #e0f7fa;
-      overflow: hidden;
-    }
-  }
+.viewport-height-fix canvas {
+  height: 100vh !important;
 }
 
 /* Fallback for browsers that do not support 100dvh - mobile only */
 @media (max-width: 768px) {
-  canvas {
-    height: calc(100vh - 25px); /* Adjust height to account for top padding */
-    width: 100vw;
-    top: 25px; /* Add 25px safety padding at the top */
-  }
-  body {
-    height: 100vh;
-    background: #e0f7fa;
-    overflow: hidden;
+  @supports not (height: 100dvh) {
+    html {
+      height: 100vh !important; /* Fallback for older browsers */
+    }
+    canvas {
+      height: 100vh !important; /* Fallback for older browsers */
+    }
   }
 }
 

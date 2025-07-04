@@ -345,6 +345,12 @@ canvas.addEventListener("click", function (e) {
     paused = false;
     gameOver = false;
     pitchLoopActive = true;
+    
+    // Refresh canvas dimensions for mobile devices
+    if (typeof refreshCanvasDimensions === 'function') {
+      refreshCanvasDimensions();
+    }
+    
     ensureMicAndStart();
     return;
   }

@@ -85,7 +85,7 @@
       <span id="highScoreDisplay">High Score: 0</span>
     </div>
     <div style="position: absolute; left: 12px; right: 0; bottom: 8px; width: 100%; text-align: left; color: #ffffff; font-size: 0.8em; pointer-events: none; max-width: 480px; margin: 0 auto;">
-         Pitch Bird v5.4.2
+         Pitch Bird v5.4.3
     </div>
   </div>
 
@@ -258,6 +258,78 @@
   </div>
   <canvas id="gameCanvas"></canvas>
   <div id="loadingOverlay" class="loading-overlay"></div>
+  <script>
+    // Emergency viewport fix function - last resort for persistent white bars
+    function emergencyViewportFix() {
+      if (window.innerWidth <= 768) {
+        const canvas = document.getElementById('gameCanvas');
+        const body = document.body;
+        const html = document.documentElement;
+        
+        // Get the actual viewport dimensions
+        const viewportHeight = Math.max(
+          window.innerHeight,
+          document.documentElement.clientHeight,
+          window.screen?.height || 0
+        );
+        
+        // Apply exact pixel heights as last resort
+        html.style.height = `${viewportHeight}px`;
+        body.style.height = `${viewportHeight}px`;
+        
+        if (canvas) {
+          canvas.style.height = `${viewportHeight}px`;
+          canvas.style.width = `${window.innerWidth}px`;
+          
+          // Add a class to indicate emergency fix was applied
+          body.classList.add('emergency-viewport-fix');
+          console.log('Emergency viewport fix applied:', {
+            width: window.innerWidth,
+            height: viewportHeight,
+            innerHeight: window.innerHeight,
+            clientHeight: document.documentElement.clientHeight
+          });
+        }
+      }
+    }
+    
+    // Apply emergency fix after a delay to ensure DOM is ready
+    setTimeout(emergencyViewportFix, 1000);
+    
+    // Also apply on orientation change
+    window.addEventListener('orientationchange', () => {
+      setTimeout(emergencyViewportFix, 500);
+    });
+
+    // Mobile viewport change handler - minimal intervention, let CSS handle sizing
+    const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+    
+    // Mobile viewport change handler - minimal intervention, let CSS handle sizing
+    if (window.innerWidth <= 768) {
+      // Handle iOS Safari address bar changes and viewport adjustments
+      let viewportChangeTimeout;
+      
+      function handleViewportChange() {
+        clearTimeout(viewportChangeTimeout);
+        viewportChangeTimeout = setTimeout(() => {
+          const canvas = document.getElementById('gameCanvas');
+          if (canvas && window.innerWidth <= 768) {
+            // Let CSS handle all dimensions - no pixel overrides
+            // Force a reflow to ensure CSS has been applied
+            canvas.style.display = 'block';
+          }
+        }, 100);
+      }
+      
+      // Listen for viewport changes
+      window.addEventListener('resize', handleViewportChange);
+      
+      // Handle visual viewport changes (iOS Safari)
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', handleViewportChange);
+      }
+    }
+  </script>
   <script src="storage.js"></script>
   <script src="cosmetics.js"></script>
   <script src="game.js"></script>
