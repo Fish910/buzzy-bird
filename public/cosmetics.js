@@ -36,7 +36,9 @@ const DEFAULT_BACKDROPS = [
 
 const BACKDROPS = [
   ...DEFAULT_BACKDROPS,
-  { id: "night", name: "Night", price: 25, img: "assets/walls/night.png" }
+  { id: "night", name: "Night", price: 25, img: "assets/walls/night.png" },
+  { id: "fall", name: "Fall", price: 25, img: "assets/walls/fall.png" },
+  { id: "winter", name: "Winter", price: 25, img: "assets/walls/winter.png" }
 ];
 
 // Current active cosmetics tab
