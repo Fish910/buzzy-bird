@@ -1,6 +1,9 @@
-# Development certificates
+# Development certificates and server files
 dev-cert.pem
 dev-key.pem
+dev-server.js
+dev-server-simple.js
+start-dev-server.bat
 
 # Logs
 logs

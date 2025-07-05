@@ -115,7 +115,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 20;
+  z-index: 10000; /* Much higher to ensure it's above everything */
 }
 .popup.hidden {
   display: none;
@@ -124,12 +124,15 @@ button {
   background: #fff;
   border-radius: 12px;
   padding: 28px 24px 18px 24px;
-  min-width: 320px;
+  width: fit-content; /* Dynamic width based on content */
+  min-width: 280px; /* Minimum width to prevent too narrow */
+  max-width: 90vw; /* Maximum width to prevent overflow */
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative; /* Added for close button positioning */
+  z-index: 10010; /* Higher than popup overlay */
 }
 .popup-content h2 {
   margin-top: 0;
@@ -147,10 +150,13 @@ button {
 
 /* Cosmetics tabs styling */
 .cosmetics-popup {
-  min-width: 380px;
+  width: 350px !important; /* Fixed width to prevent expansion */
+  min-width: 350px; /* Minimum width for cosmetics content */
+  max-width: 95vw; /* Maximum width to prevent overflow */
   align-items: stretch; /* Override default centering for cosmetics popup */
   position: relative; /* Allow positioning of tabs */
   margin-top: 40px; /* Add more space at top for protruding tabs */
+  z-index: 10010; /* Same as other popup content */
 }
 
 .cosmetics-tabs {
@@ -161,12 +167,13 @@ button {
   justify-content: flex-start; /* Align tabs to the left */
   align-self: flex-start; /* Ensure the tabs container aligns to the left */
   position: absolute; /* Position tabs absolutely */
-  top: -55px; /* Move tabs higher up to poke out more */
+  top: -42px; /* Move tabs to align bottom with top of popup */
   left: 0; /* Align to left edge */
+  z-index: 10020; /* Ensure tabs are above popup content */
 }
 
 .cosmetics-tab {
-  flex: 0 1 auto; /* Don't stretch tabs to fill width */
+  flex: 0 0 auto; /* Don't stretch tabs, use content-based width */
   padding: 12px 16px;
   background: #f5f5f5;
   border: 2px solid #ddd;
@@ -178,9 +185,14 @@ button {
   color: #666;
   transition: all 0.2s;
   margin: 0;
-  min-width: 80px; /* Ensure tabs have minimum width */
+  width: fit-content; /* Dynamic width based on text content */
+  min-width: 60px; /* Minimum width to prevent too narrow */
+  max-width: none; /* Remove max width limit */
+  white-space: nowrap; /* Prevent text wrapping */
+  overflow: visible; /* Allow text to be fully visible */
+  text-overflow: unset; /* Don't truncate text */
   position: relative; /* For z-index stacking */
-  z-index: 10; /* Ensure tabs appear above popup background */
+  z-index: 10030; /* Ensure tabs appear above popup background */
 }
 
 .cosmetics-tab:first-child {
@@ -202,7 +214,7 @@ button {
   border-color: #1976d2;
   border-bottom: 2px solid #fff;
   margin-bottom: -2px;
-  z-index: 11; /* Active tab appears above other tabs */
+  z-index: 10035; /* Active tab appears above other tabs and popup */
 }
 
 .cosmetics-tab:hover:not(.active) {
@@ -243,7 +255,7 @@ button {
 /* Backdrop-specific styling - larger boxes */
 .cosmetics-grid.backdrops-grid {
   grid-template-columns: repeat(4, 64px); /* Fewer columns, larger boxes */
-  grid-gap: 20px;
+  grid-gap: 24px; /* Increased gap from 20px to 24px to prevent overlap */
   max-height: 280px; /* Slightly smaller max height due to larger items */
 }
 
@@ -589,7 +601,8 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   
   /* iPhone-specific popup adjustments - make popups narrower and more mobile-friendly */
   .popup-content {
-    min-width: 280px !important; /* Reduced from 320px */
+    width: fit-content !important; /* Dynamic width based on content */
+    min-width: 280px !important; /* Minimum width for mobile */
     max-width: 90vw !important; /* Ensure popup doesn't exceed screen width */
     padding: 20px 16px 16px 16px !important; /* Reduced horizontal padding */
     margin: 0 10px !important; /* Add horizontal margins for safety */
@@ -597,7 +610,8 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
   
   .cosmetics-popup {
-    min-width: 300px !important; /* Slightly larger for cosmetics, but still mobile-friendly */
+    width: 300px !important; /* Fixed width to prevent expansion on mobile */
+    min-width: 300px !important; /* Minimum width for cosmetics on mobile */
     max-width: 95vw !important;
     padding: 40px 16px 16px 16px !important; /* Extra top padding to avoid X button overlap */
   }
@@ -614,6 +628,13 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     grid-template-columns: repeat(4, 40px) !important; /* Reduce from 5 to 4 columns */
     grid-gap: 12px !important; /* Reduce gap */
     margin: 8px 0 12px 0 !important; /* Reduced top margin to account for extra padding */
+  }
+  
+  /* Backdrop-specific mobile adjustments - more spacing on iPhone */
+  .cosmetics-grid.backdrops-grid {
+    grid-template-columns: repeat(auto-fill, 64px) !important; /* Fixed width, allow wrapping */
+    grid-gap: 20px !important; /* Reasonable gap for backdrops on mobile */
+    justify-content: start !important; /* Align items to start */
   }
   
   /* Make buttons more touch-friendly */
@@ -649,6 +670,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 /* Extra small screens (iPhone SE, etc.) - even more compact */
 @media (max-width: 375px) {
   .popup-content {
+    width: fit-content !important; /* Dynamic width based on content */
     min-width: 260px !important;
     max-width: 85vw !important;
     padding: 16px 12px !important;
@@ -656,6 +678,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   }
   
   .cosmetics-popup {
+    width: 280px !important; /* Fixed width to prevent expansion on extra small screens */
     min-width: 280px !important;
     max-width: 90vw !important;
     padding: 40px 12px 12px 12px !important; /* Extra top padding to avoid X button overlap */
@@ -672,23 +695,16 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
     margin: 8px 0 12px 0 !important;
   }
   
+  /* Backdrop-specific extra small screen adjustments - more spacing on iPhone SE */
+  .cosmetics-grid.backdrops-grid {
+    grid-template-columns: repeat(auto-fill, 48px) !important; /* Fixed width, allow wrapping */
+    grid-gap: 16px !important; /* Reasonable gap for backdrops on extra small screens */
+    justify-content: start !important; /* Align items to start */
+  }
+  
   .popup-content h2 {
     font-size: 1.3em !important;
     margin-bottom: 8px !important;
-  }
-  
-  /* Make X button slightly smaller for very small screens */
-  .popup-close-x {
-    font-size: 20px !important;
-    width: 40px !important;
-    height: 40px !important;
-    top: 6px !important;
-    right: 6px !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    color: #333 !important;
-    border: 2px solid #ccc !important;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25) !important;
-    font-weight: bold !important;
   }
   
   /* Extra small iPhone main menu button adjustments */
@@ -852,21 +868,21 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
       font-size: 1em; /* Reset to mobile font size */
     }
   }
+  
+  /* iPad X button styling */
+  .popup-close-x {
+    font-size: 64px !important; /* Larger X button for iPad */
+    width: 64px !important;
+    height: 64px !important;
+    top: 16px !important;
+    right: 16px !important;
+  }
 }
 
 /* Consistent leaderboard footer margin */
   .leaderboard-footer {
     margin-top: 16px; /* Consistent spacing with increased margin */
   }
-
-/* Fix X button size for iPad */
-.popup-close-x {
-  font-size: 64px !important; /* Larger X button for iPad */
-  width: 64px !important;
-  height: 64px !important;
-  top: 16px !important;
-  right: 16px !important;
-}
 
 /* END DEBUG STYLES - Remove these after testing */
 
@@ -917,12 +933,12 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   right: 12px;
   background: none;
   border: none;
-  font-size: 48px;
+  font-size: 32px; /* Reduced from 48px for PC */
   font-weight: bold;
   color: #666;
   cursor: pointer;
-  width: 48px;
-  height: 48px;
+  width: 32px; /* Reduced from 48px for PC */
+  height: 32px; /* Reduced from 48px for PC */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -930,7 +946,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   transition: background-color 0.15s, color 0.15s;
   margin: 0;
   padding: 0;
-  z-index: 100; /* Ensure it's above all content */
+  z-index: 10050; /* Ensure it's above all content including tabs */
 }
 
 .popup-close-x:hover {
@@ -938,25 +954,36 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   color: #333;
 }
 
-/* Mobile-specific X button styling */
-@media (max-width: 600px) {
+/* Mobile-specific X button styling - iPhone and mobile devices */
+@media (max-width: 768px), (max-device-width: 768px) {
   .popup-close-x {
     top: 8px !important;
     right: 8px !important;
-    font-size: 24px !important;
-    width: 44px !important;
-    height: 44px !important;
-    background: rgba(255, 255, 255, 0.95) !important;
+    font-size: 42px !important; /* Larger for better mobile accessibility */
+    width: 52px !important; /* Larger for better mobile accessibility */
+    height: 52px !important; /* Larger for better mobile accessibility */
+    background: transparent !important; /* Make circle invisible */
     color: #333 !important;
-    border: 2px solid #ccc !important;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25) !important;
+    border: none !important; /* Remove border to make circle invisible */
+    box-shadow: none !important; /* Remove shadow to make circle invisible */
     font-weight: bold !important;
   }
   
   .popup-close-x:hover {
-    background: rgba(255, 255, 255, 1) !important;
+    background: rgba(255, 255, 255, 0.1) !important; /* Very subtle hover effect */
     color: #000 !important;
-    border-color: #999 !important;
+    border: none !important;
+  }
+}
+
+/* Extra small screens (iPhone SE, small Android phones) */
+@media (max-width: 480px) {
+  .popup-close-x {
+    top: 6px !important;
+    right: 6px !important;
+    font-size: 40px !important;
+    width: 50px !important;
+    height: 50px !important;
   }
 }
 
@@ -971,9 +998,15 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   .cosmetics-tab {
     padding: 8px 16px !important;
     font-size: 0.8em !important;
-    min-width: 80px !important;
-    flex: 1 !important;
+    width: fit-content !important; /* Dynamic width based on text content */
+    min-width: 60px !important; /* Minimum width to prevent too narrow */
+    max-width: none !important; /* Remove max width limit */
+    flex: 0 0 auto !important; /* Don't stretch tabs */
     margin-left: -1px !important;
+    white-space: nowrap !important; /* Prevent text wrapping */
+    overflow: visible !important; /* Allow text to be fully visible */
+    text-overflow: unset !important; /* Don't truncate text */
+    z-index: 10030 !important; /* Ensure iPad tabs are above popup */
   }
   
   .cosmetics-tab:first-child {
@@ -982,6 +1015,7 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
   
   .cosmetics-tabs {
     top: -45px;
+    z-index: 10020 !important; /* Ensure iPad tabs container is above popup */
   }
 }
 
@@ -995,6 +1029,129 @@ html, body, button, .menu, .menu-info, .menu-tap, .popup, .popup-content, .skins
 }
 
 @media screen and (max-width: 768px) {
+  /* Mobile cosmetics tab styling - iPhone optimized - DYNAMIC SIZE BASED ON TEXT */
+  .cosmetics-tab {
+    padding: 6px 12px !important; /* Slightly more horizontal padding for text */
+    font-size: 0.5em !important; /* Smaller text - reduced from 0.6em */
+    width: fit-content !important; /* Dynamic width based on text content */
+    min-width: 60px !important; /* Minimum width to prevent too narrow */
+    max-width: none !important; /* Remove max width limit */
+    flex: 0 0 auto !important; /* Don't stretch tabs, keep them together */
+    margin-left: -1px !important;
+    border-radius: 4px 4px 0 0 !important;
+    z-index: 10030 !important; /* Ensure mobile tabs are above everything */
+    text-align: center !important;
+    border: 1px solid #ddd !important;
+    border-bottom: none !important;
+    background: #f5f5f5 !important;
+    white-space: nowrap !important; /* Prevent text wrapping */
+    overflow: visible !important; /* Allow text to be fully visible */
+    text-overflow: unset !important; /* Don't truncate text */
+    line-height: 1.2 !important;
+    height: 60px !important; /* Shorter - reduced from 80px */
+  }
+  
+  .cosmetics-tab:first-child {
+    margin-left: 0 !important;
+    border-right: 1px solid #ddd !important;
+  }
+  
+  .cosmetics-tab:last-child {
+    margin-right: 0 !important;
+    border-left: 1px solid #ddd !important;
+  }
+  
+  .cosmetics-tab:not(:first-child):not(:last-child) {
+    border-left: 1px solid #ddd !important;
+    border-right: 1px solid #ddd !important;
+  }
+  
+  .cosmetics-tab.active {
+    background: #fff !important;
+    color: #1976d2 !important;
+    border-color: #1976d2 !important;
+    border-bottom: 1px solid #fff !important;
+    z-index: 10035 !important; /* Active mobile tab appears above everything */
+  }
+  
+  .cosmetics-tabs {
+    top: -62px !important; /* Adjusted for shorter tabs */
+    width: auto !important; /* Don't force full width */
+    left: 6px !important;
+    right: auto !important; /* Remove right constraint */
+    justify-content: flex-start !important; /* Group tabs together on left */
+    z-index: 10020 !important; /* Match mobile tabs z-index */
+    gap: 0 !important;
+    display: flex !important;
+    border-bottom: 1px solid #ddd !important;
+    margin-bottom: 10px !important;
+    height: 62px !important; /* Adjusted to match tab height */
+  }
+  
+  .cosmetics-popup {
+    margin-top: 68px !important; /* Adjusted for shorter tabs */
+    z-index: 10010 !important; /* Match other popup content */
+    position: relative !important;
+    overflow: visible !important;
+  }
+
+  /* Mobile popup adjustments */
+  .popup-content {
+    width: fit-content !important; /* Dynamic width based on content */
+    min-width: 300px !important;
+    max-width: 90vw !important;
+    margin: 0 auto !important;
+    padding: 20px 16px 16px 16px !important;
+    overflow: visible !important;
+  }
+  
+  .popup-content.cosmetics-popup {
+    width: 300px !important; /* Fixed width for mobile cosmetics popup */
+    margin-top: 68px !important; /* Match the shorter tabs */
+    overflow: visible !important;
+  }
+  
+  .popup {
+    overflow: visible !important;
+  }
+
+  /* Extra small screens (iPhone SE, etc.) */
+  @media screen and (max-width: 390px) {
+    .cosmetics-tab {
+      padding: 5px 10px !important; /* Slightly more horizontal padding for text */
+      font-size: 0.45em !important; /* Smaller text - reduced from 0.55em */
+      width: fit-content !important; /* Dynamic width based on text content */
+      min-width: 50px !important; /* Minimum width to prevent too narrow */
+      max-width: none !important; /* Remove max width limit */
+      height: 54px !important; /* Shorter - reduced from 72px */
+    }
+    
+    .cosmetics-tabs {
+      top: -56px !important; /* Adjusted for shorter tabs */
+      height: 56px !important; /* Adjusted to match tab height */
+      left: 4px !important;
+    }
+    
+    .cosmetics-popup {
+      margin-top: 60px !important; /* Adjusted for shorter tabs */
+    }
+  }
+
+  /* Settings tab content mobile adjustments */
+  .settings-tab-content {
+    min-height: 140px !important;
+    padding: 10px !important;
+  }
+  
+  .setting-row {
+    margin-bottom: 15px !important;
+  }
+  
+  .note-box {
+    font-size: 0.9em !important;
+    padding: 8px 12px !important;
+  }
+
   html {
     height: 100% !important;
     height: 100dvh !important; /* Dynamic viewport height for mobile */
