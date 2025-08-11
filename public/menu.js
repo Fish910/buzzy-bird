@@ -399,6 +399,7 @@ async function renderLeaderboard() {
       leaderboardList.innerHTML = '<div style="color:#aaa;text-align:center;">No scores yet.</div>';
     }
   } catch (e) {
+    console.error('Leaderboard fetch failed:', e);
     leaderboardList.innerHTML = '<div style="color:#f66;text-align:center;">Failed to load leaderboard.</div>';
   }
 }

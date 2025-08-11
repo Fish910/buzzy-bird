@@ -348,7 +348,7 @@ async function updateHighScore(name, newScore) {
 
 // Fetch leaderboard from Firebase
 async function fetchLeaderboard() {
-  const snapshot = await db.ref('users').orderByChild('highScore').once('value');
+  const snapshot = await db.ref('users').orderByChild('highScore').limitToLast(50).once('value');
   const users = [];
   snapshot.forEach(child => {
     users.push(child.val());
